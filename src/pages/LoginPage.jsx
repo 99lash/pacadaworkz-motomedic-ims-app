@@ -1,13 +1,42 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // 1. Import navigation hook
+import { loginUser } from '../services/mockAuth'; // 2. Import your mock service
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState(''); // State for error messages
+  const [isLoading, setIsLoading] = useState(false); // State for loading spinner
 
-  const handleSubmit = (e) => {
+  const navigate = useNavigate(); // Initialize navigation
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Login attempt:', { username, password });
-    // Add your login logic here
+    setError('');
+    setIsLoading(true);
+    try {
+      // 3. Call the mock API
+      const response = await loginUser(username, password);
+
+      console.log('Login success:', response);
+
+      // Optional: Save fake token to localStorage so you stay "logged in"
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('userRole', response.data.user.role);
+
+      // 4. Redirect logic based on role (Optional, or just go to dashboard)
+      if (response.data.user.role === 'superadmin') {
+        navigate('/dashboard');
+      } else {
+        navigate('/dashboard'); // Or a different page for staff
+      }
+
+    } catch (err) {
+      console.error('Login failed:', err);
+      setError(err.message || 'Something went wrong');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -16,17 +45,23 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="flex justify-center mb-4">
           <div className="bg-blue-600 rounded-full p-4">
-            <svg 
-              className="w-8 h-8 text-white" 
-              fill="currentColor" 
+            <svg
+              className="w-8 h-8 text-white"
+              fill="currentColor"
               viewBox="0 0 24 24"
             >
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-              <circle cx="7" cy="12" r="1.5"/>
-              <circle cx="17" cy="12" r="1.5"/>
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
+              <circle cx="7" cy="12" r="1.5" />
+              <circle cx="17" cy="12" r="1.5" />
             </svg>
           </div>
         </div>
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
+            {error}
+          </div>
+        )}
 
         {/* Title */}
         <h1 className="text-center text-xl font-semibold text-gray-800 mb-1">
@@ -83,9 +118,11 @@ export default function LoginPage() {
           {/* Sign In Button */}
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-md transition-colors duration-200"
+            disabled={isLoading}
+            className={`w-full text-white font-medium py-2.5 rounded-md transition-colors duration-200 
+              ${isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
           >
-            Sign In
+            {isLoading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
 
