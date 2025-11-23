@@ -1,0 +1,68 @@
+export const ROLES = {
+  SUPER_ADMIN: 'SuperAdmin',
+  ADMIN: 'Admin',
+  STAFF: 'Staff'
+};
+
+export const PERMISSIONS = {
+  DASHBOARD: 'dashboard',
+  POS: 'pos',
+  INVENTORY: 'inventory',
+  PRODUCTS: 'products',
+  PURCHASES: 'purchases',
+  CATEGORIES: 'categories',
+  BRANDS: 'brands',
+  ATTRIBUTES: 'attributes',
+  SUPPLIERS: 'suppliers',
+  USERS: 'users',
+  ROLES: 'roles',
+  REPORTS: 'reports',
+  LOGS: 'logs',
+  SETTINGS: 'settings'
+};
+
+export const rolePermissions = {
+  [ROLES.SUPER_ADMIN]: [
+    PERMISSIONS.DASHBOARD,
+    PERMISSIONS.POS,
+    PERMISSIONS.INVENTORY,
+    PERMISSIONS.PRODUCTS,
+    PERMISSIONS.PURCHASES,
+    PERMISSIONS.CATEGORIES,
+    PERMISSIONS.BRANDS,
+    PERMISSIONS.ATTRIBUTES,
+    PERMISSIONS.SUPPLIERS,
+    PERMISSIONS.USERS,
+    PERMISSIONS.ROLES,
+    PERMISSIONS.REPORTS,
+    PERMISSIONS.LOGS,
+    PERMISSIONS.SETTINGS
+  ],
+  [ROLES.ADMIN]: [
+    PERMISSIONS.DASHBOARD,
+    PERMISSIONS.POS,
+    PERMISSIONS.INVENTORY,
+    PERMISSIONS.PRODUCTS,
+    PERMISSIONS.PURCHASES,
+    PERMISSIONS.CATEGORIES,
+    PERMISSIONS.BRANDS,
+    PERMISSIONS.ATTRIBUTES,
+    PERMISSIONS.SUPPLIERS,
+    PERMISSIONS.USERS,
+    PERMISSIONS.REPORTS,
+    PERMISSIONS.LOGS,
+    PERMISSIONS.SETTINGS
+  ],
+  [ROLES.STAFF]: [
+    PERMISSIONS.DASHBOARD,
+    PERMISSIONS.POS,
+    PERMISSIONS.INVENTORY,
+    PERMISSIONS.PRODUCTS,
+    PERMISSIONS.PURCHASES
+  ]
+};
+
+export const hasPermission = (userRole, permission) => {
+  if (!userRole || !permission) return false;
+  return rolePermissions[userRole]?.includes(permission) || false;
+};

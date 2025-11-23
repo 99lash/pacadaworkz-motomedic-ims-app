@@ -11,7 +11,6 @@ export default defineConfig({
     }),
   ],
   server: {
-    port: 3000,      // Changes the port to 3000
-    strictPort: true, // Optional: Fails if 3000 is already in use (instead of switching to 3001)
+    port: 3001,      // Changes the port to 3001
   }
 })

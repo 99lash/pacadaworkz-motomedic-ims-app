@@ -1,8 +1,22 @@
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { loginSuccess } from '../features/auth/authSlice';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const handleMockLogin = (role) => {
+    const user = {
+      name: role,
+      role: role,
+    };
+    dispatch(loginSuccess(user));
+    navigate('/');
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -92,21 +106,27 @@ export default function LoginPage() {
         {/* Demo Credentials */}
         <div className="mt-8 pt-6 border-t border-gray-200">
           <p className="text-center text-sm font-medium text-gray-700 mb-3">
-            Demo Credentials:
+            Click to login as:
           </p>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">SuperAdmin:</span>
-              <span className="text-gray-800 font-mono">superadmin / admin123</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Admin:</span>
-              <span className="text-gray-800 font-mono">admin / admin123</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Staff:</span>
-              <span className="text-gray-800 font-mono">staff / staff123</span>
-            </div>
+            <button
+              onClick={() => handleMockLogin('SuperAdmin')}
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 rounded-md transition-colors duration-200"
+            >
+              Login as SuperAdmin
+            </button>
+            <button
+              onClick={() => handleMockLogin('Admin')}
+              className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2.5 rounded-md transition-colors duration-200"
+            >
+              Login as Admin
+            </button>
+            <button
+              onClick={() => handleMockLogin('Staff')}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-md transition-colors duration-200"
+            >
+              Login as Staff
+            </button>
           </div>
         </div>
       </div>
