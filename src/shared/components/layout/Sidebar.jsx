@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../features/auth';
 import SidebarHeader from './SidebarHeader';
 import SidebarFooter from './SidebarFooter';
+import SidebarThemeToggle from './SidebarThemeToggle';
 import SidebarOverlay from './SidebarOverlay';
 
 const Sidebar = ({ 
@@ -63,7 +64,7 @@ const Sidebar = ({
         aria-label="Main navigation"
         aria-hidden={isMobile && !isMenuOpen}
       >
-        <nav className="h-full flex flex-col bg-white border-r shadow-sm">
+        <nav className="h-full flex flex-col bg-white border-r shadow-sm text-gray-900 dark:bg-gray-950 dark:text-gray-100 dark:border-gray-800">
           <SidebarHeader 
             expanded={isMobile ? true : expanded} 
             onToggle={isMobile ? onCloseMenu : toggleSidebar}
@@ -77,6 +78,8 @@ const Sidebar = ({
           >
             {children(isMobile ? true : expanded)}
           </ul>
+
+          <SidebarThemeToggle expanded={isMobile ? true : expanded} />
           
           <SidebarFooter user={user} expanded={isMobile ? true : expanded} />
         </nav>

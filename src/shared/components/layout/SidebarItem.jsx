@@ -30,8 +30,8 @@ const SidebarItem = ({ icon, text, active, expanded }) => {
         ${expanded ? 'px-3 text-xs' : 'px-2 justify-center text-xs'}
         ${
           active
-            ? 'bg-gradient-to-tr from-indigo-200 to-indigo-100 text-indigo-800'
-            : 'hover:bg-indigo-50 text-gray-600'
+            ? 'bg-gradient-to-tr from-indigo-200 to-indigo-100 text-indigo-800 dark:from-indigo-500/30 dark:to-indigo-400/10 dark:text-indigo-100'
+            : 'hover:bg-indigo-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'
         }
       `}
       role="menuitem"
@@ -52,7 +52,7 @@ const SidebarItem = ({ icon, text, active, expanded }) => {
 
       {!expanded && showTooltip && (
         <div
-          className="fixed rounded-md px-2 py-1 bg-indigo-100 text-indigo-800 text-xs whitespace-nowrap pointer-events-none z-[9999] -translate-y-1/2"
+          className="fixed rounded-md px-2 py-1 bg-indigo-100 text-indigo-800 text-xs whitespace-nowrap pointer-events-none z-[9999] -translate-y-1/2 dark:bg-gray-800 dark:text-gray-100"
           style={{
             top: tooltipPosition.top,
             left: tooltipPosition.left,

@@ -13,7 +13,7 @@ const SidebarFooter = ({ user, expanded }) => {
   };
 
   return (
-    <div className="border-t flex p-3">
+    <div className="border-t flex p-3 items-center bg-white dark:bg-gray-950 dark:border-gray-800">
       <img
         src={`https://ui-avatars.com/api/?background=c7d2fe&color=3730a3&bold=true&name=${user?.name}`}
         alt=""
@@ -27,9 +27,12 @@ const SidebarFooter = ({ user, expanded }) => {
       >
         <div className="leading-4">
           <h4 className="font-semibold">{user?.name}</h4>
-          <span className="text-xs text-gray-600">{user?.role}</span>
+          <span className="text-xs text-gray-600 dark:text-gray-400">{user?.role}</span>
         </div>
-        <button onClick={handleLogout} className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100">
+        <button
+          onClick={handleLogout}
+          className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
+        >
           <LogOut size={20} />
         </button>
       </div>

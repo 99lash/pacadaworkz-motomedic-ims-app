@@ -38,7 +38,7 @@ const CategorySearchBar = ({
     <div className={`relative max-w-md ${className}`}>
       {/* Search Icon */}
       <Search 
-        className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" 
+        className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-gray-500 pointer-events-none" 
         aria-hidden="true"
       />
       
@@ -49,7 +49,7 @@ const CategorySearchBar = ({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="pl-10 pr-10"
+        className="pl-10 pr-10 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-800"
         aria-label="Search categories"
         role="searchbox"
       />
@@ -61,7 +61,7 @@ const CategorySearchBar = ({
           variant="ghost"
           size="icon"
           onClick={handleClear}
-          className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7"
+          className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 text-muted-foreground dark:text-gray-300 hover:bg-transparent dark:hover:bg-transparent"
           aria-label="Clear search"
         >
           <X className="h-4 w-4" aria-hidden="true" />

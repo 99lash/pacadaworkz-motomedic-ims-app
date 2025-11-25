@@ -13,7 +13,7 @@ const SidebarHeader = ({ expanded, onToggle, isMobile = false }) => {
       {isMobile ? (
         <button
           onClick={onToggle}
-          className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:hover:bg-gray-700"
           aria-label="Close navigation menu"
         >
           <X size={20} aria-hidden="true" />
@@ -21,7 +21,7 @@ const SidebarHeader = ({ expanded, onToggle, isMobile = false }) => {
       ) : (
         <button
           onClick={onToggle}
-          className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:hover:bg-gray-700"
           aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
           aria-expanded={expanded}
         >

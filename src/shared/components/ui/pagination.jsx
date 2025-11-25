@@ -106,7 +106,7 @@ PageButton.propTypes = {
  */
 const Ellipsis = memo(() => (
   <span 
-    className="px-2 text-muted-foreground select-none"
+    className="px-2 text-muted-foreground dark:text-gray-500 select-none"
     aria-hidden="true"
   >
     ...
@@ -122,7 +122,7 @@ const PageSizeSelector = memo(({ pageSize, onChange, options = PAGE_SIZE_OPTIONS
   <div className="flex items-center gap-2">
     <label 
       htmlFor="page-size-select"
-      className="text-sm text-muted-foreground whitespace-nowrap"
+      className="text-sm text-muted-foreground dark:text-gray-400 whitespace-nowrap"
     >
       Items per page:
     </label>
@@ -130,7 +130,7 @@ const PageSizeSelector = memo(({ pageSize, onChange, options = PAGE_SIZE_OPTIONS
       id="page-size-select"
       value={pageSize}
       onChange={(e) => onChange(Number(e.target.value))}
-      className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+      className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring dark:bg-gray-900 dark:border-gray-800 dark:text-gray-100"
       aria-label="Select number of items per page"
     >
       {(options || PAGE_SIZE_OPTIONS).map((size) => (
@@ -192,13 +192,13 @@ const Pagination = ({
     <nav
       role="navigation"
       aria-label="Pagination"
-      className={`flex flex-col sm:flex-row items-center justify-between gap-4 ${className}`}
+      className={`flex flex-col sm:flex-row items-center justify-between gap-4 text-gray-700 dark:text-gray-300 ${className}`}
     >
       {/* Left side: Item count and page size */}
       <div className="flex flex-col sm:flex-row items-center gap-4">
         {/* Item count display */}
         {showItemCount && (
-          <p className="text-sm text-muted-foreground" aria-live="polite">
+          <p className="text-sm text-muted-foreground dark:text-gray-400" aria-live="polite">
             Showing <span className="font-medium">{startItem}</span> to{' '}
             <span className="font-medium">{endItem}</span> of{' '}
             <span className="font-medium">{totalItems}</span> results
@@ -261,7 +261,7 @@ const Pagination = ({
         </div>
 
         {/* Mobile: Current page indicator */}
-        <div className="sm:hidden px-3 text-sm text-muted-foreground">
+        <div className="sm:hidden px-3 text-sm text-muted-foreground dark:text-gray-400">
           Page {currentPage} of {totalPages}
         </div>
 

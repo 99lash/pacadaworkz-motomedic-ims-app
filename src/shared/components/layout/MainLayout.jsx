@@ -36,9 +36,9 @@ const MainLayout = () => {
   );
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 transition-colors">
       {/* Mobile Header */}
-      <header className="md:hidden flex items-center justify-between p-3 bg-white border-b shadow-sm">
+      <header className="md:hidden flex items-center justify-between p-3 bg-white border-b shadow-sm dark:bg-gray-950 dark:border-gray-800">
         <MobileMenuButton 
           isOpen={isMenuOpen} 
           onToggle={toggleMenu}
@@ -72,7 +72,7 @@ const MainLayout = () => {
         )}
         
         <main 
-          className="flex-grow p-4 bg-gray-50 overflow-auto min-w-0"
+          className="flex-grow p-4 bg-gray-50 dark:bg-gray-900 overflow-auto min-w-0 transition-colors"
           id="main-content"
         >
           <Outlet />
