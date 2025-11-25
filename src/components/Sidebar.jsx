@@ -10,8 +10,8 @@ const Sidebar = ({ children }) => {
   const toggleSidebar = () => setExpanded(prev => !prev);
 
   return (
-    <aside className="h-screen" aria-label="Main navigation">
-      <nav className="h-full flex flex-col bg-white border-r shadow-sm overflow-hidden">
+    <aside className={`h-screen ${expanded ? 'w-64' : 'w-16'} min-w-0`} aria-label="Main navigation">
+      <nav className="h-full flex flex-col bg-white border-r shadow-sm">
         <SidebarHeader expanded={expanded} onToggle={toggleSidebar} />
         
         <ul className="flex-1 px-3 overflow-y-auto" role="menu">
