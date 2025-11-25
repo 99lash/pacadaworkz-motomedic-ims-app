@@ -1,9 +1,13 @@
-const Categories = () => {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-800">Categories Page</h1>
-    </div>
-  );
-};
+/**
+ * Categories Page
+ * 
+ * This is a thin wrapper that imports and renders the CategoriesPage
+ * from the categories feature module.
+ * 
+ * The actual implementation is in:
+ * src/features/categories/CategoriesPage.jsx
+ */
 
-export default Categories;
+import { CategoriesPage } from '../features/categories';
+
+export default CategoriesPage;
