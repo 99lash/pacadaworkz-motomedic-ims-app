@@ -2,19 +2,17 @@
  * CategoriesPage Component
  * 
  * Main page component for managing product categories.
- * Orchestrates all category-related UI components and state.
- * 
  * Features:
- * - CRUD operations for categories
- * - Search and filtering
+ * - Paginated data display
+ * - Server-side search
+ * - CRUD operations
  * - Loading and error states
  * - Accessible and responsive design
- * 
- * @module features/categories/CategoriesPage
  */
 
 import React from 'react';
 import { Card, CardContent } from '../../shared/components/ui/card';
+import { Pagination } from '../../shared/components/ui/pagination';
 import { useCategories } from './hooks';
 import {
   CategoryHeader,
@@ -29,66 +27,68 @@ import {
 // MAIN COMPONENT
 // =============================================================================
 
-/**
- * CategoriesPage - Main page for category management
- * 
- * This component follows the Container/Presentational pattern:
- * - Container logic is handled by useCategories hook
- * - Presentational components handle rendering
- */
 const CategoriesPage = () => {
   // ---------------------------------------------------------------------------
   // HOOK - All state and handlers
   // ---------------------------------------------------------------------------
   const {
     // Data
-    filteredCategories,
-    
+    categories,
+    totalItems,
+
     // Search
     searchTerm,
     setSearchTerm,
-    
+
+    // Pagination
+    currentPage,
+    pageSize,
+    totalPages,
+    hasPrevPage,
+    hasNextPage,
+    paginationInfo,
+    handlePageChange,
+    handlePageSizeChange,
+
     // Loading states
     isLoading,
     isSaving,
     isDeleting,
-    
+
     // Error
     error,
-    
+
     // Dialog states
     isAddDialogOpen,
     isEditDialogOpen,
-    editingCategory,
-    
+
     // Form
     formData,
     formErrors,
     handleFormChange,
-    
+
     // Dialog handlers
     openAddDialog,
     closeAddDialog,
     closeEditDialog,
     openEditDialog,
-    
+
     // CRUD handlers
     handleAddCategory,
     handleEditCategory,
     handleDeleteCategory,
-  } = useCategories();
+  } = useCategories({ initialPageSize: 10 });
 
   // ---------------------------------------------------------------------------
-  // RENDER - Loading State
+  // RENDER - Loading State (only on initial load)
   // ---------------------------------------------------------------------------
-  if (isLoading) {
+  if (isLoading && categories.length === 0) {
     return (
       <div className="p-6 space-y-6">
         <CategoryHeader onAddClick={openAddDialog} />
         <CategorySearchBar
           value={searchTerm}
           onChange={setSearchTerm}
-          className="mb-6"
         />
         <CategoryLoadingState rows={5} />
       </div>
@@ -98,7 +98,7 @@ const CategoriesPage = () => {
   // ---------------------------------------------------------------------------
   // RENDER - Error State
   // ---------------------------------------------------------------------------
-  if (error) {
+  if (error && categories.length === 0) {
     return (
       <div className="p-6 space-y-6">
         <CategoryHeader onAddClick={openAddDialog} />
@@ -129,7 +129,7 @@ const CategoriesPage = () => {
   // ---------------------------------------------------------------------------
   return (
     <div className="p-6 space-y-6">
-      {/* Page Header with Breadcrumb and Add Button */}
+      {/* Page Header */}
       <CategoryHeader onAddClick={openAddDialog} />
 
       {/* Search Bar */}
@@ -141,9 +141,16 @@ const CategoriesPage = () => {
       {/* Categories Table or Empty State */}
       <Card>
         <CardContent className="p-0">
-          {filteredCategories.length > 0 ? (
+          {/* Loading overlay for subsequent loads */}
+          {isLoading && categories.length > 0 && (
+            <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
+              <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+            </div>
+          )}
+
+          {categories.length > 0 ? (
             <CategoryTable
-              categories={filteredCategories}
+              categories={categories}
               onEdit={openEditDialog}
               onDelete={handleDeleteCategory}
               isDeleting={isDeleting}
@@ -156,6 +163,26 @@ const CategoriesPage = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      {totalItems > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          startItem={paginationInfo.startItem}
+          endItem={paginationInfo.endItem}
+          hasPrevPage={hasPrevPage}
+          hasNextPage={hasNextPage}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          showPageSizeSelector={true}
+          showItemCount={true}
+          showFirstLast={totalPages > 5}
+          isLoading={isLoading}
+        />
+      )}
 
       {/* Add Category Dialog */}
       <CategoryFormDialog
@@ -189,4 +216,3 @@ const CategoriesPage = () => {
 // =============================================================================
 
 export default CategoriesPage;
-
