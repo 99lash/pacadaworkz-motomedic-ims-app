@@ -1,0 +1,337 @@
+import { API_ENDPOINTS } from '../utils';
+
+const mockCategories = [
+  { id: 'cat-engine', name: 'Engine Parts' },
+  { id: 'cat-brakes', name: 'Braking System' },
+  { id: 'cat-lubricants', name: 'Lubricants' },
+  { id: 'cat-electrical', name: 'Electrical' },
+  { id: 'cat-body', name: 'Body & Frame' },
+];
+
+const mockBrands = [
+  { id: 'brand-yamaha', name: 'Yamaha' },
+  { id: 'brand-honda', name: 'Honda' },
+  { id: 'brand-ktm', name: 'KTM' },
+  { id: 'brand-suzuki', name: 'Suzuki' },
+  { id: 'brand-kawasaki', name: 'Kawasaki' },
+];
+
+const getStockStatus = (stock, reorderPoint) => {
+  if (stock <= 0) return 'out_of_stock';
+  if (stock <= reorderPoint) return 'low_stock';
+  return 'in_stock';
+};
+
+let mockProducts = [
+  {
+    id: 'prod-1',
+    sku: 'ENG-1001',
+    name: 'Premium Spark Plug',
+    categoryId: 'cat-engine',
+    brandId: 'brand-honda',
+    costPrice: 120,
+    sellingPrice: 180,
+    currentStock: 42,
+    reorderPoint: 15,
+    description: 'High performance spark plug for 150cc engines',
+    createdAt: '2024-07-10T09:00:00Z',
+    updatedAt: '2024-11-15T11:10:00Z',
+  },
+  {
+    id: 'prod-2',
+    sku: 'BRK-2105',
+    name: 'Ceramic Brake Pads',
+    categoryId: 'cat-brakes',
+    brandId: 'brand-yamaha',
+    costPrice: 560,
+    sellingPrice: 790,
+    currentStock: 8,
+    reorderPoint: 10,
+    description: 'Front brake pads compatible with Yamaha NMAX',
+    createdAt: '2024-06-22T14:20:00Z',
+    updatedAt: '2024-11-05T07:45:00Z',
+  },
+  {
+    id: 'prod-3',
+    sku: 'LUB-3002',
+    name: 'Fully Synthetic 10W-40 Oil',
+    categoryId: 'cat-lubricants',
+    brandId: 'brand-suzuki',
+    costPrice: 280,
+    sellingPrice: 410,
+    currentStock: 96,
+    reorderPoint: 25,
+    description: '1L bottle of long-drain fully synthetic oil',
+    createdAt: '2024-05-18T08:15:00Z',
+    updatedAt: '2024-11-12T10:30:00Z',
+  },
+  {
+    id: 'prod-4',
+    sku: 'ELE-4411',
+    name: 'Maintenance-Free Battery',
+    categoryId: 'cat-electrical',
+    brandId: 'brand-kawasaki',
+    costPrice: 1450,
+    sellingPrice: 1800,
+    currentStock: 0,
+    reorderPoint: 5,
+    description: '12V MF battery with 12-month warranty',
+    createdAt: '2024-08-01T09:30:00Z',
+    updatedAt: '2024-10-30T16:05:00Z',
+  },
+  {
+    id: 'prod-5',
+    sku: 'BDY-5510',
+    name: 'Carbon Fiber Side Mirror Set',
+    categoryId: 'cat-body',
+    brandId: 'brand-ktm',
+    costPrice: 980,
+    sellingPrice: 1350,
+    currentStock: 18,
+    reorderPoint: 6,
+    description: 'Adjustable mirror set with anti-glare coating',
+    createdAt: '2024-04-05T12:40:00Z',
+    updatedAt: '2024-11-01T09:20:00Z',
+  },
+];
+
+const simulateNetworkDelay = (ms = 200) =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
+const generateId = () => `prod_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
+
+const enrichProduct = (product) => ({
+  ...product,
+  categoryName: mockCategories.find((c) => c.id === product.categoryId)?.name || 'Unassigned',
+  brandName: mockBrands.find((b) => b.id === product.brandId)?.name || 'Unassigned',
+  stockStatus: product.stockStatus || getStockStatus(product.currentStock, product.reorderPoint),
+});
+
+const applyFilters = (items, { search, categoryId, brandId, status }) =>
+  items.filter((product) => {
+    const matchesSearch =
+      !search ||
+      product.name.toLowerCase().includes(search.toLowerCase()) ||
+      product.sku.toLowerCase().includes(search.toLowerCase()) ||
+      product.description?.toLowerCase().includes(search.toLowerCase());
+    const matchesCategory = !categoryId || product.categoryId === categoryId;
+    const matchesBrand = !brandId || product.brandId === brandId;
+    const matchesStatus = !status || getStockStatus(product.currentStock, product.reorderPoint) === status;
+
+    return matchesSearch && matchesCategory && matchesBrand && matchesStatus;
+  });
+
+const paginate = (items, page, pageSize) => {
+  const start = (page - 1) * pageSize;
+  return items.slice(start, start + pageSize);
+};
+
+export const fetchProductsPaginated = async ({
+  page = 1,
+  pageSize = 20,
+  search = '',
+  categoryId = '',
+  brandId = '',
+  status = '',
+  sortBy = 'updatedAt',
+  sortOrder = 'desc',
+} = {}) => {
+  try {
+    await simulateNetworkDelay();
+
+    const filtered = applyFilters(mockProducts, { search, categoryId, brandId, status });
+    const sorted = [...filtered].sort((a, b) => {
+      const aVal = a[sortBy] ?? '';
+      const bVal = b[sortBy] ?? '';
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+
+      return sortOrder === 'asc'
+        ? String(aVal).localeCompare(String(bVal))
+        : String(bVal).localeCompare(String(aVal));
+    });
+
+    const totalItems = sorted.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+    const data = paginate(sorted, page, pageSize).map(enrichProduct);
+
+    return {
+      success: true,
+      data,
+      pagination: {
+        page,
+        pageSize,
+        totalItems,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
+  } catch (error) {
+    console.error('fetchProductsPaginated failed', error);
+    return {
+      success: false,
+      data: [],
+      pagination: {
+        page: 1,
+        pageSize,
+        totalItems: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+      error: error.message || 'Unable to load products',
+    };
+  }
+};
+
+export const fetchFilterOptions = async () => {
+  try {
+    await simulateNetworkDelay(150);
+    return {
+      success: true,
+      data: {
+        categories: mockCategories.map((category) => ({
+          value: category.id,
+          label: category.name,
+        })),
+        brands: mockBrands.map((brand) => ({
+          value: brand.id,
+          label: brand.name,
+        })),
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message || 'Unable to load filters',
+      data: { categories: [], brands: [] },
+    };
+  }
+};
+
+export const createProduct = async (productData) => {
+  try {
+    await simulateNetworkDelay();
+    const timestamp = new Date().toISOString();
+    const product = {
+      ...productData,
+      id: generateId(),
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      stockStatus: getStockStatus(productData.currentStock, productData.reorderPoint),
+    };
+
+    mockProducts = [product, ...mockProducts];
+
+    return { success: true, data: enrichProduct(product) };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message || 'Unable to create product',
+    };
+  }
+};
+
+export const updateProduct = async (id, productData) => {
+  try {
+    await simulateNetworkDelay();
+    const index = mockProducts.findIndex((product) => product.id === id);
+
+    if (index === -1) {
+      return { success: false, error: 'Product not found' };
+    }
+
+    const updated = {
+      ...mockProducts[index],
+      ...productData,
+      updatedAt: new Date().toISOString(),
+      stockStatus: getStockStatus(productData.currentStock, productData.reorderPoint),
+    };
+
+    mockProducts[index] = updated;
+
+    return { success: true, data: enrichProduct(updated) };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message || 'Unable to update product',
+    };
+  }
+};
+
+export const deleteProduct = async (id) => {
+  try {
+    await simulateNetworkDelay();
+    mockProducts = mockProducts.filter((product) => product.id !== id);
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message || 'Unable to delete product',
+    };
+  }
+};
+
+export const exportProductsAsCsv = async ({
+  search = '',
+  categoryId = '',
+  brandId = '',
+  status = '',
+} = {}) => {
+  try {
+    await simulateNetworkDelay(100);
+    const filtered = applyFilters(mockProducts, { search, categoryId, brandId, status }).map(enrichProduct);
+
+    const headers = [
+      'SKU',
+      'Name',
+      'Category',
+      'Brand',
+      'Cost Price',
+      'Selling Price',
+      'Stock',
+      'Reorder Point',
+      'Updated',
+    ];
+
+    const rows = filtered.map((product) => [
+      product.sku,
+      product.name,
+      product.categoryName,
+      product.brandName,
+      product.costPrice,
+      product.sellingPrice,
+      product.currentStock,
+      product.reorderPoint,
+      product.updatedAt,
+    ]);
+
+    const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
+    const filename = `products_${new Date().toISOString().split('T')[0]}.csv`;
+
+    return { success: true, data: csv, filename };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message || 'Unable to export products',
+    };
+  }
+};
+
+const productService = {
+  fetchProductsPaginated,
+  fetchFilterOptions,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  exportProductsAsCsv,
+  API_ENDPOINTS,
+};
+
+export default productService;
+
