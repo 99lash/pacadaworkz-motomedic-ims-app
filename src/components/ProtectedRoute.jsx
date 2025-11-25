@@ -11,7 +11,6 @@ const ProtectedRoute = ({ children, requirePermission }) => {
     return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
   }
 
-  // Check route-specific permission if required
   if (requirePermission && !hasPermission(userRole, requirePermission)) {
     return <Navigate to={ROUTES.DASHBOARD} replace />;
   }
