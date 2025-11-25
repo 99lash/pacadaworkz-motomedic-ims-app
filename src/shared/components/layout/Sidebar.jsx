@@ -1,20 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../../../features/auth';
 import SidebarHeader from './SidebarHeader';
 import SidebarFooter from './SidebarFooter';
 import SidebarOverlay from './SidebarOverlay';
 
-/**
- * Responsive Sidebar component
- * - Desktop: Collapsible sidebar with expand/collapse toggle
- * - Mobile: Slide-out drawer with overlay
- * 
- * HCI Principles applied:
- * - Visibility: Clear navigation structure
- * - Feedback: Smooth transitions and hover states
- * - Consistency: Same content across breakpoints
- * - Accessibility: Focus trap, ARIA labels, keyboard navigation
- */
 const Sidebar = ({ 
   children, 
   isMobile = false, 
@@ -27,10 +16,8 @@ const Sidebar = ({
 
   const toggleSidebar = () => setExpanded(prev => !prev);
 
-  // Focus management: trap focus within sidebar when open on mobile
   useEffect(() => {
     if (isMobile && isMenuOpen && sidebarRef.current) {
-      // Focus the sidebar when it opens
       const firstFocusable = sidebarRef.current.querySelector(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
@@ -40,19 +27,16 @@ const Sidebar = ({
     }
   }, [isMobile, isMenuOpen]);
 
-  // Handle navigation item click on mobile - close menu after selection
   const handleMenuItemClick = () => {
     if (isMobile && onCloseMenu) {
       onCloseMenu();
     }
   };
 
-  // Determine sidebar visibility and width
   const getSidebarClasses = () => {
     const baseClasses = 'h-screen min-w-0 transition-all duration-300 ease-in-out';
     
     if (isMobile) {
-      // Mobile: Fixed position, slide from left
       return `
         ${baseClasses}
         fixed top-0 left-0 z-50
@@ -61,7 +45,6 @@ const Sidebar = ({
       `;
     }
     
-    // Desktop: Static position, collapsible width
     return `
       ${baseClasses}
       ${expanded ? 'w-64' : 'w-16'}
@@ -71,7 +54,6 @@ const Sidebar = ({
 
   return (
     <>
-      {/* Overlay for mobile */}
       <SidebarOverlay isVisible={isMobile && isMenuOpen} onClose={onCloseMenu} />
       
       <aside 
@@ -104,3 +86,4 @@ const Sidebar = ({
 };
 
 export default Sidebar;
+

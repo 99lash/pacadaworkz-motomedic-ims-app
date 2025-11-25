@@ -10,3 +10,4 @@ export const useAuth = () => {
     userRole: user?.role
   };
 };
+

@@ -1,7 +1,7 @@
-import { LogOut } from "lucide-react"
+import { LogOut } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { logout } from "../features/auth/authSlice";
+import { logout } from "../../../features/auth/authSlice";
 
 const SidebarFooter = ({ user, expanded }) => {
   const dispatch = useDispatch();
@@ -34,7 +34,8 @@ const SidebarFooter = ({ user, expanded }) => {
         </button>
       </div>
     </div>
-  )
-}
+  );
+};
 
 export default SidebarFooter;
+

@@ -1,15 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 
-/**
- * Custom hook for managing mobile menu state
- * Handles:
- * - Mobile breakpoint detection
- * - Menu open/close state
- * - Body scroll lock when menu is open
- * - Escape key to close menu
- * - Resize handling
- */
-const MOBILE_BREAKPOINT = 768; // md breakpoint in Tailwind
+const MOBILE_BREAKPOINT = 768;
 
 export const useMobileMenu = () => {
   const [isMobile, setIsMobile] = useState(
@@ -17,13 +8,11 @@ export const useMobileMenu = () => {
   );
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Handle window resize
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < MOBILE_BREAKPOINT;
       setIsMobile(mobile);
       
-      // Close menu when switching to desktop
       if (!mobile && isMenuOpen) {
         setIsMenuOpen(false);
       }
@@ -33,7 +22,6 @@ export const useMobileMenu = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, [isMenuOpen]);
 
-  // Handle body scroll lock
   useEffect(() => {
     if (isMenuOpen && isMobile) {
       document.body.style.overflow = 'hidden';
@@ -46,7 +34,6 @@ export const useMobileMenu = () => {
     };
   }, [isMenuOpen, isMobile]);
 
-  // Handle escape key to close menu
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape' && isMenuOpen) {

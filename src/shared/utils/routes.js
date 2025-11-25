@@ -34,3 +34,4 @@ export const routePermissions = {
   [ROUTES.ACTIVITY_LOGS]: PERMISSIONS.LOGS,
   [ROUTES.SETTINGS]: PERMISSIONS.SETTINGS
 };
+

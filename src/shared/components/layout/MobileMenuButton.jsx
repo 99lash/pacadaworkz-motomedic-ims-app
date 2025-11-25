@@ -1,12 +1,5 @@
 import { Menu, X } from 'lucide-react';
 
-/**
- * Hamburger menu button for mobile navigation
- * Follows HCI principles:
- * - Clear visual affordance (recognizable hamburger icon)
- * - Immediate feedback (transforms to X when open)
- * - Proper accessibility labels
- */
 const MobileMenuButton = ({ isOpen, onToggle, className = '' }) => {
   return (
     <button

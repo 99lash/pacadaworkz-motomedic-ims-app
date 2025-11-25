@@ -1,5 +1,5 @@
 import { ChevronFirst, ChevronLast, X } from 'lucide-react';
-import logo from '../assets/logo-dark.png';
+import logo from '../../../assets/logo-dark.png';
 
 const SidebarHeader = ({ expanded, onToggle, isMobile = false }) => {
   return (
@@ -11,7 +11,6 @@ const SidebarHeader = ({ expanded, onToggle, isMobile = false }) => {
       />
       
       {isMobile ? (
-        // Mobile: Close button
         <button
           onClick={onToggle}
           className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -20,7 +19,6 @@ const SidebarHeader = ({ expanded, onToggle, isMobile = false }) => {
           <X size={20} aria-hidden="true" />
         </button>
       ) : (
-        // Desktop: Expand/Collapse toggle
         <button
           onClick={onToggle}
           className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -39,3 +37,4 @@ const SidebarHeader = ({ expanded, onToggle, isMobile = false }) => {
 };
 
 export default SidebarHeader;
+

@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../../features/auth';
 import { hasPermission } from '../utils/permissions';
 import { ROUTES } from '../utils/routes';
 
@@ -19,3 +19,4 @@ const ProtectedRoute = ({ children, requirePermission }) => {
 };
 
 export default ProtectedRoute;
+

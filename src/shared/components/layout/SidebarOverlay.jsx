@@ -1,10 +1,3 @@
-/**
- * Overlay backdrop for mobile sidebar
- * Provides:
- * - Visual focus on the sidebar content
- * - Click-outside-to-close functionality (HCI: error prevention)
- * - Smooth fade animation
- */
 const SidebarOverlay = ({ isVisible, onClose }) => {
   if (!isVisible) return null;
 

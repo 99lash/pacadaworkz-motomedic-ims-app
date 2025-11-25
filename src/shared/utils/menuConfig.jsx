@@ -103,3 +103,4 @@ export const menuConfig = [
     permission: PERMISSIONS.SETTINGS
   }
 ];
+

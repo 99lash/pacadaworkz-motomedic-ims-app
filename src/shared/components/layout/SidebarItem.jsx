@@ -67,3 +67,4 @@ const SidebarItem = ({ icon, text, active, expanded }) => {
 };
 
 export default SidebarItem;
+

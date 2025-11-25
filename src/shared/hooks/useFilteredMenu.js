@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useAuth } from './useAuth';
+import { useAuth } from '../../features/auth';
 import { menuConfig } from '../utils/menuConfig';
 import { hasPermission } from '../utils/permissions';
 
@@ -14,3 +14,4 @@ export const useFilteredMenu = () => {
     );
   }, [userRole]);
 };
+

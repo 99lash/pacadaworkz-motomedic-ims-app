@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './hooks/useAuth';
-import ProtectedRoute from './components/ProtectedRoute';
-import MainLayout from './components/MainLayout';
+import { useAuth } from './features/auth';
+import { ProtectedRoute, MainLayout } from './shared/components';
+import { ROUTES, routePermissions } from './shared/utils';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import PointOfSale from './pages/PointOfSale';
@@ -17,7 +17,6 @@ import Roles from './pages/Roles';
 import Reports from './pages/Reports';
 import ActivityLogs from './pages/ActivityLogs';
 import Settings from './pages/Settings';
-import { ROUTES, routePermissions } from './utils/routes';
 
 function App() {
   const { isAuthenticated } = useAuth();

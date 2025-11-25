@@ -66,3 +66,4 @@ export const hasPermission = (userRole, permission) => {
   if (!userRole || !permission) return false;
   return rolePermissions[userRole]?.includes(permission) || false;
 };
+

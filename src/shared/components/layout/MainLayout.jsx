@@ -2,16 +2,16 @@ import { Link, useLocation, Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import SidebarItem from './SidebarItem';
 import MobileMenuButton from './MobileMenuButton';
-import { useFilteredMenu } from '../hooks/useFilteredMenu';
-import { useMobileMenu } from '../hooks/useMobileMenu';
-import logo from '../assets/logo-dark.png';
+import { useFilteredMenu } from '../../hooks/useFilteredMenu';
+import { useMobileMenu } from '../../hooks/useMobileMenu';
+import logo from '../../../assets/logo-dark.png';
 
 const MainLayout = () => {
   const location = useLocation();
   const filteredMenu = useFilteredMenu();
   const { isMobile, isMenuOpen, closeMenu, toggleMenu } = useMobileMenu();
 
-   const renderNavItems = (expanded) => (
+  const renderNavItems = (expanded) => (
     <>
       {filteredMenu.map((item) => {
         const Icon = item.icon;
@@ -83,3 +83,4 @@ const MainLayout = () => {
 };
 
 export default MainLayout;
+
