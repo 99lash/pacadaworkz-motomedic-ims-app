@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { loginSuccess } from '../features/auth/authSlice';
+import { roleService } from '../features/roles/services';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -9,10 +10,15 @@ export default function LoginPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const handleMockLogin = (role) => {
+  const roles = useMemo(() => roleService.fetchRoles(), []);
+
+  const handleMockLogin = (roleName) => {
+    const match = roles.find((r) => r.name === roleName);
+    const assignedRole = match ?? roles[0];
+    const name = assignedRole?.name ?? roleName;
     const user = {
-      name: role,
-      role: role,
+      name,
+      role: name,
     };
     dispatch(loginSuccess(user));
     navigate('/');
@@ -103,32 +109,24 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Demo Credentials */}
-        <div className="mt-8 pt-6 border-t border-gray-200">
-          <p className="text-center text-sm font-medium text-gray-700 mb-3">
-            Click to login as:
-          </p>
-          <div className="space-y-2 text-sm">
-            <button
-              onClick={() => handleMockLogin('SuperAdmin')}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 rounded-md transition-colors duration-200"
-            >
-              Login as SuperAdmin
-            </button>
-            <button
-              onClick={() => handleMockLogin('Admin')}
-              className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2.5 rounded-md transition-colors duration-200"
-            >
-              Login as Admin
-            </button>
-            <button
-              onClick={() => handleMockLogin('Staff')}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-md transition-colors duration-200"
-            >
-              Login as Staff
-            </button>
+        {roles.length > 0 && (
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <p className="text-center text-sm font-medium text-gray-700 mb-3">
+              Quick login as:
+            </p>
+            <div className="space-y-2 text-sm">
+              {roles.map((role) => (
+                <button
+                  key={role.id}
+                  onClick={() => handleMockLogin(role.name)}
+                  className="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium py-2.5 rounded-md transition-colors duration-200"
+                >
+                  Login as {role.name}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

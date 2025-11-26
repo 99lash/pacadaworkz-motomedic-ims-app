@@ -1,12 +1,3 @@
-/**
- * Dialog Components
- * 
- * Basic dialog components following shadcn/ui API.
- * Uses native dialog element for accessibility.
- * 
- * TODO: Replace with shadcn/ui Dialog (uses Radix) for better UX
- * Command: npx shadcn-ui@latest add dialog
- */
 
 import React, { createContext, useContext, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
@@ -77,9 +68,10 @@ export const DialogContent = ({ children, className = '' }) => {
       className={`
         fixed left-[50%] top-[50%] z-50
         w-full max-w-lg translate-x-[-50%] translate-y-[-50%]
-        gap-4 border bg-background p-6 shadow-lg
+        gap-4 border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-lg
         rounded-lg
         backdrop:bg-black/50
+        text-gray-900 dark:text-gray-100
         ${className}
       `}
       onClick={(e) => {
