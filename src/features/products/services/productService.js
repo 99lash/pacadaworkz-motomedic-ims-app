@@ -140,6 +140,18 @@ export const fetchProductsPaginated = async ({
 } = {}) => {
   try {
     await simulateNetworkDelay();
+    
+    // Initialize localStorage with mockProducts if empty (for purchase service compatibility)
+    if (typeof window !== 'undefined' && mockProducts.length > 0) {
+      try {
+        const stored = window.localStorage.getItem('motomedic_products');
+        if (!stored || JSON.parse(stored).length === 0) {
+          window.localStorage.setItem('motomedic_products', JSON.stringify(mockProducts));
+        }
+      } catch (error) {
+        console.warn('Failed to initialize products in localStorage:', error);
+      }
+    }
 
     const filtered = applyFilters(mockProducts, { search, categoryId, brandId, status });
     const sorted = [...filtered].sort((a, b) => {
@@ -227,6 +239,15 @@ export const createProduct = async (productData) => {
     };
 
     mockProducts = [product, ...mockProducts];
+    
+    // Save to localStorage for purchase service compatibility
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem('motomedic_products', JSON.stringify(mockProducts));
+      } catch (error) {
+        console.warn('Failed to save products to localStorage:', error);
+      }
+    }
 
     return { success: true, data: enrichProduct(product) };
   } catch (error) {
@@ -254,6 +275,15 @@ export const updateProduct = async (id, productData) => {
     };
 
     mockProducts[index] = updated;
+    
+    // Save to localStorage for purchase service compatibility
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem('motomedic_products', JSON.stringify(mockProducts));
+      } catch (error) {
+        console.warn('Failed to save products to localStorage:', error);
+      }
+    }
 
     return { success: true, data: enrichProduct(updated) };
   } catch (error) {
@@ -268,6 +298,16 @@ export const deleteProduct = async (id) => {
   try {
     await simulateNetworkDelay();
     mockProducts = mockProducts.filter((product) => product.id !== id);
+    
+    // Save to localStorage for purchase service compatibility
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem('motomedic_products', JSON.stringify(mockProducts));
+      } catch (error) {
+        console.warn('Failed to save products to localStorage:', error);
+      }
+    }
+    
     return { success: true };
   } catch (error) {
     return {

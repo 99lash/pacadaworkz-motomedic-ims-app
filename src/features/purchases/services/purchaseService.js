@@ -72,6 +72,10 @@ export const fetchSuppliers = () => {
  * @returns {Array} Products array
  */
 export const fetchProducts = () => {
+  // Get products from localStorage
+  // Note: Products should be created through the Products page first
+  // The productService uses in-memory mockProducts, so we rely on localStorage
+  // which gets populated when products are created/updated through the Products page
   return readFromStorage(PRODUCT_STORAGE_KEY, []);
 };
 

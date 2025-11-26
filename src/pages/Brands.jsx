@@ -1,9 +1,13 @@
-const Brands = () => {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-800">Brands Page</h1>
-    </div>
-  );
-};
+/**
+ * Brands Page
+ * 
+ * This is a thin wrapper that imports and renders the BrandsPage
+ * from the brands feature module.
+ * 
+ * The actual implementation is in:
+ * src/features/brands/BrandsPage.jsx
+ */
 
-export default Brands;
+import { BrandsPage } from '../features/brands';
+
+export default BrandsPage;
