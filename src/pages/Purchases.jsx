@@ -1,9 +1,13 @@
-const Purchases = () => {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-800">Purchases Page</h1>
-    </div>
-  );
-};
+/**
+ * Purchases Page
+ * 
+ * This is a thin wrapper that imports and renders the PurchasesPage
+ * from the purchases feature module.
+ * 
+ * The actual implementation is in:
+ * src/features/purchases/PurchasesPage.jsx
+ */
 
-export default Purchases;
+import { PurchasesPage } from '../features/purchases';
+
+export default PurchasesPage;
