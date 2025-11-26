@@ -1,9 +1,13 @@
-const Inventory = () => {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-800">Inventory Page</h1>
-    </div>
-  );
-};
+/**
+ * Inventory Page
+ * 
+ * This is a thin wrapper that imports and renders the InventoryPage
+ * from the inventory feature module.
+ * 
+ * The actual implementation is in:
+ * src/features/inventory/InventoryPage.jsx
+ */
 
-export default Inventory;
+import { InventoryPage } from '../features/inventory';
+
+export default InventoryPage;
