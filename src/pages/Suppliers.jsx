@@ -1,9 +1,13 @@
-const Suppliers = () => {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-800">Suppliers Page</h1>
-    </div>
-  );
-};
+/**
+ * Suppliers Page
+ * 
+ * This is a thin wrapper that imports and renders the SuppliersPage
+ * from the suppliers feature module.
+ * 
+ * The actual implementation is in:
+ * src/features/suppliers/SuppliersPage.jsx
+ */
 
-export default Suppliers;
+import { SuppliersPage } from '../features/suppliers';
+
+export default SuppliersPage;
