@@ -1,9 +1,13 @@
-const Users = () => {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-800">Users Page</h1>
-    </div>
-  );
-};
+/**
+ * Users Page
+ * 
+ * This is a thin wrapper that imports and renders the UsersPage
+ * from the users feature module.
+ * 
+ * The actual implementation is in:
+ * src/features/users/UsersPage.jsx
+ */
 
-export default Users;
+import { UsersPage } from '../features/users';
+
+export default UsersPage;
