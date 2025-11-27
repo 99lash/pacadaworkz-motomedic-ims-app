@@ -28,7 +28,7 @@ const POSCart = ({
     </div>
 
     {/* Cart Items */}
-    <div className="space-y-3 max-h-[300px] overflow-y-auto mb-4">
+    <div className="space-y-3 max-h-[300px] overflow-y-auto mb-4 scrollbar-thin">
       {cart.length === 0 ? (
         <div className="text-center py-12 text-gray-500 dark:text-gray-400">
           <ShoppingCart className="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-gray-500" />

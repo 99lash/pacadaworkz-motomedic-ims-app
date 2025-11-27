@@ -5,7 +5,7 @@ import { UI_TEXT, formatCurrency } from '../utils';
 
 const POSProductGrid = ({ products, onAddToCart }) => (
   <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-[600px] overflow-y-auto">
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-[600px] overflow-y-auto scrollbar-thin">
       {products.length === 0 ? (
         <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
           <ShoppingCart className="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-gray-500" />
