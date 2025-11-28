@@ -1,9 +1,13 @@
-const Settings = () => {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-800">Settings Page</h1>
-    </div>
-  );
-};
+/**
+ * Settings Page
+ * 
+ * This is a thin wrapper that imports and renders the SettingsPage
+ * from the settings feature module.
+ * 
+ * The actual implementation is in:
+ * src/features/settings/SettingsPage.jsx
+ */
 
-export default Settings;
+import { SettingsPage } from '../features/settings';
+
+export default SettingsPage;
