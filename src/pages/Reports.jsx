@@ -1,9 +1,13 @@
-const Reports = () => {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-800">Reports Page</h1>
-    </div>
-  );
-};
+/**
+ * Reports Page
+ * 
+ * This is a thin wrapper that imports and renders the ReportsPage
+ * from the reports feature module.
+ * 
+ * The actual implementation is in:
+ * src/features/reports/ReportsPage.jsx
+ */
 
-export default Reports;
+import { ReportsPage } from '../features/reports';
+
+export default ReportsPage;
