@@ -26,7 +26,6 @@ export default function LoginPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Login attempt:', { username, password });
     // Add your login logic here
   };
 

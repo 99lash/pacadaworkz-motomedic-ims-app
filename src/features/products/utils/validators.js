@@ -71,5 +71,9 @@ export const sanitizeProductData = (formData) => ({
   currentStock: Number(formData.currentStock) || 0,
   reorderPoint: Number(formData.reorderPoint) || 0,
   description: formData.description?.trim() || '',
+  attributes: (formData.attributes || []).map((attr) => ({
+    attributeId: attr.attributeId,
+    value: attr.value?.trim() || '',
+  })),
 });
 

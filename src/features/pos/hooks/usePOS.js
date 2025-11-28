@@ -17,7 +17,6 @@ import { UI_TEXT, PAYMENT_METHODS } from '../utils';
 const logActivity = (activity) => {
   // Activity logging can be implemented here when the utility is available
   // Example: activityLogger.logActivity(activity);
-  console.debug('Activity log:', activity);
 };
 
 export const usePOS = (user) => {

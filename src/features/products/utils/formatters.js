@@ -62,6 +62,7 @@ export const mapProductToFormState = (product) => {
     currentStock: product.currentStock?.toString() ?? '',
     reorderPoint: product.reorderPoint?.toString() ?? '',
     description: product.description || '',
+    attributes: product.attributes || [],
   };
 };
 

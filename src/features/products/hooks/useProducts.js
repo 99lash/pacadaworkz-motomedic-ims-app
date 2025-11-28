@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { toast } from 'sonner';
 import { usePagination, DEFAULT_PAGE_SIZE } from '../../../shared/hooks';
 import { productService } from '../services';
+
 import {
   UI_TEXT,
   DEBOUNCE,
@@ -13,29 +14,36 @@ import {
   mapProductToFormState,
 } from '../utils';
 
+// helpers
 const createInitialFormState = () => ({ ...INITIAL_PRODUCT_FORM });
 const createInitialFormErrors = () => ({ ...INITIAL_PRODUCT_ERRORS });
 
 export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
+  // base state
   const [products, setProducts] = useState([]);
   const [totalItems, setTotalItems] = useState(0);
+  const [error, setError] = useState(null);
+
+  // filters
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedBrand, setSelectedBrand] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState(PRODUCT_STATUSES[0]?.value || 'all');
+
   const [filterOptions, setFilterOptions] = useState({
     categories: [],
     brands: [],
     statuses: PRODUCT_STATUSES,
   });
 
+  // ui state
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [error, setError] = useState(null);
 
+  // dialog + form
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState(createInitialFormState);
@@ -43,6 +51,7 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
 
   const isInitialLoad = useRef(true);
 
+  // pagination
   const pagination = usePagination({
     initialPage: 1,
     initialPageSize,
@@ -60,18 +69,17 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     changePageSize,
   } = pagination;
 
-  // Debounce search input
+  // debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-      if (!isInitialLoad.current) {
-        goToPage(1);
-      }
+      if (!isInitialLoad.current) goToPage(1);
     }, DEBOUNCE.SEARCH);
 
     return () => clearTimeout(timer);
   }, [searchTerm, goToPage]);
 
+  // normalized filters
   const normalizedFilters = useMemo(
     () => ({
       categoryId: selectedCategory === 'all' ? '' : selectedCategory,
@@ -81,6 +89,7 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     [selectedCategory, selectedBrand, selectedStatus]
   );
 
+  // load products
   const loadProducts = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -109,6 +118,7 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     }
   }, [currentPage, pageSize, debouncedSearchTerm, normalizedFilters]);
 
+  // load filter options
   const loadFilterOptions = useCallback(async () => {
     try {
       const result = await productService.fetchFilterOptions();
@@ -132,12 +142,14 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     loadFilterOptions();
   }, [loadFilterOptions]);
 
+  // reset form
   const resetForm = useCallback(() => {
     setFormData(createInitialFormState());
     setFormErrors(createInitialFormErrors());
     setEditingProduct(null);
   }, []);
 
+  // dialog control
   const openCreateDialog = useCallback(() => {
     resetForm();
     setIsFormDialogOpen(true);
@@ -155,6 +167,7 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     resetForm();
   }, [resetForm]);
 
+  // form change
   const handleFormFieldChange = useCallback(
     (field, value) => {
       setFormData((prev) => ({ ...prev, [field]: value }));
@@ -165,12 +178,18 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     [formErrors]
   );
 
+  const handleAttributesChange = useCallback((attributes) => {
+    setFormData((prev) => ({ ...prev, attributes }));
+  }, []);
+
+  // validation
   const validateForm = useCallback(() => {
     const { isValid, errors } = validateProductForm(formData);
     setFormErrors(errors);
     return isValid;
   }, [formData]);
 
+  // save product
   const handleSubmitProduct = useCallback(async () => {
     if (!validateForm()) return false;
 
@@ -199,6 +218,7 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     }
   }, [editingProduct, formData, validateForm, loadProducts, closeFormDialog]);
 
+  // delete product
   const handleDeleteProduct = useCallback(
     async (productId) => {
       setIsDeleting(true);
@@ -223,6 +243,7 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     [loadProducts]
   );
 
+  // export CSV
   const handleExportProducts = useCallback(async () => {
     setIsExporting(true);
     try {
@@ -256,6 +277,7 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     }
   }, [debouncedSearchTerm, normalizedFilters]);
 
+  // filter handlers
   const handleCategoryFilterChange = useCallback(
     (value) => {
       setSelectedCategory(value);
@@ -278,20 +300,6 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
       goToPage(1);
     },
     [goToPage]
-  );
-
-  const handlePageChange = useCallback(
-    (page) => {
-      goToPage(page);
-    },
-    [goToPage]
-  );
-
-  const handlePageSizeChange = useCallback(
-    (size) => {
-      changePageSize(size);
-    },
-    [changePageSize]
   );
 
   return {
@@ -322,16 +330,16 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     openEditDialog,
     closeFormDialog,
     handleFormFieldChange,
+    handleAttributesChange,
     handleSubmitProduct,
     handleDeleteProduct,
     handleExportProducts,
     handleCategoryFilterChange,
     handleBrandFilterChange,
     handleStatusFilterChange,
-    handlePageChange,
-    handlePageSizeChange,
+    handlePageSizeChange: changePageSize,
+    handlePageChange: goToPage,
   };
 };
 
 export default useProducts;
-

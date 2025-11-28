@@ -5,9 +5,9 @@ import PropTypes from 'prop-types';
 // Context for dialog state
 const DialogContext = createContext({});
 
-export const Dialog = ({ open, onOpenChange, children }) => {
+export const Dialog = ({ open, onOpenChange, children, onInteractOutside, modal = true }) => {
   return (
-    <DialogContext.Provider value={{ open, onOpenChange }}>
+    <DialogContext.Provider value={{ open, onOpenChange, onInteractOutside, modal }}>
       {children}
     </DialogContext.Provider>
   );
@@ -16,6 +16,8 @@ Dialog.propTypes = {
   open: PropTypes.bool.isRequired,
   onOpenChange: PropTypes.func.isRequired,
   children: PropTypes.node,
+  onInteractOutside: PropTypes.func,
+  modal: PropTypes.bool,
 };
 
 export const DialogTrigger = ({ children, asChild }) => {
@@ -39,48 +41,90 @@ export const DialogTrigger = ({ children, asChild }) => {
 DialogTrigger.propTypes = { children: PropTypes.node, asChild: PropTypes.bool };
 
 export const DialogContent = ({ children, className = '' }) => {
-  const { open, onOpenChange } = useContext(DialogContext);
+  const { open, onOpenChange, onInteractOutside, modal } = useContext(DialogContext);
   const dialogRef = useRef(null);
+  const isClosingProgrammaticallyRef = useRef(false);
   
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
     
     if (open) {
-      dialog.showModal();
+      if (modal) {
+        dialog.showModal();
+      } else {
+        dialog.show();
+      }
+      isClosingProgrammaticallyRef.current = false;
     } else {
-      dialog.close();
+      // Mark that we're closing programmatically
+      isClosingProgrammaticallyRef.current = true;
+      // Close the dialog when open prop is false
+      if (dialog.open) {
+        dialog.close();
+      }
     }
-  }, [open]);
+  }, [open, modal]);
   
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
     
-    const handleClose = () => onOpenChange(false);
+    const handleClose = () => {
+      // Only trigger onOpenChange if this is a user-initiated close
+      // (not programmatic from our own code)
+      if (!isClosingProgrammaticallyRef.current && open) {
+        onOpenChange(false);
+      }
+      isClosingProgrammaticallyRef.current = false;
+    };
+    
+    const handleCancel = (e) => {
+      // If onInteractOutside is provided and returns false, prevent closing
+      if (onInteractOutside && onInteractOutside(e) === false) {
+        e.preventDefault();
+        return;
+      }
+      // Otherwise, allow the close (this is user-initiated)
+      isClosingProgrammaticallyRef.current = false;
+      if (open) {
+        onOpenChange(false);
+      }
+    };
+    
     dialog.addEventListener('close', handleClose);
-    return () => dialog.removeEventListener('close', handleClose);
-  }, [onOpenChange]);
+    dialog.addEventListener('cancel', handleCancel);
+    return () => {
+      dialog.removeEventListener('close', handleClose);
+      dialog.removeEventListener('cancel', handleCancel);
+    };
+  }, [onOpenChange, onInteractOutside, open]);
   
   return (
     <dialog
       ref={dialogRef}
-      className={`
-        fixed left-[50%] top-[50%] z-50
-        w-full max-w-lg translate-x-[-50%] translate-y-[-50%]
-        gap-4 border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-lg
-        rounded-lg
-        backdrop:bg-black/50
-        text-gray-900 dark:text-gray-100
-        ${className}
-      `}
+      className="fixed inset-0 z-50 flex items-center justify-center w-full h-full border-0 bg-transparent backdrop:bg-black/50"
+      style={{ margin: 0, padding: 0 }}
       onClick={(e) => {
         if (e.target === e.currentTarget) {
+          // Check if we should prevent closing
+          if (onInteractOutside && onInteractOutside(e) === false) {
+            return;
+          }
           onOpenChange(false);
         }
       }}
     >
-      {children}
+      <div className={`
+        w-full max-w-lg max-h-[90vh]
+        border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-lg
+        rounded-lg
+        text-gray-900 dark:text-gray-100
+        overflow-hidden flex flex-col
+        ${className}
+      `}>
+        {children}
+      </div>
     </dialog>
   );
 };

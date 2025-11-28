@@ -1,4 +1,4 @@
-import React, { memo, useId } from 'react';
+import React, { memo, useId, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Button } from '../../../shared/components/ui/button';
 import { Input } from '../../../shared/components/ui/input';
@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../../shared/components/ui/dialog';
+import ProductAttributesSection from './ProductAttributesSection';
 import { UI_TEXT, VALIDATION } from '../utils';
 
 const ProductFormDialog = ({
@@ -21,6 +22,7 @@ const ProductFormDialog = ({
   formData,
   formErrors,
   onFieldChange,
+  onAttributesChange,
   isEditing,
   isSaving,
   categoryOptions,
@@ -45,19 +47,35 @@ const ProductFormDialog = ({
     onSubmit();
   };
 
-  const handleOpenChange = (open) => {
-    if (!open && !isSaving) {
+  const handleOpenChange = useCallback((open) => {
+    // Sync state with dialog's open state
+    if (!open) {
       onClose();
+    }
+  }, [onClose]);
+
+  const handleInteractOutside = (event) => {
+    // Prevent closing if currently saving
+    if (isSaving) {
+      event.preventDefault();
     }
   };
 
+  // Don't render if not open (matches pattern used in other dialogs)
+  if (!isOpen) {
+    return null;
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-3xl">
-        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-          <DialogHeader>
-            <DialogTitle>{dialogTitle}</DialogTitle>
-            <DialogDescription>{dialogDescription}</DialogDescription>
+      <DialogContent 
+        className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"
+        onInteractOutside={handleInteractOutside}
+      >
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-6 px-2 py-4" noValidate>
+          <DialogHeader className="pb-4 border-b border-gray-200 dark:border-gray-800">
+            <DialogTitle className="text-xl text-gray-900 dark:text-gray-100">{dialogTitle}</DialogTitle>
+            <DialogDescription className="mt-1.5 text-gray-600 dark:text-gray-400">{dialogDescription}</DialogDescription>
           </DialogHeader>
 
           <section className="grid gap-4 md:grid-cols-2">
@@ -279,11 +297,30 @@ const ProductFormDialog = ({
             </p>
           </section>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
+          <section>
+            <ProductAttributesSection
+              attributes={formData.attributes || []}
+              onAttributesChange={onAttributesChange}
+              disabled={isSaving}
+            />
+          </section>
+
+          <DialogFooter className="pt-4 border-t border-gray-200 dark:border-gray-800 gap-2 sm:gap-0 mt-auto">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Explicitly trigger Dialog's onOpenChange to ensure it closes
+                handleOpenChange(false);
+              }} 
+              disabled={isSaving} 
+              className="w-full sm:w-auto"
+            >
               {UI_TEXT.BTN_CANCEL}
             </Button>
-            <Button type="submit" disabled={isSaving}>
+            <Button type="submit" disabled={isSaving} className="w-full sm:w-auto">
               {isSaving ? UI_TEXT.BTN_SAVING : submitText}
             </Button>
           </DialogFooter>
@@ -307,9 +344,11 @@ ProductFormDialog.propTypes = {
     currentStock: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     reorderPoint: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     description: PropTypes.string,
+    attributes: PropTypes.array,
   }).isRequired,
   formErrors: PropTypes.object.isRequired,
   onFieldChange: PropTypes.func.isRequired,
+  onAttributesChange: PropTypes.func.isRequired,
   isEditing: PropTypes.bool,
   isSaving: PropTypes.bool,
   categoryOptions: PropTypes.array,
@@ -324,4 +363,3 @@ ProductFormDialog.defaultProps = {
 };
 
 export default memo(ProductFormDialog);
-

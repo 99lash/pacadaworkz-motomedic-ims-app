@@ -36,8 +36,6 @@ const RolesPage = () => {
     getUserCount,
   } = useRoles();
 
-  console.log('isFormOpen', isFormOpen);
-
   const normalizedRole = user?.role?.toLowerCase();
   const isAuthorized = normalizedRole === 'admin' || normalizedRole === 'superadmin';
 

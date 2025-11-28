@@ -1,9 +1,13 @@
-const Attributes = () => {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-800">Attributes Page</h1>
-    </div>
-  );
-};
+/**
+ * Attributes Page
+ * 
+ * This is a thin wrapper that imports and renders the AttributesPage
+ * from the attributes feature module.
+ * 
+ * The actual implementation is in:
+ * src/features/attributes/AttributesPage.jsx
+ */
 
-export default Attributes;
+import { AttributesPage } from '../features/attributes';
+
+export default AttributesPage;

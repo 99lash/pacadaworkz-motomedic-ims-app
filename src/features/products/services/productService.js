@@ -1,5 +1,7 @@
 import { API_ENDPOINTS } from '../utils';
 
+/* ----------------------------- mock data ----------------------------- */
+
 const mockCategories = [
   { id: 'cat-engine', name: 'Engine Parts' },
   { id: 'cat-brakes', name: 'Braking System' },
@@ -16,11 +18,36 @@ const mockBrands = [
   { id: 'brand-kawasaki', name: 'Kawasaki' },
 ];
 
+/* ----------------------------- helpers ----------------------------- */
+
+const simulateNetworkDelay = (ms = 200) =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+const generateId = () =>
+  `prod_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
+
 const getStockStatus = (stock, reorderPoint) => {
   if (stock <= 0) return 'out_of_stock';
   if (stock <= reorderPoint) return 'low_stock';
   return 'in_stock';
 };
+
+const enrichProduct = (p) => ({
+  ...p,
+  categoryName: mockCategories.find((x) => x.id === p.categoryId)?.name || 'Unassigned',
+  brandName: mockBrands.find((x) => x.id === p.brandId)?.name || 'Unassigned',
+  stockStatus: p.stockStatus || getStockStatus(p.currentStock, p.reorderPoint),
+});
+
+const saveToLocalStorage = () => {
+  try {
+    window.localStorage.setItem('motomedic_products', JSON.stringify(mockProducts));
+  } catch (err) {
+    console.warn('Failed to save products:', err);
+  }
+};
+
+/* ----------------------------- mock products ----------------------------- */
 
 let mockProducts = [
   {
@@ -95,38 +122,30 @@ let mockProducts = [
   },
 ];
 
-const simulateNetworkDelay = (ms = 200) =>
-  new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-
-const generateId = () => `prod_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
-
-const enrichProduct = (product) => ({
-  ...product,
-  categoryName: mockCategories.find((c) => c.id === product.categoryId)?.name || 'Unassigned',
-  brandName: mockBrands.find((b) => b.id === product.brandId)?.name || 'Unassigned',
-  stockStatus: product.stockStatus || getStockStatus(product.currentStock, product.reorderPoint),
-});
+/* ----------------------------- filter + paginate ----------------------------- */
 
 const applyFilters = (items, { search, categoryId, brandId, status }) =>
-  items.filter((product) => {
+  items.filter((p) => {
     const matchesSearch =
       !search ||
-      product.name.toLowerCase().includes(search.toLowerCase()) ||
-      product.sku.toLowerCase().includes(search.toLowerCase()) ||
-      product.description?.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory = !categoryId || product.categoryId === categoryId;
-    const matchesBrand = !brandId || product.brandId === brandId;
-    const matchesStatus = !status || getStockStatus(product.currentStock, product.reorderPoint) === status;
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      p.sku.toLowerCase().includes(search.toLowerCase()) ||
+      p.description?.toLowerCase().includes(search.toLowerCase());
+
+    const matchesCategory = !categoryId || p.categoryId === categoryId;
+    const matchesBrand = !brandId || p.brandId === brandId;
+    const matchesStatus =
+      !status || getStockStatus(p.currentStock, p.reorderPoint) === status;
 
     return matchesSearch && matchesCategory && matchesBrand && matchesStatus;
   });
 
-const paginate = (items, page, pageSize) => {
-  const start = (page - 1) * pageSize;
-  return items.slice(start, start + pageSize);
+const paginate = (items, page, size) => {
+  const start = (page - 1) * size;
+  return items.slice(start, start + size);
 };
+
+/* ----------------------------- services ----------------------------- */
 
 export const fetchProductsPaginated = async ({
   page = 1,
@@ -140,20 +159,20 @@ export const fetchProductsPaginated = async ({
 } = {}) => {
   try {
     await simulateNetworkDelay();
-    
-    // Initialize localStorage with mockProducts if empty (for purchase service compatibility)
-    if (typeof window !== 'undefined' && mockProducts.length > 0) {
-      try {
-        const stored = window.localStorage.getItem('motomedic_products');
-        if (!stored || JSON.parse(stored).length === 0) {
-          window.localStorage.setItem('motomedic_products', JSON.stringify(mockProducts));
-        }
-      } catch (error) {
-        console.warn('Failed to initialize products in localStorage:', error);
-      }
+
+    // ensure localStorage mirror exists
+    if (typeof window !== 'undefined' && mockProducts.length) {
+      const stored = window.localStorage.getItem('motomedic_products');
+      if (!stored || JSON.parse(stored).length === 0) saveToLocalStorage();
     }
 
-    const filtered = applyFilters(mockProducts, { search, categoryId, brandId, status });
+    const filtered = applyFilters(mockProducts, {
+      search,
+      categoryId,
+      brandId,
+      status,
+    });
+
     const sorted = [...filtered].sort((a, b) => {
       const aVal = a[sortBy] ?? '';
       const bVal = b[sortBy] ?? '';
@@ -169,6 +188,7 @@ export const fetchProductsPaginated = async ({
 
     const totalItems = sorted.length;
     const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+
     const data = paginate(sorted, page, pageSize).map(enrichProduct);
 
     return {
@@ -183,8 +203,9 @@ export const fetchProductsPaginated = async ({
         hasPrevPage: page > 1,
       },
     };
-  } catch (error) {
-    console.error('fetchProductsPaginated failed', error);
+  } catch (err) {
+    console.error('fetchProductsPaginated failed', err);
+
     return {
       success: false,
       data: [],
@@ -196,40 +217,47 @@ export const fetchProductsPaginated = async ({
         hasNextPage: false,
         hasPrevPage: false,
       },
-      error: error.message || 'Unable to load products',
+      error: err.message || 'Unable to load products',
     };
   }
 };
 
+/* ----------------------------- filter options ----------------------------- */
+
 export const fetchFilterOptions = async () => {
   try {
     await simulateNetworkDelay(150);
+
     return {
       success: true,
       data: {
-        categories: mockCategories.map((category) => ({
-          value: category.id,
-          label: category.name,
+        categories: mockCategories.map((c) => ({
+          value: c.id,
+          label: c.name,
         })),
-        brands: mockBrands.map((brand) => ({
-          value: brand.id,
-          label: brand.name,
+        brands: mockBrands.map((b) => ({
+          value: b.id,
+          label: b.name,
         })),
       },
     };
-  } catch (error) {
+  } catch (err) {
     return {
       success: false,
-      error: error.message || 'Unable to load filters',
+      error: err.message || 'Unable to load filters',
       data: { categories: [], brands: [] },
     };
   }
 };
 
+/* ----------------------------- create / update / delete ----------------------------- */
+
 export const createProduct = async (productData) => {
   try {
     await simulateNetworkDelay();
+
     const timestamp = new Date().toISOString();
+
     const product = {
       ...productData,
       id: generateId(),
@@ -239,21 +267,14 @@ export const createProduct = async (productData) => {
     };
 
     mockProducts = [product, ...mockProducts];
-    
-    // Save to localStorage for purchase service compatibility
-    if (typeof window !== 'undefined') {
-      try {
-        window.localStorage.setItem('motomedic_products', JSON.stringify(mockProducts));
-      } catch (error) {
-        console.warn('Failed to save products to localStorage:', error);
-      }
-    }
+
+    if (typeof window !== 'undefined') saveToLocalStorage();
 
     return { success: true, data: enrichProduct(product) };
-  } catch (error) {
+  } catch (err) {
     return {
       success: false,
-      error: error.message || 'Unable to create product',
+      error: err.message || 'Unable to create product',
     };
   }
 };
@@ -261,11 +282,9 @@ export const createProduct = async (productData) => {
 export const updateProduct = async (id, productData) => {
   try {
     await simulateNetworkDelay();
-    const index = mockProducts.findIndex((product) => product.id === id);
 
-    if (index === -1) {
-      return { success: false, error: 'Product not found' };
-    }
+    const index = mockProducts.findIndex((p) => p.id === id);
+    if (index === -1) return { success: false, error: 'Product not found' };
 
     const updated = {
       ...mockProducts[index],
@@ -275,21 +294,14 @@ export const updateProduct = async (id, productData) => {
     };
 
     mockProducts[index] = updated;
-    
-    // Save to localStorage for purchase service compatibility
-    if (typeof window !== 'undefined') {
-      try {
-        window.localStorage.setItem('motomedic_products', JSON.stringify(mockProducts));
-      } catch (error) {
-        console.warn('Failed to save products to localStorage:', error);
-      }
-    }
+
+    if (typeof window !== 'undefined') saveToLocalStorage();
 
     return { success: true, data: enrichProduct(updated) };
-  } catch (error) {
+  } catch (err) {
     return {
       success: false,
-      error: error.message || 'Unable to update product',
+      error: err.message || 'Unable to update product',
     };
   }
 };
@@ -297,25 +309,21 @@ export const updateProduct = async (id, productData) => {
 export const deleteProduct = async (id) => {
   try {
     await simulateNetworkDelay();
-    mockProducts = mockProducts.filter((product) => product.id !== id);
-    
-    // Save to localStorage for purchase service compatibility
-    if (typeof window !== 'undefined') {
-      try {
-        window.localStorage.setItem('motomedic_products', JSON.stringify(mockProducts));
-      } catch (error) {
-        console.warn('Failed to save products to localStorage:', error);
-      }
-    }
-    
+
+    mockProducts = mockProducts.filter((p) => p.id !== id);
+
+    if (typeof window !== 'undefined') saveToLocalStorage();
+
     return { success: true };
-  } catch (error) {
+  } catch (err) {
     return {
       success: false,
-      error: error.message || 'Unable to delete product',
+      error: err.message || 'Unable to delete product',
     };
   }
 };
+
+/* ----------------------------- export CSV ----------------------------- */
 
 export const exportProductsAsCsv = async ({
   search = '',
@@ -325,7 +333,13 @@ export const exportProductsAsCsv = async ({
 } = {}) => {
   try {
     await simulateNetworkDelay(100);
-    const filtered = applyFilters(mockProducts, { search, categoryId, brandId, status }).map(enrichProduct);
+
+    const filtered = applyFilters(mockProducts, {
+      search,
+      categoryId,
+      brandId,
+      status,
+    }).map(enrichProduct);
 
     const headers = [
       'SKU',
@@ -339,29 +353,31 @@ export const exportProductsAsCsv = async ({
       'Updated',
     ];
 
-    const rows = filtered.map((product) => [
-      product.sku,
-      product.name,
-      product.categoryName,
-      product.brandName,
-      product.costPrice,
-      product.sellingPrice,
-      product.currentStock,
-      product.reorderPoint,
-      product.updatedAt,
+    const rows = filtered.map((p) => [
+      p.sku,
+      p.name,
+      p.categoryName,
+      p.brandName,
+      p.costPrice,
+      p.sellingPrice,
+      p.currentStock,
+      p.reorderPoint,
+      p.updatedAt,
     ]);
 
-    const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
+    const csv = [headers, ...rows].map((r) => r.join(',')).join('\n');
     const filename = `products_${new Date().toISOString().split('T')[0]}.csv`;
 
     return { success: true, data: csv, filename };
-  } catch (error) {
+  } catch (err) {
     return {
       success: false,
-      error: error.message || 'Unable to export products',
+      error: err.message || 'Unable to export products',
     };
   }
 };
+
+/* ----------------------------- export service ----------------------------- */
 
 const productService = {
   fetchProductsPaginated,
@@ -374,4 +390,3 @@ const productService = {
 };
 
 export default productService;
-
