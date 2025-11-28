@@ -28,9 +28,8 @@ const DatabaseTab = ({
   onValidate,
 }) => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-4">
       <div>
-        <h3 className="text-gray-900 dark:text-gray-100 mb-2">{UI_TEXT.DATABASE_TITLE}</h3>
         <p className="text-gray-600 dark:text-gray-400">{UI_TEXT.DATABASE_SUBTITLE}</p>
       </div>
 

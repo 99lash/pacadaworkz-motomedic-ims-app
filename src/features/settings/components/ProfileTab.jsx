@@ -22,7 +22,7 @@ import { UI_TEXT } from '../utils';
 const ProfileTab = ({ user, profileData, isSaving, onFieldChange, onSave }) => {
   return (
     <form onSubmit={onSave} className="max-w-2xl space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
         <div>
           <label htmlFor="firstName" className="block text-gray-700 dark:text-gray-300 mb-2">
             {UI_TEXT.PROFILE_FIRST_NAME}

@@ -25,8 +25,7 @@ const SecurityTab = () => {
   };
 
   return (
-    <div className="max-w-2xl">
-      <h3 className="text-gray-900 dark:text-gray-100 mb-4">{UI_TEXT.SECURITY_TITLE}</h3>
+    <div className="max-w-2xl pt-4">
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleUpdatePassword(); }}>
         <div>
           <label htmlFor="currentPassword" className="block text-gray-700 dark:text-gray-300 mb-2">
