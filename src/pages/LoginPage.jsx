@@ -1,33 +1,29 @@
-import { useState, useMemo } from 'react';
-import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { loginSuccess } from '../features/auth/authSlice';
-import { roleService } from '../features/roles/services';
+import { useLoginForm } from '../features/auth/hooks/useLoginForm';
+import { ROUTES } from '../shared/utils/routes';
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const roles = useMemo(() => roleService.fetchRoles(), []);
-
-  const handleMockLogin = (roleName) => {
-    const match = roles.find((r) => r.name === roleName);
-    const assignedRole = match ?? roles[0];
-    const name = assignedRole?.name ?? roleName;
-    const user = {
-      name,
-      role: name,
-    };
-    dispatch(loginSuccess(user));
-    navigate('/');
+  // Handle successful login
+  const handleLoginSuccess = () => {
+    navigate(ROUTES.DASHBOARD || '/');
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Add your login logic here
-  };
+  const {
+    formData,
+    validationErrors,
+    loading,
+    error,
+    updateField,
+    handleSubmit,
+  } = useLoginForm(handleLoginSuccess);
+
+  // Get display error (validation or API error)
+  const displayError = 
+    Object.values(validationErrors)[0] || 
+    error || 
+    null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center p-4">
@@ -57,25 +53,39 @@ export default function LoginPage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit}>
-          {/* Username Field */}
+          {/* Error Message */}
+          {displayError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-600">{displayError}</p>
+            </div>
+          )}
+
+          {/* Email Field */}
           <div className="mb-4">
             <label className="block text-sm text-gray-700 mb-2">
-              Username or Email
+              Email
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.8a2.5 2.5 0 11-5 0" />
                 </svg>
               </span>
               <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                type="email"
+                value={formData.email}
+                onChange={(e) => updateField('email', e.target.value)}
+                placeholder="Enter your email"
+                disabled={loading}
+                className={`w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                  validationErrors.email ? 'border-red-300' : 'border-gray-300'
+                }`}
+                required
               />
             </div>
+            {validationErrors.email && (
+              <p className="mt-1 text-sm text-red-600">{validationErrors.email}</p>
+            )}
           </div>
 
           {/* Password Field */}
@@ -91,41 +101,40 @@ export default function LoginPage() {
               </span>
               <input
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={formData.password}
+                onChange={(e) => updateField('password', e.target.value)}
                 placeholder="Enter your password"
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={loading}
+                className={`w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                  validationErrors.password ? 'border-red-300' : 'border-gray-300'
+                }`}
+                required
               />
             </div>
+            {validationErrors.password && (
+              <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
+            )}
           </div>
 
           {/* Sign In Button */}
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-md transition-colors duration-200"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-md transition-colors duration-200 flex items-center justify-center"
           >
-            Sign In
+            {loading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Signing in...
+              </>
+            ) : (
+              'Sign In'
+            )}
           </button>
         </form>
-
-        {roles.length > 0 && (
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <p className="text-center text-sm font-medium text-gray-700 mb-3">
-              Quick login as:
-            </p>
-            <div className="space-y-2 text-sm">
-              {roles.map((role) => (
-                <button
-                  key={role.id}
-                  onClick={() => handleMockLogin(role.name)}
-                  className="w-full bg-gray-900 hover:bg-gray-800 text-white font-medium py-2.5 rounded-md transition-colors duration-200"
-                >
-                  Login as {role.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

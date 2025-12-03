@@ -4,7 +4,12 @@ import PropTypes from 'prop-types';
 export const Select = ({ children, value, onValueChange, ...props }) => {
   return React.Children.map(children, (child) => {
     if (React.isValidElement(child)) {
-      return React.cloneElement(child, { value, onValueChange, ...props });
+      // ✅ Fix: Map onValueChange to onChange for native select elements
+      const childProps = { value, ...props };
+      if (onValueChange) {
+        childProps.onChange = (e) => onValueChange(e.target.value);
+      }
+      return React.cloneElement(child, childProps);
     }
     return child;
   });

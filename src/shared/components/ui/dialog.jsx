@@ -44,12 +44,13 @@ export const DialogContent = ({ children, className = '' }) => {
   const { open, onOpenChange, onInteractOutside, modal } = useContext(DialogContext);
   const dialogRef = useRef(null);
   const isClosingProgrammaticallyRef = useRef(false);
-  
+
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    
+
     if (open) {
+      // Show the dialog
       if (modal) {
         dialog.showModal();
       } else {
@@ -57,12 +58,17 @@ export const DialogContent = ({ children, className = '' }) => {
       }
       isClosingProgrammaticallyRef.current = false;
     } else {
-      // Mark that we're closing programmatically
+      // Force close the dialog
       isClosingProgrammaticallyRef.current = true;
-      // Close the dialog when open prop is false
-      if (dialog.open) {
-        dialog.close();
+      try {
+        if (dialog.open) {
+          dialog.close();
+        }
+      } catch {
+        // Dialog might not be open, ignore error
       }
+      // Also ensure the open attribute is removed
+      dialog.removeAttribute('open');
     }
   }, [open, modal]);
   
@@ -103,7 +109,7 @@ export const DialogContent = ({ children, className = '' }) => {
   return (
     <dialog
       ref={dialogRef}
-      className="fixed inset-0 z-50 flex items-center justify-center w-full h-full border-0 bg-transparent backdrop:bg-black/50"
+      className={`fixed inset-0 z-50 flex items-center justify-center w-full h-full border-0 bg-transparent backdrop:bg-black/50 ${open ? '' : 'hidden'}`}
       style={{ margin: 0, padding: 0 }}
       onClick={(e) => {
         if (e.target === e.currentTarget) {

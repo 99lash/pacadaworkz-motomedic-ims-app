@@ -172,6 +172,15 @@ export const useCategories = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     loadAllCategories();
   }, [loadAllCategories]);
 
+  // Clean up dialog states when component unmounts
+  useEffect(() => {
+    return () => {
+      setIsAddDialogOpen(false);
+      setIsEditDialogOpen(false);
+      resetForm();
+    };
+  }, []);
+
   // ---------------------------------------------------------------------------
   // FORM HANDLERS
   // ---------------------------------------------------------------------------

@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useAuth } from './features/auth';
 import { ProtectedRoute, MainLayout } from './shared/components';
 import { ROUTES, routePermissions } from './shared/utils';
@@ -19,7 +20,25 @@ import ActivityLogs from './pages/ActivityLogs';
 import Settings from './pages/Settings';
 
 function App() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, initializeAuth } = useAuth();
+  const navigate = useNavigate();
+
+  // Initialize auth state from storage on app load
+  useEffect(() => {
+    initializeAuth();
+  }, []); // ✅ Fixed: Empty dependency array since initializeAuth doesn't change
+
+  // Handle logout events from apiClient interceptor
+  useEffect(() => {
+    const handleLogout = () => {
+      navigate(ROUTES.LOGIN || '/login');
+    };
+
+    window.addEventListener('auth:logout', handleLogout);
+    return () => {
+      window.removeEventListener('auth:logout', handleLogout);
+    };
+  }, [navigate]); // ✅ This one is correct as it depends on navigate
 
   return (
     <Routes>
