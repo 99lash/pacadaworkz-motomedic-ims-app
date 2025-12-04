@@ -1,210 +1,56 @@
+import apiClient from '../../../shared/services/apiClient';
+import { extractErrorMessage } from '../../../shared/utils/errorHandler';
 import { API_ENDPOINTS } from '../utils';
 
-/* ----------------------------- mock data ----------------------------- */
+// =============================================================================
+// API SERVICE METHODS
+// =============================================================================
 
-const mockCategories = [
-  { id: 'cat-engine', name: 'Engine Parts' },
-  { id: 'cat-brakes', name: 'Braking System' },
-  { id: 'cat-lubricants', name: 'Lubricants' },
-  { id: 'cat-electrical', name: 'Electrical' },
-  { id: 'cat-body', name: 'Body & Frame' },
-];
-
-const mockBrands = [
-  { id: 'brand-yamaha', name: 'Yamaha' },
-  { id: 'brand-honda', name: 'Honda' },
-  { id: 'brand-ktm', name: 'KTM' },
-  { id: 'brand-suzuki', name: 'Suzuki' },
-  { id: 'brand-kawasaki', name: 'Kawasaki' },
-];
-
-/* ----------------------------- helpers ----------------------------- */
-
-const simulateNetworkDelay = (ms = 200) =>
-  new Promise((resolve) => setTimeout(resolve, ms));
-
-const generateId = () =>
-  `prod_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
-
-const getStockStatus = (stock, reorderPoint) => {
-  if (stock <= 0) return 'out_of_stock';
-  if (stock <= reorderPoint) return 'low_stock';
-  return 'in_stock';
-};
-
-const enrichProduct = (p) => ({
-  ...p,
-  categoryName: mockCategories.find((x) => x.id === p.categoryId)?.name || 'Unassigned',
-  brandName: mockBrands.find((x) => x.id === p.brandId)?.name || 'Unassigned',
-  stockStatus: p.stockStatus || getStockStatus(p.currentStock, p.reorderPoint),
-});
-
-const saveToLocalStorage = () => {
-  try {
-    window.localStorage.setItem('motomedic_products', JSON.stringify(mockProducts));
-  } catch (err) {
-    console.warn('Failed to save products:', err);
-  }
-};
-
-/* ----------------------------- mock products ----------------------------- */
-
-let mockProducts = [
-  {
-    id: 'prod-1',
-    sku: 'ENG-1001',
-    name: 'Premium Spark Plug',
-    categoryId: 'cat-engine',
-    brandId: 'brand-honda',
-    costPrice: 120,
-    sellingPrice: 180,
-    currentStock: 42,
-    reorderPoint: 15,
-    description: 'High performance spark plug for 150cc engines',
-    createdAt: '2024-07-10T09:00:00Z',
-    updatedAt: '2024-11-15T11:10:00Z',
-  },
-  {
-    id: 'prod-2',
-    sku: 'BRK-2105',
-    name: 'Ceramic Brake Pads',
-    categoryId: 'cat-brakes',
-    brandId: 'brand-yamaha',
-    costPrice: 560,
-    sellingPrice: 790,
-    currentStock: 8,
-    reorderPoint: 10,
-    description: 'Front brake pads compatible with Yamaha NMAX',
-    createdAt: '2024-06-22T14:20:00Z',
-    updatedAt: '2024-11-05T07:45:00Z',
-  },
-  {
-    id: 'prod-3',
-    sku: 'LUB-3002',
-    name: 'Fully Synthetic 10W-40 Oil',
-    categoryId: 'cat-lubricants',
-    brandId: 'brand-suzuki',
-    costPrice: 280,
-    sellingPrice: 410,
-    currentStock: 96,
-    reorderPoint: 25,
-    description: '1L bottle of long-drain fully synthetic oil',
-    createdAt: '2024-05-18T08:15:00Z',
-    updatedAt: '2024-11-12T10:30:00Z',
-  },
-  {
-    id: 'prod-4',
-    sku: 'ELE-4411',
-    name: 'Maintenance-Free Battery',
-    categoryId: 'cat-electrical',
-    brandId: 'brand-kawasaki',
-    costPrice: 1450,
-    sellingPrice: 1800,
-    currentStock: 0,
-    reorderPoint: 5,
-    description: '12V MF battery with 12-month warranty',
-    createdAt: '2024-08-01T09:30:00Z',
-    updatedAt: '2024-10-30T16:05:00Z',
-  },
-  {
-    id: 'prod-5',
-    sku: 'BDY-5510',
-    name: 'Carbon Fiber Side Mirror Set',
-    categoryId: 'cat-body',
-    brandId: 'brand-ktm',
-    costPrice: 980,
-    sellingPrice: 1350,
-    currentStock: 18,
-    reorderPoint: 6,
-    description: 'Adjustable mirror set with anti-glare coating',
-    createdAt: '2024-04-05T12:40:00Z',
-    updatedAt: '2024-11-01T09:20:00Z',
-  },
-];
-
-/* ----------------------------- filter + paginate ----------------------------- */
-
-const applyFilters = (items, { search, categoryId, brandId, status }) =>
-  items.filter((p) => {
-    const matchesSearch =
-      !search ||
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku.toLowerCase().includes(search.toLowerCase()) ||
-      p.description?.toLowerCase().includes(search.toLowerCase());
-
-    const matchesCategory = !categoryId || p.categoryId === categoryId;
-    const matchesBrand = !brandId || p.brandId === brandId;
-    const matchesStatus =
-      !status || getStockStatus(p.currentStock, p.reorderPoint) === status;
-
-    return matchesSearch && matchesCategory && matchesBrand && matchesStatus;
-  });
-
-const paginate = (items, page, size) => {
-  const start = (page - 1) * size;
-  return items.slice(start, start + size);
-};
-
-/* ----------------------------- services ----------------------------- */
-
+/**
+ * Fetches products with pagination and search
+ *
+ * @param {Object} params - Query parameters
+ * @param {number} params.page - Page number (1-based)
+ * @param {number} params.pageSize - Items per page
+ * @param {string} params.search - Search term (optional)
+ * @returns {Promise<Object>} Paginated response
+ */
 export const fetchProductsPaginated = async ({
   page = 1,
   pageSize = 20,
   search = '',
-  categoryId = '',
-  brandId = '',
-  status = '',
-  sortBy = 'updatedAt',
-  sortOrder = 'desc',
 } = {}) => {
   try {
-    await simulateNetworkDelay();
+    const params = new URLSearchParams({
+      page: page.toString(),
+      per_page: pageSize.toString(),
+    });
 
-    // ensure localStorage mirror exists
-    if (typeof window !== 'undefined' && mockProducts.length) {
-      const stored = window.localStorage.getItem('motomedic_products');
-      if (!stored || JSON.parse(stored).length === 0) saveToLocalStorage();
+    if (search?.trim()) {
+      params.append('search', search.trim());
     }
 
-    const filtered = applyFilters(mockProducts, {
-      search,
-      categoryId,
-      brandId,
-      status,
-    });
+    const response = await apiClient.get(`${API_ENDPOINTS.PRODUCTS}?${params}`);
 
-    const sorted = [...filtered].sort((a, b) => {
-      const aVal = a[sortBy] ?? '';
-      const bVal = b[sortBy] ?? '';
+    if (response.data.success) {
+      const { data, meta } = response.data;
 
-      if (typeof aVal === 'number' && typeof bVal === 'number') {
-        return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
-      }
+      // Transform backend response to frontend format
+      const transformedData = data.map(transformProductFromBackend);
 
-      return sortOrder === 'asc'
-        ? String(aVal).localeCompare(String(bVal))
-        : String(bVal).localeCompare(String(aVal));
-    });
-
-    const totalItems = sorted.length;
-    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-
-    const data = paginate(sorted, page, pageSize).map(enrichProduct);
-
-    return {
-      success: true,
-      data,
-      pagination: {
-        page,
-        pageSize,
-        totalItems,
-        totalPages,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
-      },
-    };
-  } catch (err) {
-    console.error('fetchProductsPaginated failed', err);
+      return {
+        success: true,
+        data: transformedData,
+        pagination: {
+          page: meta?.current_page || page,
+          pageSize: meta?.per_page || pageSize,
+          totalItems: meta?.total || 0,
+          totalPages: meta?.last_page || 0,
+          hasNextPage: (meta?.current_page || page) < (meta?.last_page || 0),
+          hasPrevPage: (meta?.current_page || page) > 1,
+        },
+      };
+    }
 
     return {
       success: false,
@@ -217,175 +63,283 @@ export const fetchProductsPaginated = async ({
         hasNextPage: false,
         hasPrevPage: false,
       },
-      error: err.message || 'Unable to load products',
+      error: response.data.message || 'Failed to fetch products',
     };
-  }
-};
-
-/* ----------------------------- filter options ----------------------------- */
-
-export const fetchFilterOptions = async () => {
-  try {
-    await simulateNetworkDelay(150);
-
-    return {
-      success: true,
-      data: {
-        categories: mockCategories.map((c) => ({
-          value: c.id,
-          label: c.name,
-        })),
-        brands: mockBrands.map((b) => ({
-          value: b.id,
-          label: b.name,
-        })),
-      },
-    };
-  } catch (err) {
+  } catch (error) {
     return {
       success: false,
-      error: err.message || 'Unable to load filters',
-      data: { categories: [], brands: [] },
+      data: [],
+      pagination: {
+        page: 1,
+        pageSize,
+        totalItems: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+      error: extractErrorMessage(error, 'Failed to fetch products'),
     };
   }
 };
 
-/* ----------------------------- create / update / delete ----------------------------- */
+/**
+ * Fetches all products (for dropdowns and validation)
+ * @returns {Promise<Object>}
+ */
+export const fetchProducts = async () => {
+  try {
+    // Fetch all products without pagination for dropdowns/validation
+    const response = await apiClient.get(`${API_ENDPOINTS.PRODUCTS}?per_page=1000`);
 
+    if (response.data.success) {
+      const transformedData = response.data.data.map(transformProductFromBackend);
+      return {
+        data: transformedData,
+        success: true,
+      };
+    }
+
+    return {
+      data: [],
+      success: false,
+      error: response.data.message || 'Failed to fetch products',
+    };
+  } catch (error) {
+    return {
+      data: [],
+      success: false,
+      error: extractErrorMessage(error, 'Failed to fetch products'),
+    };
+  }
+};
+
+/**
+ * Fetches a single product by ID
+ * @param {string|number} id - Product ID
+ * @returns {Promise<Object>}
+ */
+export const fetchProductById = async (id) => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.PRODUCT_BY_ID(id));
+
+    if (response.data.success) {
+      return {
+        data: transformProductFromBackend(response.data.data),
+        success: true,
+      };
+    }
+
+    return {
+      data: null,
+      success: false,
+      error: response.data.message || 'Product not found',
+    };
+  } catch (error) {
+    return {
+      data: null,
+      success: false,
+      error: extractErrorMessage(error, 'Failed to fetch product'),
+    };
+  }
+};
+
+/**
+ * Creates a new product
+ * @param {Object} productData - Product data
+ * @param {string} productData.name - Product name
+ * @param {string} productData.sku - Product SKU
+ * @param {string|number} productData.categoryId - Category ID
+ * @param {string|number} productData.brandId - Brand ID
+ * @param {number} productData.costPrice - Cost price
+ * @param {number} productData.sellingPrice - Selling price
+ * @param {number} productData.reorderPoint - Reorder point
+ * @param {string} productData.description - Description (optional)
+ * @returns {Promise<Object>}
+ */
 export const createProduct = async (productData) => {
   try {
-    await simulateNetworkDelay();
+    const payload = transformProductToBackend(productData);
 
-    const timestamp = new Date().toISOString();
+    const response = await apiClient.post(API_ENDPOINTS.PRODUCTS, payload);
 
-    const product = {
-      ...productData,
-      id: generateId(),
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      stockStatus: getStockStatus(productData.currentStock, productData.reorderPoint),
-    };
+    if (response.data.success) {
+      return {
+        data: transformProductFromBackend(response.data.data),
+        success: true,
+      };
+    }
 
-    mockProducts = [product, ...mockProducts];
-
-    if (typeof window !== 'undefined') saveToLocalStorage();
-
-    return { success: true, data: enrichProduct(product) };
-  } catch (err) {
     return {
+      data: null,
       success: false,
-      error: err.message || 'Unable to create product',
+      error: response.data.message || 'Failed to create product',
+    };
+  } catch (error) {
+    return {
+      data: null,
+      success: false,
+      error: extractErrorMessage(error, 'Failed to create product'),
     };
   }
 };
 
+/**
+ * Updates an existing product
+ * @param {string|number} id - Product ID
+ * @param {Object} productData - Updated data
+ * @returns {Promise<Object>}
+ */
 export const updateProduct = async (id, productData) => {
   try {
-    await simulateNetworkDelay();
+    const payload = transformProductToBackend(productData);
 
-    const index = mockProducts.findIndex((p) => p.id === id);
-    if (index === -1) return { success: false, error: 'Product not found' };
+    const response = await apiClient.put(API_ENDPOINTS.PRODUCT_BY_ID(id), payload);
 
-    const updated = {
-      ...mockProducts[index],
-      ...productData,
-      updatedAt: new Date().toISOString(),
-      stockStatus: getStockStatus(productData.currentStock, productData.reorderPoint),
-    };
+    if (response.data.success) {
+      return {
+        data: transformProductFromBackend(response.data.data),
+        success: true,
+      };
+    }
 
-    mockProducts[index] = updated;
-
-    if (typeof window !== 'undefined') saveToLocalStorage();
-
-    return { success: true, data: enrichProduct(updated) };
-  } catch (err) {
     return {
+      data: null,
       success: false,
-      error: err.message || 'Unable to update product',
+      error: response.data.message || 'Failed to update product',
+    };
+  } catch (error) {
+    return {
+      data: null,
+      success: false,
+      error: extractErrorMessage(error, 'Failed to update product'),
     };
   }
 };
 
+/**
+ * Deletes a product
+ * @param {string|number} id - Product ID
+ * @returns {Promise<Object>}
+ */
 export const deleteProduct = async (id) => {
   try {
-    await simulateNetworkDelay();
+    const response = await apiClient.delete(API_ENDPOINTS.PRODUCT_BY_ID(id));
 
-    mockProducts = mockProducts.filter((p) => p.id !== id);
+    if (response.data.success) {
+      return { success: true };
+    }
 
-    if (typeof window !== 'undefined') saveToLocalStorage();
-
-    return { success: true };
-  } catch (err) {
     return {
       success: false,
-      error: err.message || 'Unable to delete product',
+      error: response.data.message || 'Failed to delete product',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: extractErrorMessage(error, 'Failed to delete product'),
     };
   }
 };
 
-/* ----------------------------- export CSV ----------------------------- */
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
 
-export const exportProductsAsCsv = async ({
-  search = '',
-  categoryId = '',
-  brandId = '',
-  status = '',
-} = {}) => {
-  try {
-    await simulateNetworkDelay(100);
+/**
+ * Transforms backend product data to frontend format
+ * @param {Object} backendProduct - Product from backend
+ * @returns {Object} Transformed product
+ */
+const transformProductFromBackend = (backendProduct) => ({
+  id: backendProduct.id,
+  sku: backendProduct.sku,
+  name: backendProduct.name,
+  categoryId: backendProduct.category_id, // Note: backend returns category_id in resource
+  brandId: backendProduct.brand_id, // Note: backend returns brand_id in resource
+  categoryName: backendProduct.category,
+  brandName: backendProduct.brand,
+  costPrice: parseFloat(backendProduct.cost_price) || 0,
+  sellingPrice: parseFloat(backendProduct.unit_price) || 0,
+  reorderPoint: parseInt(backendProduct.reorder_level) || 0,
+  currentStock: 0, // TODO: Implement inventory integration
+  description: backendProduct.description || '',
+  isActive: backendProduct.is_active || true,
+  stockStatus: 'in_stock', // TODO: Calculate based on inventory
+  createdAt: backendProduct.created_at,
+  updatedAt: backendProduct.updated_at,
+});
 
-    const filtered = applyFilters(mockProducts, {
-      search,
-      categoryId,
-      brandId,
-      status,
-    }).map(enrichProduct);
+/**
+ * Transforms frontend product data to backend format
+ * @param {Object} frontendProduct - Product from frontend
+ * @returns {Object} Transformed product for API
+ */
+const transformProductToBackend = (frontendProduct) => ({
+  category_id: frontendProduct.categoryId,
+  brand_id: frontendProduct.brandId,
+  sku: frontendProduct.sku,
+  name: frontendProduct.name,
+  description: frontendProduct.description || '',
+  unit_price: parseFloat(frontendProduct.sellingPrice) || 0,
+  cost_price: parseFloat(frontendProduct.costPrice) || 0,
+  reorder_level: parseInt(frontendProduct.reorderPoint) || 0,
+  // Note: currentStock not sent to backend as it's not implemented yet
+});
 
-    const headers = [
-      'SKU',
-      'Name',
-      'Category',
-      'Brand',
-      'Cost Price',
-      'Selling Price',
-      'Stock',
-      'Reorder Point',
-      'Updated',
-    ];
+// =============================================================================
+// LEGACY FUNCTIONS (for compatibility)
+// =============================================================================
 
-    const rows = filtered.map((p) => [
-      p.sku,
-      p.name,
-      p.categoryName,
-      p.brandName,
-      p.costPrice,
-      p.sellingPrice,
-      p.currentStock,
-      p.reorderPoint,
-      p.updatedAt,
-    ]);
-
-    const csv = [headers, ...rows].map((r) => r.join(',')).join('\n');
-    const filename = `products_${new Date().toISOString().split('T')[0]}.csv`;
-
-    return { success: true, data: csv, filename };
-  } catch (err) {
-    return {
-      success: false,
-      error: err.message || 'Unable to export products',
-    };
-  }
+/**
+ * @deprecated Use fetchFilterOptions from categoryService and brandService instead
+ */
+export const fetchFilterOptions = async () => {
+  // This would require fetching categories and brands separately
+  // For now, return empty to avoid breaking existing code
+  return {
+    success: true,
+    data: {
+      categories: [],
+      brands: [],
+    },
+  };
 };
 
-/* ----------------------------- export service ----------------------------- */
+/**
+ * @deprecated Export functionality not implemented in backend yet
+ */
+export const exportProductsAsCsv = async () => {
+  return {
+    success: false,
+    error: 'Export functionality not implemented yet',
+  };
+};
 
+// =============================================================================
+// SERVICE EXPORT
+// =============================================================================
+
+/**
+ * Product Service
+ * Provides a clean API for product operations with proper error handling
+ * and data transformation. All methods return consistent response objects.
+ */
 const productService = {
+  // Data fetching methods
+  fetchProducts,
   fetchProductsPaginated,
-  fetchFilterOptions,
+  fetchProductById,
+
+  // CRUD operations
   createProduct,
   updateProduct,
   deleteProduct,
+
+  // Legacy methods (for compatibility)
+  fetchFilterOptions,
   exportProductsAsCsv,
+
+  // Constants
   API_ENDPOINTS,
 };
 

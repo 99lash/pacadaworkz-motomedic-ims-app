@@ -1,6 +1,6 @@
 export const API_ENDPOINTS = {
-  PRODUCTS: '/api/products',
-  PRODUCT_BY_ID: (id) => `/api/products/${id}`,
+  PRODUCTS: '/v1/products',
+  PRODUCT_BY_ID: (id) => `/v1/products/${id}`,
 };
 
 export const UI_TEXT = {

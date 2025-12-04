@@ -5,6 +5,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* CSS Variables for semantic colors */
+@layer base {
+  :root {
+    --background: #F5F7F8;
+    --foreground: #181C14;
+    --muted-foreground: #6b7280;
+    --border: rgb(0 0 0 / 0.1);
+    --input: rgb(0 0 0 / 0.1);
+    --primary: #1e88e5;
+    --primary-foreground: #ffffff;
+    --destructive: #dc2626;
+    --destructive-foreground: #ffffff;
+    --accent: #ff6b6b;
+    --accent-foreground: #ffffff;
+  }
+
+  .dark {
+    --background: #1E201E;
+    --foreground: #F5F5F5;
+    --muted-foreground: #686D76;
+    --border: rgb(255 255 255 / 0.1);
+    --input: rgb(255 255 255 / 0.1);
+    --primary: #1e88e5;
+    --primary-foreground: #ffffff;
+    --destructive: #dc2626;
+    --destructive-foreground: #ffffff;
+    --accent: #ff6b6b;
+    --accent-foreground: #ffffff;
+  }
+}
+
 /* Thin scrollbar styles */
 .scrollbar-thin::-webkit-scrollbar {
   width: 6px;

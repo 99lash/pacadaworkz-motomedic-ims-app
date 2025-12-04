@@ -67,9 +67,9 @@ export const AlertDialogContent = ({ children, className = '', role = 'alertdial
       className={`
         fixed left-[50%] top-[50%] z-50
         w-full max-w-lg translate-x-[-50%] translate-y-[-50%]
-        gap-4 border bg-background p-6 shadow-lg
-        rounded-lg
-        backdrop:bg-black/50
+        gap-4 border-2 bg-background text-foreground p-6 shadow-xl
+        rounded-lg border-border
+        backdrop:bg-black/90
         ${className}
       `}
       onClose={() => setOpen(false)}
@@ -95,7 +95,7 @@ export const AlertDialogFooter = ({ children, className = '' }) => (
 AlertDialogFooter.propTypes = { children: PropTypes.node, className: PropTypes.string };
 
 export const AlertDialogTitle = ({ children, className = '', id }) => (
-  <h2 id={id} className={`text-lg font-semibold ${className}`}>
+  <h2 id={id} className={`text-lg font-semibold text-foreground ${className}`}>
     {children}
   </h2>
 );
@@ -119,12 +119,7 @@ export const AlertDialogAction = ({ children, onClick, disabled, className = '' 
         onClick?.(e);
         setOpen(false);
       }}
-      className={`
-        inline-flex items-center justify-center rounded-md text-sm font-medium
-        h-10 px-4 py-2 bg-primary text-primary-foreground
-        hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50
-        ${className}
-      `}
+      className={`inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50 ${className}`}
     >
       {children}
     </button>
@@ -145,14 +140,7 @@ export const AlertDialogCancel = ({ children, disabled, className = '' }) => {
       type="button"
       disabled={disabled}
       onClick={() => setOpen(false)}
-      className={`
-        inline-flex items-center justify-center rounded-md text-sm font-medium
-        h-10 px-4 py-2 border border-input bg-background
-        hover:bg-accent hover:text-accent-foreground
-        disabled:pointer-events-none disabled:opacity-50
-        mt-2 sm:mt-0
-        ${className}
-      `}
+      className={`inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 mt-2 sm:mt-0 ${className}`}
     >
       {children || 'Cancel'}
     </button>

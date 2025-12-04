@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { Toaster } from 'sonner';
 import { useAuth } from './features/auth';
 import { ProtectedRoute, MainLayout } from './shared/components';
 import { ROUTES, routePermissions } from './shared/utils';
@@ -41,22 +42,45 @@ function App() {
   }, [navigate]); // ✅ This one is correct as it depends on navigate
 
   return (
-    <Routes>
-      {/* Public route - redirect if authenticated */}
-      <Route 
-        path={ROUTES.LOGIN} 
-        element={isAuthenticated ? <Navigate to={ROUTES.DASHBOARD} replace /> : <LoginPage />} 
+    <>
+      {/* Toast Notifications with Dark Mode Support */}
+      <Toaster
+        theme="system"
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: 'rgb(255 255 255 / 0.95)',
+            color: '#181C14',
+            border: '1px solid rgb(0 0 0 / 0.1)',
+            backdropFilter: 'blur(8px)',
+          },
+        }}
+        toastOptionsDark={{
+          style: {
+            background: 'rgb(47 51 47 / 0.95)',
+            color: '#F5F5F5',
+            border: '1px solid rgb(255 255 255 / 0.1)',
+            backdropFilter: 'blur(8px)',
+          },
+        }}
       />
-      
-      {/* Protected routes */}
-      <Route 
-        path="/" 
-        element={
-          <ProtectedRoute>
-            <MainLayout />
-          </ProtectedRoute>
-        }
-      >
+
+      <Routes>
+        {/* Public route - redirect if authenticated */}
+        <Route
+          path={ROUTES.LOGIN}
+          element={isAuthenticated ? <Navigate to={ROUTES.DASHBOARD} replace /> : <LoginPage />}
+        />
+
+        {/* Protected routes */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <MainLayout />
+            </ProtectedRoute>
+          }
+        >
         <Route 
           index 
           element={
@@ -174,6 +198,7 @@ function App() {
       {/* 404 - Catch all */}
       <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
     </Routes>
+    </>
   );
 }
 

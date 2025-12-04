@@ -23,8 +23,8 @@ const STOCK_STATUS_META = {
 
 const deriveStockStatus = (product) => {
   if (product.stockStatus) return product.stockStatus;
-  if (product.currentStock <= 0) return 'out_of_stock';
-  if (product.currentStock <= product.reorderPoint) return 'low_stock';
+  // TODO: Implement stock status based on inventory when available
+  // For now, default to in_stock since currentStock is not in API
   return 'in_stock';
 };
 
@@ -55,12 +55,11 @@ export const mapProductToFormState = (product) => {
     ...INITIAL_PRODUCT_FORM,
     name: product.name || '',
     sku: product.sku || '',
-    categoryId: product.categoryId || '',
-    brandId: product.brandId || '',
-    costPrice: product.costPrice?.toString() ?? '',
-    sellingPrice: product.sellingPrice?.toString() ?? '',
-    currentStock: product.currentStock?.toString() ?? '',
-    reorderPoint: product.reorderPoint?.toString() ?? '',
+    categoryId: product.categoryId || product.category_id || '',
+    brandId: product.brandId || product.brand_id || '',
+    costPrice: product.costPrice?.toString() ?? product.cost_price?.toString() ?? '',
+    sellingPrice: product.sellingPrice?.toString() ?? product.unit_price?.toString() ?? '',
+    reorderPoint: product.reorderPoint?.toString() ?? product.reorder_level?.toString() ?? '',
     description: product.description || '',
     attributes: product.attributes || [],
   };

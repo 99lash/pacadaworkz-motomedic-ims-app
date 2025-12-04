@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { toast } from 'sonner';
 import { usePagination, DEFAULT_PAGE_SIZE } from '../../../shared/hooks';
 import { productService } from '../services';
+import categoryService from '../../categories/services/categoryService';
+import brandService from '../../brands/services/brandService';
 
 import {
   UI_TEXT,
@@ -121,14 +123,20 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   // load filter options
   const loadFilterOptions = useCallback(async () => {
     try {
-      const result = await productService.fetchFilterOptions();
-      if (result.success) {
-        setFilterOptions({
-          categories: result.data.categories || [],
-          brands: result.data.brands || [],
-          statuses: PRODUCT_STATUSES,
-        });
-      }
+      const [categoriesResult, brandsResult] = await Promise.all([
+        categoryService.fetchCategories(),
+        brandService.fetchBrands(),
+      ]);
+
+      setFilterOptions({
+        categories: categoriesResult.success
+          ? categoriesResult.data.map(cat => ({ value: cat.id, label: cat.name }))
+          : [],
+        brands: brandsResult.success
+          ? brandsResult.data.map(brand => ({ value: brand.id, label: brand.name }))
+          : [],
+        statuses: PRODUCT_STATUSES,
+      });
     } catch (err) {
       console.error('Failed to load product filter options', err);
     }

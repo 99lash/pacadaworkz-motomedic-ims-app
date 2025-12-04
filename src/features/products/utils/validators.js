@@ -41,11 +41,6 @@ export const validateProductForm = (formData = INITIAL_PRODUCT_FORM) => {
     errors.sellingPrice = UI_TEXT.VALIDATION_SELLING_GREATER;
   }
 
-  const currentStock = ensureNumber(formData.currentStock);
-  if (Number.isNaN(currentStock) || currentStock < VALIDATION.STOCK_MIN) {
-    errors.currentStock = UI_TEXT.VALIDATION_STOCK_REQUIRED;
-  }
-
   const reorderPoint = ensureNumber(formData.reorderPoint);
   if (Number.isNaN(reorderPoint) || reorderPoint < VALIDATION.STOCK_MIN) {
     errors.reorderPoint = UI_TEXT.VALIDATION_REORDER_REQUIRED;
@@ -68,7 +63,6 @@ export const sanitizeProductData = (formData) => ({
   brandId: formData.brandId,
   costPrice: Number(formData.costPrice) || 0,
   sellingPrice: Number(formData.sellingPrice) || 0,
-  currentStock: Number(formData.currentStock) || 0,
   reorderPoint: Number(formData.reorderPoint) || 0,
   description: formData.description?.trim() || '',
   attributes: (formData.attributes || []).map((attr) => ({

@@ -1,126 +1,246 @@
-/**
- * Brand Service
- * Handles all data operations for the brands feature
- * 
- * This service uses localStorage for persistence.
- * Replace with actual API calls when backend is ready.
- */
-
-const BRAND_STORAGE_KEY = 'motomedic_brands';
+import apiClient from '../../../shared/services/apiClient';
+import { extractErrorMessage } from '../../../shared/utils/errorHandler';
 
 // =============================================================================
-// HELPER FUNCTIONS
+// API ENDPOINTS CONFIGURATION
 // =============================================================================
 
-const readFromStorage = (key, fallback = []) => {
-  if (typeof window === 'undefined') return fallback;
-  try {
-    const stored = window.localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : fallback;
-  } catch {
-    return fallback;
-  }
+const API_ENDPOINTS = {
+  BRANDS: '/v1/brands',
+  BRAND_BY_ID: (id) => `/v1/brands/${id}`,
 };
 
-const saveToStorage = (key, data) => {
-  if (typeof window === 'undefined') return;
+// =============================================================================
+// API SERVICE METHODS
+// =============================================================================
+
+/**
+ * Fetches all brands (for dropdowns and validation)
+ * @returns {Promise<Object>}
+ */
+export const fetchBrands = async () => {
   try {
-    window.localStorage.setItem(key, JSON.stringify(data));
+    // Fetch all brands without pagination for dropdowns/validation
+    const response = await apiClient.get(`${API_ENDPOINTS.BRANDS}?per_page=1000`);
+
+    if (response.data.success) {
+      return {
+        data: response.data.data || [],
+        success: true,
+      };
+    }
+
+    return {
+      data: [],
+      success: false,
+      error: response.data.message || 'Failed to fetch brands',
+    };
   } catch (error) {
-    console.error('Error saving to storage:', error);
+    return {
+      data: [],
+      success: false,
+      error: extractErrorMessage(error, 'Failed to fetch brands'),
+    };
   }
 };
 
-const generateBrandId = () => {
-  return crypto.randomUUID ? crypto.randomUUID() : `brand_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-};
-
-// =============================================================================
-// SERVICE METHODS
-// =============================================================================
-
 /**
- * Fetches all brands
- * @returns {Array} Brands array
+ * Fetches brands with pagination and search
+ *
+ * @param {Object} params - Query parameters
+ * @param {number} params.page - Page number (1-based)
+ * @param {number} params.pageSize - Items per page
+ * @param {string} params.search - Search term (optional)
+ * @returns {Promise<Object>} Paginated response
  */
-export const fetchBrands = () => {
-  return readFromStorage(BRAND_STORAGE_KEY, []);
+export const fetchBrandsPaginated = async ({
+  page = 1,
+  pageSize = 20,
+  search = '',
+} = {}) => {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      per_page: pageSize.toString(),
+    });
+
+    if (search?.trim()) {
+      params.append('search', search.trim());
+    }
+
+    const response = await apiClient.get(`${API_ENDPOINTS.BRANDS}?${params}`);
+
+    if (response.data.success) {
+      const { data, meta } = response.data;
+
+      return {
+        success: true,
+        data: data || [],
+        pagination: {
+          page: meta?.current_page || page,
+          pageSize: meta?.per_page || pageSize,
+          totalItems: meta?.total || 0,
+          totalPages: meta?.last_page || 0,
+          hasNextPage: (meta?.current_page || page) < (meta?.last_page || 0),
+          hasPrevPage: (meta?.current_page || page) > 1,
+        },
+      };
+    }
+
+    return {
+      success: false,
+      data: [],
+      pagination: {
+        page: 1,
+        pageSize,
+        totalItems: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+      error: response.data.message || 'Failed to fetch brands',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      data: [],
+      pagination: {
+        page: 1,
+        pageSize,
+        totalItems: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+      error: extractErrorMessage(error, 'Failed to fetch brands'),
+    };
+  }
 };
 
 /**
  * Fetches a single brand by ID
- * @param {string} id - Brand ID
- * @returns {Object|null} Brand object or null
+ * @param {string|number} id - Brand ID
+ * @returns {Promise<Object>}
  */
-export const fetchBrandById = (id) => {
-  const brands = fetchBrands();
-  return brands.find(brand => brand.id === id) || null;
+export const fetchBrandById = async (id) => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.BRAND_BY_ID(id));
+
+    if (response.data.success) {
+      return {
+        data: response.data.data,
+        success: true,
+      };
+    }
+
+    return {
+      data: null,
+      success: false,
+      error: response.data.message || 'Brand not found',
+    };
+  } catch (error) {
+    return {
+      data: null,
+      success: false,
+      error: extractErrorMessage(error, 'Failed to fetch brand'),
+    };
+  }
 };
 
 /**
  * Creates a new brand
  * @param {Object} brandData - Brand data
- * @returns {Object} Created brand
+ * @param {string} brandData.name - Brand name
+ * @param {string} brandData.description - Brand description (optional)
+ * @returns {Promise<Object>}
  */
-export const createBrand = (brandData) => {
-  const brands = fetchBrands();
-  const newBrand = {
-    id: generateBrandId(),
-    name: brandData.name?.trim() || '',
-    description: brandData.description?.trim() || '',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-  
-  const updatedBrands = [...brands, newBrand];
-  saveToStorage(BRAND_STORAGE_KEY, updatedBrands);
-  return newBrand;
+export const createBrand = async (brandData) => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.BRANDS, {
+      name: brandData.name,
+      description: brandData.description || '',
+    });
+
+    if (response.data.success) {
+      return {
+        data: response.data.data,
+        success: true,
+      };
+    }
+
+    return {
+      data: null,
+      success: false,
+      error: response.data.message || 'Failed to create brand',
+    };
+  } catch (error) {
+    return {
+      data: null,
+      success: false,
+      error: extractErrorMessage(error, 'Failed to create brand'),
+    };
+  }
 };
 
 /**
  * Updates an existing brand
- * @param {string} id - Brand ID
- * @param {Object} brandData - Updated brand data
- * @returns {Object|null} Updated brand or null
+ * @param {string|number} id - Brand ID
+ * @param {Object} brandData - Updated data
+ * @param {string} brandData.name - Brand name
+ * @param {string} brandData.description - Brand description (optional)
+ * @returns {Promise<Object>}
  */
-export const updateBrand = (id, brandData) => {
-  const brands = fetchBrands();
-  const index = brands.findIndex(brand => brand.id === id);
-  
-  if (index === -1) return null;
-  
-  const updatedBrand = {
-    ...brands[index],
-    name: brandData.name?.trim() || '',
-    description: brandData.description?.trim() || '',
-    updatedAt: new Date().toISOString(),
-  };
-  
-  const updatedBrands = [
-    ...brands.slice(0, index),
-    updatedBrand,
-    ...brands.slice(index + 1),
-  ];
-  
-  saveToStorage(BRAND_STORAGE_KEY, updatedBrands);
-  return updatedBrand;
+export const updateBrand = async (id, brandData) => {
+  try {
+    const response = await apiClient.put(API_ENDPOINTS.BRAND_BY_ID(id), {
+      name: brandData.name,
+      description: brandData.description || '',
+    });
+
+    if (response.data.success) {
+      return {
+        data: response.data.data,
+        success: true,
+      };
+    }
+
+    return {
+      data: null,
+      success: false,
+      error: response.data.message || 'Failed to update brand',
+    };
+  } catch (error) {
+    return {
+      data: null,
+      success: false,
+      error: extractErrorMessage(error, 'Failed to update brand'),
+    };
+  }
 };
 
 /**
  * Deletes a brand
- * @param {string} id - Brand ID
- * @returns {boolean} Success status
+ * @param {string|number} id - Brand ID
+ * @returns {Promise<Object>}
  */
-export const deleteBrand = (id) => {
-  const brands = fetchBrands();
-  const filteredBrands = brands.filter(brand => brand.id !== id);
-  
-  if (filteredBrands.length === brands.length) {
-    return false; // Brand not found
+export const deleteBrand = async (id) => {
+  try {
+    const response = await apiClient.delete(API_ENDPOINTS.BRAND_BY_ID(id));
+
+    if (response.data.success) {
+      return { success: true };
+    }
+
+    return {
+      success: false,
+      error: response.data.message || 'Failed to delete brand',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: extractErrorMessage(error, 'Failed to delete brand'),
+    };
   }
-  
-  saveToStorage(BRAND_STORAGE_KEY, filteredBrands);
-  return true;
 };
 
 // =============================================================================
