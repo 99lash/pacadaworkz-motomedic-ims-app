@@ -1,4 +1,4 @@
-import { ChevronFirst, ChevronLast, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import logo from '../../../assets/logo-dark.png';
 
 const SidebarHeader = ({ expanded, onToggle, isMobile = false }) => {
@@ -26,9 +26,9 @@ const SidebarHeader = ({ expanded, onToggle, isMobile = false }) => {
           aria-expanded={expanded}
         >
           {expanded ? (
-            <ChevronFirst size={20} aria-hidden="true" />
+            <ChevronLeft size={20} aria-hidden="true" />
           ) : (
-            <ChevronLast size={20} aria-hidden="true" />
+            <ChevronRight size={20} aria-hidden="true" />
           )}
         </button>
       )}
