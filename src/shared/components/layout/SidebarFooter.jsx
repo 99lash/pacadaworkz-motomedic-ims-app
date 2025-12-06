@@ -1,15 +1,19 @@
 import { LogOut } from "lucide-react";
-import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { logout } from "../../../features/auth/authSlice";
+import { useAuth } from "../../../features/auth";
 
 const SidebarFooter = ({ user, expanded }) => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      // Even if logout fails, navigate to login
+      navigate('/login');
+    }
   };
 
   return (
@@ -27,7 +31,7 @@ const SidebarFooter = ({ user, expanded }) => {
       >
         <div className="leading-4">
           <h4 className="font-semibold">{user?.name}</h4>
-          <span className="text-xs text-gray-600 dark:text-gray-400">{user?.role}</span>
+          <span className="text-xs text-gray-600 dark:text-gray-400">{user?.role?.role_name}</span>
         </div>
         <button
           onClick={handleLogout}

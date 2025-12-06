@@ -82,7 +82,7 @@ export const useAuth = () => {
       await authService.logout();
       dispatch(logoutAction());
       return { success: true };
-    } catch (error) {
+    } catch (_error) {
       // Even if API call fails, clear local state
       dispatch(logoutAction());
       return { success: true };
@@ -142,7 +142,7 @@ export const useAuth = () => {
     loading,
     error,
     accessToken,
-    userRole: user?.role,
+    userRole: user?.role?.role_name,
     login,
     logout,
     getCurrentUser,

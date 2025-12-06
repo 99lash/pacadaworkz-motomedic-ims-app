@@ -1,35 +1,45 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { userService } from '../services';
 import {
   INITIAL_FORM_STATE,
   INITIAL_FORM_ERRORS,
   UI_TEXT,
-  PERMISSION_MODULES,
-  PERMISSION_ACTIONS,
   validateUserForm,
 } from '../utils';
 
 export const useUsers = () => {
-  const [users, setUsers] = useState(() => userService.fetchUsers());
-  const isLoading = false;
+  const [users, setUsers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Dialog states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [isPermissionsOpen, setIsPermissionsOpen] = useState(false);
   const [formMode, setFormMode] = useState('create');
   const [selectedUser, setSelectedUser] = useState(null);
   const [userToDelete, setUserToDelete] = useState(null);
-  const [userForPermissions, setUserForPermissions] = useState(null);
 
   // Form state
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [formErrors, setFormErrors] = useState(INITIAL_FORM_ERRORS);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Permissions state
-  const [permissions, setPermissions] = useState({});
+  // Fetch users on mount
+  useEffect(() => {
+    const loadUsers = async () => {
+      setIsLoading(true);
+      const result = await userService.fetchUsers();
+      if (result.success) {
+        setUsers(result.data);
+      } else {
+        toast.error(result.error || 'Failed to load users');
+        setUsers([]);
+      }
+      setIsLoading(false);
+    };
+
+    loadUsers();
+  }, []);
 
   const resetForm = useCallback(() => {
     setFormData(INITIAL_FORM_STATE);
@@ -50,9 +60,7 @@ export const useUsers = () => {
       name: user.name,
       email: user.email,
       role: user.role,
-      status: user.status,
       password: '',
-      permissions: user.permissions || {},
     });
     setFormErrors(INITIAL_FORM_ERRORS);
     setIsFormOpen(true);
@@ -70,7 +78,7 @@ export const useUsers = () => {
     }
   }, [formErrors]);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     const { isValid, errors } = validateUserForm(formData, users, selectedUser?.id);
     if (!isValid) {
       setFormErrors(errors);
@@ -78,28 +86,37 @@ export const useUsers = () => {
     }
 
     if (formMode === 'create') {
-      const newUser = userService.createUser({
+      const result = await userService.createUser({
         name: formData.name.trim(),
         email: formData.email.trim(),
+        password: formData.password,
         role: formData.role,
-        status: formData.status,
-        permissions: formData.permissions || {},
       });
-      setUsers(userService.fetchUsers());
-      closeFormDialog();
-      toast.success(UI_TEXT.TOAST_CREATE);
+      if (result.success) {
+        const usersResult = await userService.fetchUsers();
+        if (usersResult.success) {
+          setUsers(usersResult.data);
+        }
+        closeFormDialog();
+        toast.success(UI_TEXT.TOAST_CREATE);
+      } else {
+        toast.error(result.error || 'Failed to create user');
+      }
     } else {
-      const updated = userService.updateUser(selectedUser.id, {
+      const result = await userService.updateUser(selectedUser.id, {
         name: formData.name.trim(),
         email: formData.email.trim(),
         role: formData.role,
-        status: formData.status,
-        permissions: formData.permissions || {},
       });
-      if (updated) {
-        setUsers(userService.fetchUsers());
+      if (result.success) {
+        const usersResult = await userService.fetchUsers();
+        if (usersResult.success) {
+          setUsers(usersResult.data);
+        }
         closeFormDialog();
         toast.success(UI_TEXT.TOAST_UPDATE);
+      } else {
+        toast.error(result.error || 'Failed to update user');
       }
     }
     return true;
@@ -115,54 +132,23 @@ export const useUsers = () => {
     setIsDeleteOpen(false);
   }, []);
 
-  const handleDelete = useCallback(() => {
+  const handleDelete = useCallback(async () => {
     if (!userToDelete) return false;
-    const success = userService.deleteUser(userToDelete.id);
-    if (success) {
-      setUsers(userService.fetchUsers());
+    const result = await userService.deleteUser(userToDelete.id);
+    if (result.success) {
+      const usersResult = await userService.fetchUsers();
+      if (usersResult.success) {
+        setUsers(usersResult.data);
+      }
       closeDeleteDialog();
       toast.success(UI_TEXT.TOAST_DELETE);
       return true;
+    } else {
+      toast.error(result.error || 'Failed to delete user');
     }
     return false;
   }, [userToDelete, closeDeleteDialog]);
 
-  const openPermissionsDialog = useCallback((user) => {
-    setUserForPermissions(user);
-    setPermissions(user.permissions || {});
-    setIsPermissionsOpen(true);
-  }, []);
-
-  const closePermissionsDialog = useCallback(() => {
-    setUserForPermissions(null);
-    setPermissions({});
-    setIsPermissionsOpen(false);
-  }, []);
-
-  const handlePermissionToggle = useCallback((module, action) => {
-    setPermissions((prev) => {
-      const modulePerms = prev[module] || {};
-      return {
-        ...prev,
-        [module]: {
-          ...modulePerms,
-          [action]: !modulePerms[action],
-        },
-      };
-    });
-  }, []);
-
-  const handleSavePermissions = useCallback(() => {
-    if (!userForPermissions) return false;
-    const updated = userService.updateUserPermissions(userForPermissions.id, permissions);
-    if (updated) {
-      setUsers(userService.fetchUsers());
-      closePermissionsDialog();
-      toast.success(UI_TEXT.TOAST_PERMISSIONS_UPDATE);
-      return true;
-    }
-    return false;
-  }, [userForPermissions, permissions, closePermissionsDialog]);
 
   const filteredUsers = users.filter(
     (user) =>
@@ -198,13 +184,6 @@ export const useUsers = () => {
     isDeleteOpen,
     userToDelete,
 
-    // Permissions state
-    isPermissionsOpen,
-    userForPermissions,
-    permissions,
-    permissionModules: PERMISSION_MODULES,
-    permissionActions: PERMISSION_ACTIONS,
-
     // Actions
     openCreateDialog,
     openEditDialog,
@@ -214,10 +193,6 @@ export const useUsers = () => {
     openDeleteDialog,
     closeDeleteDialog,
     handleDelete,
-    openPermissionsDialog,
-    closePermissionsDialog,
-    handlePermissionToggle,
-    handleSavePermissions,
   };
 };
 

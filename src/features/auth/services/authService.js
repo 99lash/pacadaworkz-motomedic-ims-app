@@ -1,3 +1,4 @@
+import axios from 'axios';
 import apiClient from '../../../shared/services/apiClient';
 import storageService from '../../../shared/services/storageService';
 import { STORAGE_KEYS } from '../../../shared/config/storage';
@@ -57,7 +58,7 @@ export const authService = {
               user: userData,
             },
           };
-        } catch (userError) {
+        } catch (_userError) {
           // If getting user fails, still return success with tokens
           // The user can be fetched later using getCurrentUser()
           return {
@@ -95,14 +96,20 @@ export const authService = {
    */
   async logout() {
     try {
-      await apiClient.post(API_CONFIG.ENDPOINTS.AUTH.LOGOUT);
+      // Use direct axios call without Authorization header for logout
+      await axios.post(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.LOGOUT}`, {}, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      });
     } catch (error) {
       // Continue with logout even if API call fails
     } finally {
       // Always clear local storage
       this.clearAuthData();
     }
-    
+
     return {
       success: true,
       message: 'Logged out successfully',

@@ -6,7 +6,6 @@ import {
   UserTable,
   UserFormDialog,
   UserDeleteDialog,
-  UserPermissionsDialog,
 } from './components';
 
 const UsersPage = () => {
@@ -25,18 +24,10 @@ const UsersPage = () => {
     formErrors,
     formMode,
     isFormOpen,
-    selectedUser,
 
     // Delete state
     isDeleteOpen,
     userToDelete,
-
-    // Permissions state
-    isPermissionsOpen,
-    userForPermissions,
-    permissions,
-    permissionModules,
-    permissionActions,
 
     // Actions
     openCreateDialog,
@@ -47,10 +38,6 @@ const UsersPage = () => {
     openDeleteDialog,
     closeDeleteDialog,
     handleDelete,
-    openPermissionsDialog,
-    closePermissionsDialog,
-    handlePermissionToggle,
-    handleSavePermissions,
   } = useUsers();
 
   return (
@@ -69,7 +56,6 @@ const UsersPage = () => {
           onSearchChange={setSearchTerm}
           onEdit={openEditDialog}
           onDelete={openDeleteDialog}
-          onPermissions={openPermissionsDialog}
         />
       )}
 
@@ -92,18 +78,6 @@ const UsersPage = () => {
         />
       )}
 
-      {userForPermissions && (
-        <UserPermissionsDialog
-          user={userForPermissions}
-          isOpen={isPermissionsOpen}
-          permissions={permissions}
-          permissionModules={permissionModules}
-          permissionActions={permissionActions}
-          onClose={closePermissionsDialog}
-          onPermissionToggle={handlePermissionToggle}
-          onSave={handleSavePermissions}
-        />
-      )}
     </div>
   );
 };

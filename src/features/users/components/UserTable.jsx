@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Edit, Trash2, Shield, Search } from 'lucide-react';
+import { Edit, Trash2, Search } from 'lucide-react';
 import { Button } from '../../../shared/components/ui/button';
 import { Input } from '../../../shared/components/ui/input';
 import { Badge } from '../../../shared/components/ui/badge';
@@ -43,7 +43,7 @@ const getStatusBadge = (status) => {
   );
 };
 
-const UserTable = ({ users, searchTerm, onSearchChange, onEdit, onDelete, onPermissions }) => {
+const UserTable = ({ users, searchTerm, onSearchChange, onEdit, onDelete }) => {
   return (
     <div className="space-y-4">
       {/* Search */}
@@ -113,15 +113,6 @@ const UserTable = ({ users, searchTerm, onSearchChange, onEdit, onDelete, onPerm
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => onPermissions(user)}
-                        className="h-9 w-9 p-0"
-                        aria-label="Manage permissions"
-                      >
-                        <Shield className="h-5 w-5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
                         onClick={() => onDelete(user)}
                         className="h-9 w-9 p-0 text-destructive hover:text-destructive"
                         aria-label="Delete user"
@@ -146,7 +137,6 @@ UserTable.propTypes = {
   onSearchChange: PropTypes.func.isRequired,
   onEdit: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
-  onPermissions: PropTypes.func.isRequired,
 };
 
 export default UserTable;
