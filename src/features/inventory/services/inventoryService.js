@@ -1,153 +1,314 @@
 /**
  * Inventory Service
  * Handles all data operations for the inventory feature
- * 
- * This service uses localStorage for persistence.
- * Replace with actual API calls when backend is ready.
+ *
+ * This service integrates with the backend API endpoints.
  */
 
-const INVENTORY_STORAGE_KEY = 'motomedic_inventory';
+import apiClient from '../../../shared/services/apiClient';
+import { extractErrorMessage } from '../../../shared/utils/errorHandler';
+
+// =============================================================================
+// API ENDPOINTS CONFIGURATION
+// =============================================================================
+
+const API_ENDPOINTS = {
+  INVENTORY: '/v1/inventory',
+  INVENTORY_BY_ID: (id) => `/v1/inventory/${id}`,
+};
+
+// =============================================================================
+// API SERVICE METHODS
+// =============================================================================
+
+/**
+ * Fetches inventory items with pagination and search
+ *
+ * @param {Object} params - Query parameters
+ * @param {number} params.page - Page number (1-based)
+ * @param {number} params.pageSize - Items per page
+ * @param {string} params.search - Search term (optional)
+ * @returns {Promise<Object>} Paginated response
+ */
+export const fetchInventory = async ({
+  page = 1,
+  pageSize = 20,
+  search = '',
+} = {}) => {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      per_page: pageSize.toString(),
+    });
+
+    if (search?.trim()) {
+      params.append('search', search.trim());
+    }
+
+    const response = await apiClient.get(`${API_ENDPOINTS.INVENTORY}?${params}`);
+
+    if (response.data.success) {
+      const { data, meta } = response.data;
+
+      // Transform backend response to frontend format
+      const transformedData = data.map(transformInventoryFromBackend);
+
+      return {
+        success: true,
+        data: transformedData,
+        pagination: {
+          page: meta?.current_page || page,
+          pageSize: meta?.per_page || pageSize,
+          totalItems: meta?.total || 0,
+          totalPages: meta?.last_page || 0,
+          hasNextPage: (meta?.current_page || page) < (meta?.last_page || 0),
+          hasPrevPage: (meta?.current_page || page) > 1,
+        },
+      };
+    }
+
+    return {
+      success: false,
+      data: [],
+      pagination: {
+        page: 1,
+        pageSize,
+        totalItems: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+      error: response.data.message || 'Failed to fetch inventory',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      data: [],
+      pagination: {
+        page: 1,
+        pageSize,
+        totalItems: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+      error: extractErrorMessage(error, 'Failed to fetch inventory'),
+    };
+  }
+};
+
+/**
+ * Fetches all inventory items (for dropdowns and validation)
+ * @returns {Promise<Object>}
+ */
+export const fetchAllInventory = async () => {
+  try {
+    // Fetch all inventory without pagination for dropdowns/validation
+    const response = await apiClient.get(`${API_ENDPOINTS.INVENTORY}?per_page=1000`);
+
+    if (response.data.success) {
+      const transformedData = response.data.data.map(transformInventoryFromBackend);
+      return {
+        data: transformedData,
+        success: true,
+      };
+    }
+
+    return {
+      data: [],
+      success: false,
+      error: response.data.message || 'Failed to fetch inventory',
+    };
+  } catch (error) {
+    return {
+      data: [],
+      success: false,
+      error: extractErrorMessage(error, 'Failed to fetch inventory'),
+    };
+  }
+};
+
+/**
+ * Fetches a single inventory item by ID
+ * @param {string|number} id - Inventory item ID
+ * @returns {Promise<Object>}
+ */
+export const fetchInventoryById = async (id) => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.INVENTORY_BY_ID(id));
+
+    if (response.data.success) {
+      return {
+        data: transformInventoryFromBackend(response.data.data),
+        success: true,
+      };
+    }
+
+    return {
+      data: null,
+      success: false,
+      error: response.data.message || 'Inventory item not found',
+    };
+  } catch (error) {
+    return {
+      data: null,
+      success: false,
+      error: extractErrorMessage(error, 'Failed to fetch inventory item'),
+    };
+  }
+};
+
+/**
+ * Creates a new inventory item
+ * @param {Object} inventoryData - Inventory data
+ * @param {number} inventoryData.product_id - Product ID
+ * @param {number} inventoryData.supplier_id - Supplier ID
+ * @param {number} inventoryData.quantity - Quantity
+ * @param {string} inventoryData.last_stock_in - Last stock in date (optional)
+ * @returns {Promise<Object>}
+ */
+export const createInventory = async (inventoryData) => {
+  try {
+    const payload = transformInventoryToBackend(inventoryData);
+
+    const response = await apiClient.post(API_ENDPOINTS.INVENTORY, payload);
+
+    if (response.data.success) {
+      return {
+        data: transformInventoryFromBackend(response.data.data),
+        success: true,
+      };
+    }
+
+    return {
+      data: null,
+      success: false,
+      error: response.data.message || 'Failed to create inventory item',
+    };
+  } catch (error) {
+    return {
+      data: null,
+      success: false,
+      error: extractErrorMessage(error, 'Failed to create inventory item'),
+    };
+  }
+};
+
+/**
+ * Updates an existing inventory item
+ * @param {string|number} id - Inventory item ID
+ * @param {Object} inventoryData - Updated data
+ * @returns {Promise<Object>}
+ */
+export const updateInventory = async (id, inventoryData) => {
+  try {
+    const payload = transformInventoryToBackend(inventoryData);
+
+    const response = await apiClient.patch(API_ENDPOINTS.INVENTORY_BY_ID(id), payload);
+
+    if (response.data.success) {
+      return {
+        data: transformInventoryFromBackend(response.data.data),
+        success: true,
+      };
+    }
+
+    return {
+      data: null,
+      success: false,
+      error: response.data.message || 'Failed to update inventory item',
+    };
+  } catch (error) {
+    return {
+      data: null,
+      success: false,
+      error: extractErrorMessage(error, 'Failed to update inventory item'),
+    };
+  }
+};
+
+/**
+ * Deletes an inventory item
+ * @param {string|number} id - Inventory item ID
+ * @returns {Promise<Object>}
+ */
+export const deleteInventory = async (id) => {
+  try {
+    const response = await apiClient.delete(API_ENDPOINTS.INVENTORY_BY_ID(id));
+
+    if (response.data.success) {
+      return { success: true };
+    }
+
+    return {
+      success: false,
+      error: response.data.message || 'Failed to delete inventory item',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: extractErrorMessage(error, 'Failed to delete inventory item'),
+    };
+  }
+};
 
 // =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
 
-const readFromStorage = (key, fallback = []) => {
-  if (typeof window === 'undefined') return fallback;
-  try {
-    const stored = window.localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : fallback;
-  } catch {
-    return fallback;
-  }
-};
-
-const saveToStorage = (key, data) => {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(key, JSON.stringify(data));
-  } catch (error) {
-    console.error('Error saving to storage:', error);
-  }
-};
-
-// =============================================================================
-// MOCK DATA (Initial seed data)
-// =============================================================================
-
-const mockInventory = [
-  {
-    id: 'inv-1',
-    product: 'Laptop Dell XPS 13',
-    sku: 'DELL-XPS13-001',
-    currentStock: 25,
-    minStock: 10,
-    maxStock: 50,
-    location: 'Warehouse A',
-    lastUpdated: '2025-01-30',
-    status: 'healthy',
-  },
-  {
-    id: 'inv-2',
-    product: 'Office Chair Ergonomic',
-    sku: 'CHAIR-ERG-001',
-    currentStock: 12,
-    minStock: 15,
-    maxStock: 30,
-    location: 'Warehouse B',
-    lastUpdated: '2025-01-29',
-    status: 'low',
-  },
-  {
-    id: 'inv-3',
-    product: 'Wireless Mouse',
-    sku: 'MOUSE-WL-001',
-    currentStock: 5,
-    minStock: 20,
-    maxStock: 100,
-    location: 'Warehouse A',
-    lastUpdated: '2025-01-30',
-    status: 'critical',
-  },
-  {
-    id: 'inv-4',
-    product: 'Monitor 24" LED',
-    sku: 'MON-24LED-001',
-    currentStock: 0,
-    minStock: 8,
-    maxStock: 25,
-    location: 'Warehouse C',
-    lastUpdated: '2025-01-28',
-    status: 'out',
-  },
-  {
-    id: 'inv-5',
-    product: 'Printer Paper A4',
-    sku: 'PAPER-A4-001',
-    currentStock: 45,
-    minStock: 50,
-    maxStock: 200,
-    location: 'Warehouse A',
-    lastUpdated: '2025-01-30',
-    status: 'low',
-  },
-];
-
-// =============================================================================
-// SERVICE METHODS
-// =============================================================================
+/**
+ * Transforms backend inventory data to frontend format
+ * @param {Object} backendInventory - Inventory from backend
+ * @returns {Object} Transformed inventory
+ */
+const transformInventoryFromBackend = (backendInventory) => ({
+  id: backendInventory.id,
+  productId: backendInventory.product_id,
+  supplierId: backendInventory.supplier_id,
+  sku: backendInventory.sku,
+  productName: backendInventory.product_name,
+  category: backendInventory.category,
+  brand: backendInventory.brand,
+  quantity: parseInt(backendInventory.quantity) || 0,
+  lastStockIn: backendInventory.last_stock_in,
+  // Note: Additional fields like minStock, maxStock, location, status
+  // are not provided by backend and would need to be added separately
+});
 
 /**
- * Fetches all inventory items
- * @returns {Array} Inventory items array
+ * Transforms frontend inventory data to backend format
+ * @param {Object} frontendInventory - Inventory from frontend
+ * @returns {Object} Transformed inventory for API
  */
-export const fetchInventory = () => {
-  const stored = readFromStorage(INVENTORY_STORAGE_KEY, []);
-  
-  // Initialize with mock data if empty
-  if (stored.length === 0 && typeof window !== 'undefined') {
-    saveToStorage(INVENTORY_STORAGE_KEY, mockInventory);
-    return mockInventory;
-  }
-  
-  return stored;
-};
-
-/**
- * Updates inventory stock for an item
- * @param {string} id - Inventory item ID
- * @param {number} newStock - New stock quantity
- * @returns {Object|null} Updated inventory item or null
- */
-export const updateInventoryStock = (id, newStock) => {
-  const inventory = fetchInventory();
-  const index = inventory.findIndex(item => item.id === id);
-  
-  if (index === -1) return null;
-  
-  const updatedItem = {
-    ...inventory[index],
-    currentStock: newStock,
-    lastUpdated: new Date().toISOString().split('T')[0],
-  };
-  
-  const updatedInventory = [
-    ...inventory.slice(0, index),
-    updatedItem,
-    ...inventory.slice(index + 1),
-  ];
-  
-  saveToStorage(INVENTORY_STORAGE_KEY, updatedInventory);
-  return updatedItem;
-};
+const transformInventoryToBackend = (frontendInventory) => ({
+  product_id: frontendInventory.productId,
+  supplier_id: frontendInventory.supplierId,
+  quantity: parseInt(frontendInventory.quantity) || 0,
+  last_stock_in: frontendInventory.lastStockIn || null,
+});
 
 // =============================================================================
 // SERVICE EXPORT
 // =============================================================================
 
+/**
+ * Inventory Service
+ * Provides a clean API for inventory operations with proper error handling
+ * and data transformation. All methods return consistent response objects.
+ */
 const inventoryService = {
+  // Data fetching methods
   fetchInventory,
-  updateInventoryStock,
+  fetchAllInventory,
+  fetchInventoryById,
+
+  // CRUD operations
+  createInventory,
+  updateInventory,
+  deleteInventory,
+
+  // Constants
+  API_ENDPOINTS,
 };
 
 export default inventoryService;

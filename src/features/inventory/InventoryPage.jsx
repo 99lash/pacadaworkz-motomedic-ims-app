@@ -26,7 +26,6 @@ const InventoryPage = () => {
     // Helpers
     getItemStockStatus,
     getStatusDisplayWithIcon,
-    getItemStockPercentage,
 
     // Actions
     handleSearchChange,
@@ -61,7 +60,6 @@ const InventoryPage = () => {
               inventory={filteredInventory}
               getItemStockStatus={getItemStockStatus}
               getStatusDisplayWithIcon={getStatusDisplayWithIcon}
-              getItemStockPercentage={getItemStockPercentage}
             />
           )}
         </CardContent>

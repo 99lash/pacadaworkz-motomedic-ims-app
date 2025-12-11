@@ -3,15 +3,14 @@
  */
 
 /**
- * Calculates stock status based on current, min, and max stock
+ * Calculates stock status based on current stock quantity
+ * Since backend doesn't provide min/max stock levels, we use simple thresholds
  * @param {number} currentStock - Current stock quantity
- * @param {number} minStock - Minimum stock threshold
- * @returns {string} Stock status ('out', 'critical', 'low', 'healthy')
+ * @returns {string} Stock status ('out', 'low', 'healthy')
  */
-export const getStockStatus = (currentStock, minStock) => {
+export const getStockStatus = (currentStock) => {
   if (currentStock === 0) return 'out';
-  if (currentStock < minStock * 0.5) return 'critical';
-  if (currentStock < minStock) return 'low';
+  if (currentStock < 10) return 'low'; // Arbitrary threshold
   return 'healthy';
 };
 
@@ -35,13 +34,13 @@ export const getStockPercentage = (current, max) => {
  */
 export const filterInventory = (inventory, searchTerm, statusFilter, getStockStatusFn) => {
   return inventory.filter((item) => {
-    const matchesSearch = 
-      item.product.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch =
+      item.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.sku.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const itemStatus = getStockStatusFn(item.currentStock, item.minStock);
+
+    const itemStatus = getStockStatusFn(item.quantity);
     let matchesStatus = true;
-    
+
     if (statusFilter !== 'All Status') {
       switch (statusFilter) {
         case 'In Stock':
@@ -50,9 +49,6 @@ export const filterInventory = (inventory, searchTerm, statusFilter, getStockSta
         case 'Low Stock':
           matchesStatus = itemStatus === 'low';
           break;
-        case 'Critical':
-          matchesStatus = itemStatus === 'critical';
-          break;
         case 'Out of Stock':
           matchesStatus = itemStatus === 'out';
           break;
@@ -60,7 +56,7 @@ export const filterInventory = (inventory, searchTerm, statusFilter, getStockSta
           matchesStatus = true;
       }
     }
-    
+
     return matchesSearch && matchesStatus;
   });
 };
@@ -74,8 +70,6 @@ export const getStatusDisplay = (status) => {
   switch (status) {
     case 'out':
       return { text: 'Out of Stock', variant: 'destructive', iconName: 'AlertTriangle' };
-    case 'critical':
-      return { text: 'Critical', variant: 'destructive', iconName: 'AlertTriangle' };
     case 'low':
       return { text: 'Low Stock', variant: 'secondary', iconName: 'Package' };
     case 'healthy':

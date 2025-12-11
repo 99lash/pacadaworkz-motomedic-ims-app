@@ -10,16 +10,14 @@ export const UI_TEXT = {
   BTN_ADJUST_STOCK: 'Adjust Stock',
   COLUMN_PRODUCT: 'Product',
   COLUMN_CURRENT_STOCK: 'Current Stock',
-  COLUMN_MIN_MAX: 'Min/Max',
-  COLUMN_STOCK_LEVEL: 'Stock Level',
-  COLUMN_LOCATION: 'Location',
+  COLUMN_CATEGORY: 'Category',
+  COLUMN_BRAND: 'Brand',
   COLUMN_STATUS: 'Status',
-  COLUMN_LAST_UPDATED: 'Last Updated',
+  COLUMN_LAST_STOCK_IN: 'Last Stock In',
   COLUMN_ACTIONS: 'Actions',
   STATUS_ALL: 'All Status',
   STATUS_IN_STOCK: 'In Stock',
   STATUS_LOW_STOCK: 'Low Stock',
-  STATUS_CRITICAL: 'Critical',
   STATUS_OUT_OF_STOCK: 'Out of Stock',
 };
 
@@ -27,7 +25,6 @@ export const STATUS_FILTERS = [
   UI_TEXT.STATUS_ALL,
   UI_TEXT.STATUS_IN_STOCK,
   UI_TEXT.STATUS_LOW_STOCK,
-  UI_TEXT.STATUS_CRITICAL,
   UI_TEXT.STATUS_OUT_OF_STOCK,
 ];
 
