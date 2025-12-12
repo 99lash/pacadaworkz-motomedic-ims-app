@@ -1,133 +1,83 @@
-import { useCallback, useState } from 'react';
-import { toast } from 'sonner';
-import { brandService } from '../services';
-import {
-  INITIAL_FORM_STATE,
-  INITIAL_FORM_ERRORS,
-  UI_TEXT,
-  validateBrandForm,
-} from '../utils';
+import { useCallback } from 'react';
+import { useBrandsData } from './useBrandsData';
+import { useBrandForm } from './useBrandForm';
+import { useBrandDialogs } from './useBrandDialogs';
 
 export const useBrands = () => {
-  const [brands, setBrands] = useState(() => brandService.fetchBrands());
-  const isLoading = false;
+  const brandsData = useBrandsData();
+  const brandForm = useBrandForm(brandsData.brands);
+  const brandDialogs = useBrandDialogs();
 
-  // Dialog states
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [formMode, setFormMode] = useState('create');
-  const [selectedBrand, setSelectedBrand] = useState(null);
-  const [brandToDelete, setBrandToDelete] = useState(null);
-
-  // Form state
-  const [formData, setFormData] = useState(INITIAL_FORM_STATE);
-  const [formErrors, setFormErrors] = useState(INITIAL_FORM_ERRORS);
-
-  const resetForm = useCallback(() => {
-    setFormData(INITIAL_FORM_STATE);
-    setFormErrors(INITIAL_FORM_ERRORS);
-    setSelectedBrand(null);
-  }, []);
-
-  const openCreateDialog = useCallback(() => {
-    setFormMode('create');
-    resetForm();
-    setIsFormOpen(true);
-  }, [resetForm]);
-
-  const openEditDialog = useCallback((brand) => {
-    setFormMode('edit');
-    setSelectedBrand(brand);
-    setFormData({
-      name: brand.name || '',
-      description: brand.description || '',
-    });
-    setFormErrors(INITIAL_FORM_ERRORS);
-    setIsFormOpen(true);
-  }, []);
-
-  const closeFormDialog = useCallback(() => {
-    setIsFormOpen(false);
-    resetForm();
-  }, [resetForm]);
-
-  const handleFormFieldChange = useCallback((field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    if (formErrors[field]) {
-      setFormErrors((prev) => ({ ...prev, [field]: '' }));
-    }
-  }, [formErrors]);
-
-  const handleSubmit = useCallback(() => {
-    const { isValid, errors } = validateBrandForm(formData, brands, selectedBrand?.id);
-    if (!isValid) {
-      setFormErrors(errors);
-      toast.error(UI_TEXT.TOAST_FORM_ERROR);
+  const handleSubmit = useCallback(async () => {
+    if (!brandForm.validateForm()) {
       return false;
     }
 
-    if (formMode === 'create') {
-      brandService.createBrand(formData);
-      setBrands(brandService.fetchBrands());
-      closeFormDialog();
-      toast.success(UI_TEXT.TOAST_CREATE);
+    let result;
+    if (brandForm.formMode === 'create') {
+      result = await brandsData.createBrand(brandForm.formData);
     } else {
-      const updated = brandService.updateBrand(selectedBrand.id, formData);
-      if (updated) {
-        setBrands(brandService.fetchBrands());
-        closeFormDialog();
-        toast.success(UI_TEXT.TOAST_UPDATE);
-      }
+      result = await brandsData.updateBrand(brandForm.selectedBrand.id, brandForm.formData);
     }
-    return true;
-  }, [formData, brands, selectedBrand, formMode, closeFormDialog]);
 
-  const openDeleteDialog = useCallback((brand) => {
-    setBrandToDelete(brand);
-    setIsDeleteOpen(true);
-  }, []);
-
-  const closeDeleteDialog = useCallback(() => {
-    setBrandToDelete(null);
-    setIsDeleteOpen(false);
-  }, []);
-
-  const handleDelete = useCallback(() => {
-    if (!brandToDelete) return false;
-    const success = brandService.deleteBrand(brandToDelete.id);
-    if (success) {
-      setBrands(brandService.fetchBrands());
-      closeDeleteDialog();
-      toast.success(UI_TEXT.TOAST_DELETE);
+    if (result.success) {
+      brandDialogs.closeFormDialog();
       return true;
     }
     return false;
-  }, [brandToDelete, closeDeleteDialog]);
+  }, [brandForm, brandsData, brandDialogs]);
+
+  const handleDelete = useCallback(async () => {
+    if (!brandDialogs.brandToDelete) return false;
+
+    const result = await brandsData.deleteBrand(brandDialogs.brandToDelete.id);
+    if (result.success) {
+      brandDialogs.closeDeleteDialog();
+      return true;
+    }
+    return false;
+  }, [brandsData, brandDialogs]);
+
+  const openCreateDialog = useCallback(() => {
+    brandForm.openCreateDialog();
+    brandDialogs.openFormDialog();
+  }, [brandForm, brandDialogs]);
+
+  const openEditDialog = useCallback((brand) => {
+    brandForm.openEditDialog(brand);
+    brandDialogs.openFormDialog();
+  }, [brandForm, brandDialogs]);
+
+  const closeFormDialog = useCallback(() => {
+    brandDialogs.closeFormDialog();
+    brandForm.resetForm();
+  }, [brandDialogs, brandForm]);
 
   return {
     // Data
-    brands,
-    isLoading,
+    brands: brandsData.brands,
+    isLoading: brandsData.isLoading,
+    error: brandsData.error,
 
     // Form state
-    formData,
-    formErrors,
-    formMode,
-    isFormOpen,
-    selectedBrand,
+    formData: brandForm.formData,
+    formErrors: brandForm.formErrors,
+    formMode: brandForm.formMode,
+    isFormOpen: brandDialogs.isFormOpen,
+    selectedBrand: brandForm.selectedBrand,
 
     // Delete state
-    isDeleteOpen,
-    brandToDelete,
+    isDeleteOpen: brandDialogs.isDeleteOpen,
+    brandToDelete: brandDialogs.brandToDelete,
 
     // Actions
     openCreateDialog,
     openEditDialog,
     closeFormDialog,
-    handleFormFieldChange,
+    handleFormFieldChange: brandForm.handleFormFieldChange,
     handleSubmit,
-    openDeleteDialog,
-    closeDeleteDialog,
+    openDeleteDialog: brandDialogs.openDeleteDialog,
+    closeDeleteDialog: brandDialogs.closeDeleteDialog,
     handleDelete,
   };
 };
