@@ -182,7 +182,6 @@ export default function LoginPage() {
           <GoogleLogin
             onSuccess={handleGoogleLoginSuccess}
             onError={handleGoogleLoginError}
-            width="100%"
             useOneTap
           />
         </div>
