@@ -1,9 +1,43 @@
 import { useNavigate } from 'react-router-dom';
 import { useLoginForm } from '../features/auth/hooks/useLoginForm';
 import { ROUTES } from '../shared/utils/routes';
+import { GoogleLogin } from '@react-oauth/google';
+import apiClient from '../shared/services/apiClient';
+import { useDispatch } from 'react-redux';
+import { loginSuccess } from '../features/auth/authSlice';
+import storageService from '../shared/services/storageService';
+import { STORAGE_KEYS } from '../shared/config/storage';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const handleGoogleLoginSuccess = async (credentialResponse) => {
+    try {
+      const response = await apiClient.post('/v1/auth/login/google', {
+        credential: credentialResponse.credential,
+      });
+
+      const { user, access_token, refresh_token } = response.data.data;
+      
+      dispatch(loginSuccess({ user, accessToken: access_token, refreshToken: refresh_token }));
+
+      // Persist tokens and user
+      storageService.set(STORAGE_KEYS.ACCESS_TOKEN, access_token);
+      storageService.set(STORAGE_KEYS.REFRESH_TOKEN, refresh_token);
+      storageService.setJSON(STORAGE_KEYS.USER, user);
+
+      navigate(ROUTES.DASHBOARD || '/');
+    } catch (error) {
+      console.error('Google login failed:', error);
+      // Handle login error (e.g., show a notification to the user)
+    }
+  };
+
+  const handleGoogleLoginError = () => {
+    console.error('Google login failed');
+    // Handle login error (e.g., show a notification to the user)
+  };
 
   // Handle successful login
   const handleLoginSuccess = () => {
@@ -135,6 +169,22 @@ export default function LoginPage() {
             )}
           </button>
         </form>
+
+        {/* Divider */}
+        <div className="flex items-center my-6">
+          <div className="flex-grow border-t border-gray-300"></div>
+          <span className="mx-4 text-sm text-gray-500">OR</span>
+          <div className="flex-grow border-t border-gray-300"></div>
+        </div>
+
+        {/* Google Login Button */}
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleLoginSuccess}
+            onError={handleGoogleLoginError}
+            useOneTap
+          />
+        </div>
       </div>
     </div>
   );

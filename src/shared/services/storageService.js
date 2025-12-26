@@ -80,7 +80,7 @@ class StorageService {
    */
   getJSON(key) {
     const value = this.get(key);
-    if (!value) return null;
+    if (!value || value === 'undefined') return null;
 
     try {
       return JSON.parse(value);
@@ -97,6 +97,10 @@ class StorageService {
    * @returns {boolean} Success status
    */
   setJSON(key, value) {
+    if (value === undefined) {
+      this.remove(key);
+      return true;
+    }
     try {
       const jsonString = JSON.stringify(value);
       return this.set(key, jsonString);
