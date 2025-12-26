@@ -25,7 +25,7 @@ export default function LoginPage() {
       // Persist tokens and user
       storageService.set(STORAGE_KEYS.ACCESS_TOKEN, access_token);
       storageService.set(STORAGE_KEYS.REFRESH_TOKEN, refresh_token);
-      storageService.set(STORAGE_KEYS.USER, user);
+      storageService.setJSON(STORAGE_KEYS.USER, user);
 
       navigate(ROUTES.DASHBOARD || '/');
     } catch (error) {
