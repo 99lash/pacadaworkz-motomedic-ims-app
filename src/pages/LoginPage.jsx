@@ -7,6 +7,7 @@ import { useDispatch } from 'react-redux';
 import { loginSuccess } from '../features/auth/authSlice';
 import storageService from '../shared/services/storageService';
 import { STORAGE_KEYS } from '../shared/config/storage';
+import { authService } from '../features/auth/services/authService';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -14,22 +15,34 @@ export default function LoginPage() {
 
   const handleGoogleLoginSuccess = async (credentialResponse) => {
     try {
+      // 1. Send Google credential to the backend
       const response = await apiClient.post('/v1/auth/login/google', {
         credential: credentialResponse.credential,
       });
 
-      const { user, access_token, refresh_token } = response.data.data;
-      
-      dispatch(loginSuccess({ user, accessToken: access_token, refreshToken: refresh_token }));
+      const { access_token, refresh_token } = response.data.data;
 
-      // Persist tokens and user
+      // 2. Persist tokens immediately
       storageService.set(STORAGE_KEYS.ACCESS_TOKEN, access_token);
-      storageService.set(STORAGE_KEYS.REFRESH_TOKEN, refresh_token);
-      storageService.setJSON(STORAGE_KEYS.USER, user);
+      if (refresh_token) {
+        storageService.set(STORAGE_KEYS.REFRESH_TOKEN, refresh_token);
+      }
+      
+      // 3. Fetch the user data from the /me endpoint to ensure consistency
+      const userResponse = await authService.getCurrentUser();
+      if (!userResponse.success) {
+        throw new Error('Failed to fetch user data after Google login.');
+      }
+      const user = userResponse.data;
+
+      // 4. Dispatch success with consistent user object and tokens
+      dispatch(loginSuccess({ user, accessToken: access_token, refreshToken: refresh_token }));
 
       navigate(ROUTES.DASHBOARD || '/');
     } catch (error) {
       console.error('Google login failed:', error);
+      // Clean up on failure
+      authService.clearAuthData();
       // Handle login error (e.g., show a notification to the user)
     }
   };
