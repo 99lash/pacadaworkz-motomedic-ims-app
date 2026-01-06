@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { brandService } from '../services';
 import {
@@ -9,8 +9,9 @@ import {
 } from '../utils';
 
 export const useBrands = () => {
-  const [brands, setBrands] = useState(() => brandService.fetchBrands());
-  const isLoading = false;
+  const [brands, setBrands] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Dialog states
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -22,6 +23,23 @@ export const useBrands = () => {
   // Form state
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [formErrors, setFormErrors] = useState(INITIAL_FORM_ERRORS);
+
+  const fetchBrands = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    const { data, success, error: fetchError } = await brandService.fetchBrands();
+    if (success) {
+      setBrands(data);
+    } else {
+      setError(fetchError);
+      toast.error(UI_TEXT.TOAST_FETCH_ERROR);
+    }
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchBrands();
+  }, [fetchBrands]);
 
   const resetForm = useCallback(() => {
     setFormData(INITIAL_FORM_STATE);
@@ -58,7 +76,7 @@ export const useBrands = () => {
     }
   }, [formErrors]);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = async () => {
     const { isValid, errors } = validateBrandForm(formData, brands, selectedBrand?.id);
     if (!isValid) {
       setFormErrors(errors);
@@ -67,20 +85,26 @@ export const useBrands = () => {
     }
 
     if (formMode === 'create') {
-      brandService.createBrand(formData);
-      setBrands(brandService.fetchBrands());
-      closeFormDialog();
-      toast.success(UI_TEXT.TOAST_CREATE);
+      const { success, error: createError } = await brandService.createBrand(formData);
+      if (success) {
+        await fetchBrands();
+        closeFormDialog();
+        toast.success(UI_TEXT.TOAST_CREATE);
+      } else {
+        toast.error(createError || UI_TEXT.TOAST_CREATE_ERROR);
+      }
     } else {
-      const updated = brandService.updateBrand(selectedBrand.id, formData);
-      if (updated) {
-        setBrands(brandService.fetchBrands());
+      const { success, error: updateError } = await brandService.updateBrand(selectedBrand.id, formData);
+      if (success) {
+        await fetchBrands();
         closeFormDialog();
         toast.success(UI_TEXT.TOAST_UPDATE);
+      } else {
+        toast.error(updateError || UI_TEXT.TOAST_UPDATE_ERROR);
       }
     }
     return true;
-  }, [formData, brands, selectedBrand, formMode, closeFormDialog]);
+  };
 
   const openDeleteDialog = useCallback((brand) => {
     setBrandToDelete(brand);
@@ -92,22 +116,25 @@ export const useBrands = () => {
     setIsDeleteOpen(false);
   }, []);
 
-  const handleDelete = useCallback(() => {
+  const handleDelete = async () => {
     if (!brandToDelete) return false;
-    const success = brandService.deleteBrand(brandToDelete.id);
+    const { success, error: deleteError } = await brandService.deleteBrand(brandToDelete.id);
     if (success) {
-      setBrands(brandService.fetchBrands());
+      await fetchBrands();
       closeDeleteDialog();
       toast.success(UI_TEXT.TOAST_DELETE);
       return true;
+    } else {
+      toast.error(deleteError || UI_TEXT.TOAST_DELETE_ERROR);
     }
     return false;
-  }, [brandToDelete, closeDeleteDialog]);
+  };
 
   return {
     // Data
     brands,
     isLoading,
+    error,
 
     // Form state
     formData,

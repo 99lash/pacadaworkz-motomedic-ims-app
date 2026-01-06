@@ -8,6 +8,13 @@ import {
   setUser 
 } from '../authSlice';
 import authService from '../services/authService';
+import { ROLES } from '../../../shared/utils/permissions';
+
+const roleMap = {
+  1: ROLES.SUPER_ADMIN,
+  2: ROLES.ADMIN,
+  3: ROLES.STAFF,
+};
 
 export const useAuth = () => {
   const dispatch = useDispatch();
@@ -142,7 +149,7 @@ export const useAuth = () => {
     loading,
     error,
     accessToken,
-    userRole: user?.role?.role_name,
+    userRole: user ? roleMap[user.role_id] : null,
     login,
     logout,
     getCurrentUser,
