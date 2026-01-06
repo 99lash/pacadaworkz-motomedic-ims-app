@@ -3,12 +3,14 @@ import Sidebar from './Sidebar';
 import Header from './Header'; // Import the new Header
 import SidebarItem from './SidebarItem';
 import MobileMenuButton from './MobileMenuButton';
+import { useAuth } from '../../../features/auth';
 import { useFilteredMenu } from '../../hooks/useFilteredMenu';
 import { useMobileMenu } from '../../hooks/useMobileMenu';
 import logo from '../../../assets/logo-dark.png';
 
 const MainLayout = () => {
   const location = useLocation();
+  const { user, userRole } = useAuth();
   const filteredMenu = useFilteredMenu();
   const { isMobile, isMenuOpen, closeMenu, toggleMenu } = useMobileMenu();
 
