@@ -12,7 +12,7 @@ import {
 import { PERMISSION_MODULES } from './utils';
 
 const RolesPage = () => {
-  const { user } = useAuth();
+  const { userRole } = useAuth();
   const {
     roles,
     isLoading,
@@ -36,7 +36,7 @@ const RolesPage = () => {
     getUserCount,
   } = useRoles();
 
-  const normalizedRole = user?.role?.toLowerCase();
+  const normalizedRole = userRole?.toLowerCase();
   const isAuthorized = normalizedRole === 'admin' || normalizedRole === 'superadmin';
 
   if (!isAuthorized) {
