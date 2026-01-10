@@ -19,6 +19,9 @@ export const fetchProductsPaginated = async ({
   page = 1,
   pageSize = 20,
   search = '',
+  categoryId = '',
+  brandId = '',
+  status = '',
 } = {}) => {
   try {
     const params = new URLSearchParams({
@@ -28,6 +31,15 @@ export const fetchProductsPaginated = async ({
 
     if (search?.trim()) {
       params.append('search', search.trim());
+    }
+    if (categoryId) {
+      params.append('category_id', categoryId);
+    }
+    if (brandId) {
+      params.append('brand_id', brandId);
+    }
+    if (status) {
+      params.append('status', status);
     }
 
     const response = await apiClient.get(`${API_ENDPOINTS.PRODUCTS}?${params}`);
@@ -261,7 +273,7 @@ const transformProductFromBackend = (backendProduct) => ({
   costPrice: parseFloat(backendProduct.cost_price) || 0,
   sellingPrice: parseFloat(backendProduct.unit_price) || 0,
   reorderPoint: parseInt(backendProduct.reorder_level) || 0,
-  currentStock: 0, // TODO: Implement inventory integration
+  currentStock: parseInt(backendProduct.current_stock) || 0,
   description: backendProduct.description || '',
   isActive: backendProduct.is_active || true,
   stockStatus: 'in_stock', // TODO: Calculate based on inventory
