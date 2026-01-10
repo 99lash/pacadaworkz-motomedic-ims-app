@@ -65,11 +65,10 @@ const ProductTable = ({ products, onEdit, onDelete, isDeleting }) => (
               {formatCurrency(product.sellingPrice)}
             </TableCell>
             <TableCell headers="col-stock" className="text-right">
-              <span className="font-semibold">{product.currentStock}</span>
+              <span className="font-semibold">{product.reorderPoint}</span>
               <span className="block text-xs text-muted-foreground">
-                Reorder @ {product.reorderPoint}
-              </span>
-            </TableCell>
+                
+              </span>            </TableCell>
             <TableCell headers="col-status" className="text-center">
               <Badge variant="outline" className={stockStatus.className}>
                 {stockStatus.label}
