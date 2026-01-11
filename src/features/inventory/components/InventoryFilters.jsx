@@ -18,7 +18,7 @@ const InventoryFilters = ({ searchTerm, statusFilter, statusFilters, onSearchCha
     </div>
     <Select value={statusFilter} onValueChange={onStatusFilterChange}>
       <SelectTrigger className="w-full sm:w-40">
-        <SelectValue />
+        <SelectValue placeholder={UI_TEXT.STATUS_ALL} />
       </SelectTrigger>
       <SelectContent>
         {statusFilters.map((status) => (
