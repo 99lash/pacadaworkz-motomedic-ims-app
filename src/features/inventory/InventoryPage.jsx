@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../shared/components/ui/card';
 import { useInventory } from './hooks';
 import {
@@ -6,6 +6,7 @@ import {
   InventoryStatsCards,
   InventoryFilters,
   InventoryTable,
+  AdjustStockModal,
 } from './components';
 import { UI_TEXT } from './utils';
 
@@ -14,6 +15,7 @@ const InventoryPage = () => {
     // Data
     filteredInventory,
     isLoading,
+    error,
 
     // Filters
     searchTerm,
@@ -31,7 +33,34 @@ const InventoryPage = () => {
     // Actions
     handleSearchChange,
     handleStatusFilterChange,
+    handleAdjustStock,
   } = useInventory();
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+
+  const handleOpenModal = (item) => {
+    setSelectedItem(item);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedItem(null);
+    setIsModalOpen(false);
+  };
+
+  const handleSaveStock = async (itemId, newStock) => {
+    await handleAdjustStock(itemId, newStock);
+    handleCloseModal();
+  };
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-red-500">Error loading inventory: {error.message}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -52,7 +81,7 @@ const InventoryPage = () => {
             onStatusFilterChange={handleStatusFilterChange}
           />
 
-          {isLoading ? (
+          {isLoading && !filteredInventory.length ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-gray-500 dark:text-gray-400">Loading inventory...</div>
             </div>
@@ -62,10 +91,20 @@ const InventoryPage = () => {
               getItemStockStatus={getItemStockStatus}
               getStatusDisplayWithIcon={getStatusDisplayWithIcon}
               getItemStockPercentage={getItemStockPercentage}
+              onAdjustStock={handleOpenModal}
             />
           )}
         </CardContent>
       </Card>
+
+      {isModalOpen && (
+        <AdjustStockModal
+          item={selectedItem}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          onSave={handleSaveStock}
+        />
+      )}
     </div>
   );
 };

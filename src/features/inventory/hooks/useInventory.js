@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from 'react';
-import { inventoryService } from '../services';
+import { useCallback, useMemo, useState, useEffect } from 'react';
+import { fetchInventory, updateInventoryStock } from '../services';
 import {
   STATUS_FILTERS,
   UI_TEXT,
@@ -11,10 +11,27 @@ import {
 import { AlertTriangle, CheckCircle, Package } from 'lucide-react';
 
 export const useInventory = () => {
-  const [inventory, setInventory] = useState(() => inventoryService.fetchInventory());
+  const [inventory, setInventory] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState(UI_TEXT.STATUS_ALL);
-  const isLoading = false;
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const refreshInventory = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const data = await fetchInventory();
+      setInventory(data);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshInventory();
+  }, [refreshInventory]);
 
   // Get stock status for an item
   const getItemStockStatus = useCallback((item) => {
@@ -70,9 +87,18 @@ export const useInventory = () => {
     setStatusFilter(value);
   }, []);
 
-  // Refresh inventory
-  const refreshInventory = useCallback(() => {
-    setInventory(inventoryService.fetchInventory());
+  const handleAdjustStock = useCallback(async (itemId, newStock) => {
+    try {
+      const updatedItem = await updateInventoryStock(itemId, newStock);
+      setInventory(prevInventory => 
+        prevInventory.map(item => 
+          item.id === itemId ? { ...item, ...updatedItem } : item
+        )
+      );
+    } catch (err) {
+      console.error('Failed to update stock:', err);
+      // Here you could set an error state to show in the UI
+    }
   }, []);
 
   return {
@@ -80,6 +106,7 @@ export const useInventory = () => {
     inventory,
     filteredInventory,
     isLoading,
+    error,
 
     // Filters
     searchTerm,
@@ -98,6 +125,7 @@ export const useInventory = () => {
     handleSearchChange,
     handleStatusFilterChange,
     refreshInventory,
+    handleAdjustStock,
   };
 };
 

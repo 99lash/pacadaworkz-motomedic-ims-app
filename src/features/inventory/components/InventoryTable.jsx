@@ -10,6 +10,7 @@ const InventoryTable = ({
   getItemStockStatus,
   getStatusDisplayWithIcon,
   getItemStockPercentage,
+  onAdjustStock,
 }) => {
   if (inventory.length === 0) {
     return (
@@ -91,7 +92,7 @@ const InventoryTable = ({
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">{item.lastUpdated}</TableCell>
                 <TableCell>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => onAdjustStock(item)}>
                     {UI_TEXT.BTN_ADJUST_STOCK}
                   </Button>
                 </TableCell>
@@ -109,6 +110,7 @@ InventoryTable.propTypes = {
   getItemStockStatus: PropTypes.func.isRequired,
   getStatusDisplayWithIcon: PropTypes.func.isRequired,
   getItemStockPercentage: PropTypes.func.isRequired,
+  onAdjustStock: PropTypes.func.isRequired,
 };
 
 export default InventoryTable;
