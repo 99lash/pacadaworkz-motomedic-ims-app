@@ -6,6 +6,7 @@ import {
   BrandFormDialog,
   BrandDeleteDialog,
   BrandEmptyState,
+  Pagination,
 } from './components';
 
 const BrandsPage = () => {
@@ -13,6 +14,7 @@ const BrandsPage = () => {
     // Data
     brands,
     isLoading,
+    pagination,
 
     // Form state
     formData,
@@ -34,6 +36,7 @@ const BrandsPage = () => {
     openDeleteDialog,
     closeDeleteDialog,
     handleDelete,
+    handlePageChange,
   } = useBrands();
 
   return (
@@ -47,11 +50,14 @@ const BrandsPage = () => {
       ) : brands.length === 0 ? (
         <BrandEmptyState onAddClick={openCreateDialog} />
       ) : (
-        <BrandTable
-          brands={brands}
-          onEdit={openEditDialog}
-          onDelete={openDeleteDialog}
-        />
+        <>
+          <BrandTable
+            brands={brands}
+            onEdit={openEditDialog}
+            onDelete={openDeleteDialog}
+          />
+          <Pagination pagination={pagination} onPageChange={handlePageChange} />
+        </>
       )}
 
       <BrandFormDialog
@@ -77,4 +83,3 @@ const BrandsPage = () => {
 };
 
 export default BrandsPage;
-
