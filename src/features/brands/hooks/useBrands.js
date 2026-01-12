@@ -26,7 +26,7 @@ export const useBrands = () => {
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [formErrors, setFormErrors] = useState(INITIAL_FORM_ERRORS);
 
-  const fetchBrands = useCallback(async (page) => {
+  const fetchBrandsPaginated = useCallback(async (page) => {
     setIsLoading(true);
     setError(null);
     const { data, success, pagination: newPagination, error: fetchError } = await brandService.fetchBrandsPaginated({ page, pageSize: 10 });
@@ -41,8 +41,8 @@ export const useBrands = () => {
   }, []);
 
   useEffect(() => {
-    fetchBrands(currentPage);
-  }, [fetchBrands, currentPage]);
+    fetchBrandsPaginated(currentPage);
+  }, [fetchBrandsPaginated, currentPage]);
 
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
@@ -94,7 +94,7 @@ export const useBrands = () => {
     if (formMode === 'create') {
       const { success, error: createError } = await brandService.createBrand(formData);
       if (success) {
-        await fetchBrands(currentPage);
+        await fetchBrandsPaginated(currentPage);
         closeFormDialog();
         toast.success(UI_TEXT.TOAST_CREATE);
       } else {
@@ -103,7 +103,7 @@ export const useBrands = () => {
     } else {
       const { success, error: updateError } = await brandService.updateBrand(selectedBrand.id, formData);
       if (success) {
-        await fetchBrands(currentPage);
+        await fetchBrandsPaginated(currentPage);
         closeFormDialog();
         toast.success(UI_TEXT.TOAST_UPDATE);
       } else {
@@ -127,7 +127,7 @@ export const useBrands = () => {
     if (!brandToDelete) return false;
     const { success, error: deleteError } = await brandService.deleteBrand(brandToDelete.id);
     if (success) {
-      await fetchBrands(currentPage);
+      await fetchBrandsPaginated(currentPage);
       closeDeleteDialog();
       toast.success(UI_TEXT.TOAST_DELETE);
       return true;

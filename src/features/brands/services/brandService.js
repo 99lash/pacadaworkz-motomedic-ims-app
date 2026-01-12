@@ -18,14 +18,36 @@ const API_ENDPOINTS = {
  * Fetches all brands (for dropdowns and validation)
  * @returns {Promise<Object>}
  */
+const fetchAllPages = async (url, allData = []) => {
+  const response = await apiClient.get(url);
+  const { data, links, meta } = response.data;
+
+  const combinedData = allData.concat(data);
+
+  if (links?.next) {
+    // If there is a next page, recursively call fetchAllPages
+    return fetchAllPages(links.next, combinedData);
+  }
+
+  return {
+    data: combinedData,
+    success: true,
+    pagination: meta,
+  };
+};
+
+/**
+ * Fetches all brands (for dropdowns and validation)
+ * @returns {Promise<Object>}
+ */
 export const fetchBrands = async () => {
   try {
-    // Fetch all brands without pagination for dropdowns/validation
-    const response = await apiClient.get(`${API_ENDPOINTS.BRANDS}?per_page=1000`);
+    const initialUrl = `${API_ENDPOINTS.BRANDS}`;
+    const { data, success } = await fetchAllPages(initialUrl);
 
-    if (response.data.success) {
+    if (success) {
       return {
-        data: response.data.data || [],
+        data: data || [],
         success: true,
       };
     }
@@ -33,7 +55,7 @@ export const fetchBrands = async () => {
     return {
       data: [],
       success: false,
-      error: response.data.message || 'Failed to fetch brands',
+      error: 'Failed to fetch brands',
     };
   } catch (error) {
     return {
