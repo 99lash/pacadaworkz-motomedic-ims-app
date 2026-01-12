@@ -18,14 +18,36 @@ const API_ENDPOINTS = {
  * Fetches all brands (for dropdowns and validation)
  * @returns {Promise<Object>}
  */
+const fetchAllPages = async (url, allData = []) => {
+  const response = await apiClient.get(url);
+  const { data, links, meta } = response.data;
+
+  const combinedData = allData.concat(data);
+
+  if (links?.next) {
+    // If there is a next page, recursively call fetchAllPages
+    return fetchAllPages(links.next, combinedData);
+  }
+
+  return {
+    data: combinedData,
+    success: true,
+    pagination: meta,
+  };
+};
+
+/**
+ * Fetches all brands (for dropdowns and validation)
+ * @returns {Promise<Object>}
+ */
 export const fetchBrands = async () => {
   try {
-    // Fetch all brands without pagination for dropdowns/validation
-    const response = await apiClient.get(`${API_ENDPOINTS.BRANDS}?per_page=1000`);
+    const initialUrl = `${API_ENDPOINTS.BRANDS}`;
+    const { data, success } = await fetchAllPages(initialUrl);
 
-    if (response.data.success) {
+    if (success) {
       return {
-        data: response.data.data || [],
+        data: data || [],
         success: true,
       };
     }
@@ -33,7 +55,7 @@ export const fetchBrands = async () => {
     return {
       data: [],
       success: false,
-      error: response.data.message || 'Failed to fetch brands',
+      error: 'Failed to fetch brands',
     };
   } catch (error) {
     return {
@@ -70,35 +92,19 @@ export const fetchBrandsPaginated = async ({
 
     const response = await apiClient.get(`${API_ENDPOINTS.BRANDS}?${params}`);
 
-    if (response.data.success) {
-      const { data, meta } = response.data;
-
-      return {
-        success: true,
-        data: data || [],
-        pagination: {
-          page: meta?.current_page || page,
-          pageSize: meta?.per_page || pageSize,
-          totalItems: meta?.total || 0,
-          totalPages: meta?.last_page || 0,
-          hasNextPage: (meta?.current_page || page) < (meta?.last_page || 0),
-          hasPrevPage: (meta?.current_page || page) > 1,
-        },
-      };
-    }
+    const { data, meta } = response.data;
 
     return {
-      success: false,
-      data: [],
+      success: true,
+      data: data || [],
       pagination: {
-        page: 1,
-        pageSize,
-        totalItems: 0,
-        totalPages: 0,
-        hasNextPage: false,
-        hasPrevPage: false,
+        page: meta?.current_page || page,
+        pageSize: meta?.per_page || pageSize,
+        totalItems: meta?.total || 0,
+        totalPages: meta?.last_page || 0,
+        hasNextPage: (meta?.current_page || page) < (meta?.last_page || 0),
+        hasPrevPage: (meta?.current_page || page) > 1,
       },
-      error: response.data.message || 'Failed to fetch brands',
     };
   } catch (error) {
     return {
@@ -249,6 +255,7 @@ export const deleteBrand = async (id) => {
 
 const brandService = {
   fetchBrands,
+  fetchBrandsPaginated,
   fetchBrandById,
   createBrand,
   updateBrand,
