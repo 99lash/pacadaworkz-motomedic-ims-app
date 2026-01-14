@@ -163,9 +163,10 @@ export const useCategories = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   }, []);
 
   // Initial load and reload on pagination/search changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadCategories();
-  }, [loadCategories]);
+  }, [currentPage, pageSize, debouncedSearchTerm]);
 
   // Load all categories once for validation
   useEffect(() => {
