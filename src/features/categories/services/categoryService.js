@@ -118,27 +118,47 @@ export const fetchCategoriesPaginated = async ({
  * @returns {Promise<Object>}
  */
 export const fetchCategories = async () => {
-  try {
-    // Fetch all categories without pagination for dropdowns/validation
-    const response = await apiClient.get(`${API_ENDPOINTS.CATEGORIES}?per_page=1000`);
+  let allCategories = [];
+  let currentPage = 1;
+  let totalPages = 1; // Start with 1 to ensure at least one request is made
 
-    if (response.data.success) {
-      return {
-        data: response.data.data || [],
-        success: true,
-      };
-    }
+  try {
+    do {
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        // Backend ignores this, but it's here for clarity.
+        // The backend's hardcoded page size is 10.
+        per_page: '10',
+      });
+
+      const response = await apiClient.get(`${API_ENDPOINTS.CATEGORIES}?${params}`);
+
+      if (response.data.success) {
+        const { data, meta } = response.data;
+        if (data && data.length > 0) {
+          allCategories = allCategories.concat(data);
+        }
+        totalPages = meta?.total_pages || totalPages;
+        currentPage++;
+      } else {
+        // If any page fails, return what has been fetched so far along with an error.
+        return {
+          data: allCategories,
+          success: false,
+          error: response.data.message || 'Failed to fetch all categories',
+        };
+      }
+    } while (currentPage <= totalPages);
 
     return {
-      data: [],
-      success: false,
-      error: response.data.message || 'Failed to fetch categories',
+      data: allCategories,
+      success: true,
     };
   } catch (error) {
     return {
-      data: [],
+      data: allCategories, // Return whatever was fetched before the error
       success: false,
-      error: extractErrorMessage(error, 'Failed to fetch categories'),
+      error: extractErrorMessage(error, 'Failed to fetch all categories'),
     };
   }
 };
