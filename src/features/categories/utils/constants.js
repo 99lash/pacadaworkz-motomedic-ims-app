@@ -86,8 +86,8 @@ export const DEBOUNCE = {
 // =============================================================================
 // TABLE CONFIGURATION
 // =============================================================================
-export const TABLE_CONFIG = {
-  COLUMNS: ['name', 'description', 'productCount', 'actions'],
+export const CATEGORY_TABLE_CONFIG = {
+  COLUMNS: ['name', 'description', 'actions'],
   DEFAULT_SORT: 'name',
   DEFAULT_SORT_ORDER: 'asc',
 };

@@ -122,7 +122,7 @@ export const useCategories = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   const loadCategories = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-
+    
     try {
       const result = await categoryService.fetchCategoriesPaginated({
         page: currentPage,

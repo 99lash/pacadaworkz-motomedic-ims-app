@@ -35,7 +35,7 @@ const CategoryDeleteDialog = ({
   isDeleting,
   trigger,
 }) => {
-  const hasProducts = category.productCount > 0;
+
   
   return (
     <AlertDialog>
@@ -61,18 +61,9 @@ const CategoryDeleteDialog = ({
           
           <AlertDialogDescription id="delete-dialog-description">
             Are you sure you want to delete &quot;{category.name}&quot;?
-            {hasProducts && (
-              <span className="block mt-2 text-destructive font-medium">
-                <AlertTriangle className="inline h-4 w-4 mr-1" aria-hidden="true" />
-                This category has {category.productCount} products assigned to it.
-                You must reassign these products before deleting.
-              </span>
-            )}
-            {!hasProducts && (
-              <span className="block mt-2">
-                This action cannot be undone.
-              </span>
-            )}
+            <span className="block mt-2">
+              This action cannot be undone.
+            </span>
           </AlertDialogDescription>
         </AlertDialogHeader>
         
@@ -83,9 +74,8 @@ const CategoryDeleteDialog = ({
           
           <AlertDialogAction
             onClick={onConfirm}
-            disabled={isDeleting || hasProducts}
+            disabled={isDeleting}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            aria-describedby={hasProducts ? 'delete-blocked-reason' : undefined}
           >
             {isDeleting ? (
               <>
@@ -98,11 +88,7 @@ const CategoryDeleteDialog = ({
           </AlertDialogAction>
         </AlertDialogFooter>
         
-        {hasProducts && (
-          <p id="delete-blocked-reason" className="sr-only">
-            Cannot delete because category has products
-          </p>
-        )}
+
       </AlertDialogContent>
     </AlertDialog>
   );
@@ -117,7 +103,7 @@ CategoryDeleteDialog.propTypes = {
   category: PropTypes.shape({
     id: PropTypes.string.isRequired,
     name: PropTypes.string.isRequired,
-    productCount: PropTypes.number.isRequired,
+
   }).isRequired,
   
   /** Callback when delete is confirmed */
