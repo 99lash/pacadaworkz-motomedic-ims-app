@@ -26,50 +26,75 @@ const API_ENDPOINTS = {
  */
 export const fetchCategoriesPaginated = async ({
   page = 1,
-  pageSize = 20,
+  pageSize = 10,
   search = '',
 } = {}) => {
   try {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      per_page: pageSize.toString(),
-    });
+    const BACKEND_PAGE_SIZE = 10; // Backend hardcoded pagination limit
+    const pagesToFetch = Math.ceil(pageSize / BACKEND_PAGE_SIZE);
+    const requests = [];
 
-    if (search?.trim()) {
-      params.append('search', search.trim());
+    // Calculate the range of backend pages to fetch based on the frontend's current page and desired pageSize
+    const startBackendPage = (page - 1) * pagesToFetch + 1;
+    const endBackendPage = startBackendPage + pagesToFetch - 1;
+
+    for (let i = startBackendPage; i <= endBackendPage; i++) {
+      const params = new URLSearchParams({
+        page: i.toString(),
+        // Although the backend ignores this, it's good practice to send it
+        per_page: BACKEND_PAGE_SIZE.toString(),
+      });
+
+      if (search?.trim()) {
+        params.append('search', search.trim());
+      }
+      requests.push(apiClient.get(`${API_ENDPOINTS.CATEGORIES}?${params}`));
     }
 
-    const response = await apiClient.get(`${API_ENDPOINTS.CATEGORIES}?${params}`);
+    const responses = await Promise.all(requests);
 
-    if (response.data.success) {
-      const { data, meta } = response.data;
+    let combinedData = [];
+    let latestBackendMeta = null;
 
-      return {
-        success: true,
-        data: data || [],
-        pagination: {
-          page: meta?.current_page || page,
-          pageSize: meta?.per_page || pageSize,
-          totalItems: meta?.total || 0,
-          totalPages: meta?.total_pages || 0,
-          hasNextPage: (meta?.current_page || page) < (meta?.total_pages || 0),
-          hasPrevPage: (meta?.current_page || page) > 1,
-        },
-      };
+    for (const response of responses) {
+      if (response.data.success) {
+        combinedData = combinedData.concat(response.data.data || []);
+        // Keep the meta from the latest successful backend response for total items
+        latestBackendMeta = response.data.meta;
+      } else {
+        // If any of the requests fail, return an error for the entire operation
+        return {
+          success: false,
+          data: [],
+          pagination: {
+            page: 1,
+            pageSize,
+            totalItems: 0,
+            totalPages: 0,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
+          error: response.data.message || 'Failed to fetch categories from one or more pages',
+        };
+      }
     }
+
+    const totalItems = latestBackendMeta?.total || 0;
+    // Recalculate totalPages based on the frontend's desired pageSize
+    const totalPages = Math.ceil(totalItems / pageSize);
 
     return {
-      success: false,
-      data: [],
+      success: true,
+      // Slice the combined data to match the requested pageSize
+      data: combinedData.slice(0, pageSize),
       pagination: {
-        page: 1,
-        pageSize,
-        totalItems: 0,
-        totalPages: 0,
-        hasNextPage: false,
-        hasPrevPage: false,
+        page: page,
+        pageSize: pageSize,
+        totalItems: totalItems,
+        totalPages: totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
       },
-      error: response.data.message || 'Failed to fetch categories',
     };
   } catch (error) {
     return {

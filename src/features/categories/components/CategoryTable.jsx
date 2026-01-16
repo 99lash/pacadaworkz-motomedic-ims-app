@@ -40,9 +40,7 @@ const CategoryTable = ({
         <TableRow>
           <TableHead id="col-name">Category Name</TableHead>
           <TableHead id="col-description">Description</TableHead>
-          <TableHead id="col-count" className="text-center">
-            Product Count
-          </TableHead>
+
           <TableHead id="col-actions" className="text-center">
             Actions
           </TableHead>
@@ -71,18 +69,7 @@ const CategoryTable = ({
               {category.description || UI_TEXT.MSG_NO_DESCRIPTION}
             </TableCell>
             
-            {/* Product Count */}
-            <TableCell 
-              headers="col-count"
-              className="text-center"
-            >
-              <Badge 
-                variant="secondary"
-                aria-label={`${category.productCount} products in this category`}
-              >
-                {category.productCount}
-              </Badge>
-            </TableCell>
+
             
             {/* Actions */}
             <TableCell headers="col-actions">
@@ -128,7 +115,7 @@ CategoryTable.propTypes = {
       id: PropTypes.string.isRequired,
       name: PropTypes.string.isRequired,
       description: PropTypes.string,
-      productCount: PropTypes.number.isRequired,
+
       createdAt: PropTypes.string,
       updatedAt: PropTypes.string,
     })
