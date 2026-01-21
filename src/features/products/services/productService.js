@@ -1,13 +1,14 @@
-import apiClient from '../../../shared/services/apiClient';
+import { apiClient } from '../../../shared/services';
 import { extractErrorMessage } from '../../../shared/utils/errorHandler';
-import { API_ENDPOINTS } from '../utils';
+import { API_ENDPOINTS } from '../utils'; // Reverted to original import
+import { fetchInventory } from '../../inventory/services/inventoryService';
 
 // =============================================================================
 // API SERVICE METHODS
 // =============================================================================
 
 /**
- * Fetches products with pagination and search
+ * Fetches products with pagination and search, and enriches them with inventory stock.
  *
  * @param {Object} params - Query parameters
  * @param {number} params.page - Page number (1-based)
@@ -42,13 +43,23 @@ export const fetchProductsPaginated = async ({
       params.append('status', status);
     }
 
-    const response = await apiClient.get(`${API_ENDPOINTS.PRODUCTS}?${params}`);
+    const [productResponse, inventoryData] = await Promise.all([
+      apiClient.get(`${API_ENDPOINTS.PRODUCTS}?${params}`),
+      fetchInventory(),
+    ]);
 
-    if (response.data.success) {
-      const { data, meta } = response.data;
+    const stockMap = inventoryData.reduce((acc, item) => {
+      acc[item.sku] = item.currentStock;
+      return acc;
+    }, {});
 
-      // Transform backend response to frontend format
-      const transformedData = data.map(transformProductFromBackend);
+    if (productResponse.data.success) {
+      const { data, meta } = productResponse.data;
+
+      // Transform backend response to frontend format, enriching with stock data
+      const transformedData = data.map(product =>
+        transformProductFromBackend(product, stockMap)
+      );
 
       return {
         success: true,
@@ -75,7 +86,7 @@ export const fetchProductsPaginated = async ({
         hasNextPage: false,
         hasPrevPage: false,
       },
-      error: response.data.message || 'Failed to fetch products',
+      error: productResponse.data.message || 'Failed to fetch products',
     };
   } catch (error) {
     return {
@@ -95,16 +106,25 @@ export const fetchProductsPaginated = async ({
 };
 
 /**
- * Fetches all products (for dropdowns and validation)
+ * Fetches all products (for dropdowns and validation) and enriches them with inventory stock.
  * @returns {Promise<Object>}
  */
 export const fetchProducts = async () => {
   try {
-    // Fetch all products without pagination for dropdowns/validation
-    const response = await apiClient.get(`${API_ENDPOINTS.PRODUCTS}?per_page=1000`);
+    const [productResponse, inventoryData] = await Promise.all([
+      apiClient.get(`${API_ENDPOINTS.PRODUCTS}?per_page=1000`),
+      fetchInventory(),
+    ]);
 
-    if (response.data.success) {
-      const transformedData = response.data.data.map(transformProductFromBackend);
+    const stockMap = inventoryData.reduce((acc, item) => {
+      acc[item.sku] = item.currentStock;
+      return acc;
+    }, {});
+
+    if (productResponse.data.success) {
+      const transformedData = productResponse.data.data.map(product =>
+        transformProductFromBackend(product, stockMap)
+      );
       return {
         data: transformedData,
         success: true,
@@ -114,7 +134,7 @@ export const fetchProducts = async () => {
     return {
       data: [],
       success: false,
-      error: response.data.message || 'Failed to fetch products',
+      error: productResponse.data.message || 'Failed to fetch products',
     };
   } catch (error) {
     return {
@@ -126,17 +146,25 @@ export const fetchProducts = async () => {
 };
 
 /**
- * Fetches a single product by ID
+ * Fetches a single product by ID, enriched with inventory stock.
  * @param {string|number} id - Product ID
  * @returns {Promise<Object>}
  */
 export const fetchProductById = async (id) => {
   try {
-    const response = await apiClient.get(API_ENDPOINTS.PRODUCT_BY_ID(id));
+    const [productResponse, inventoryData] = await Promise.all([
+      apiClient.get(API_ENDPOINTS.PRODUCT_BY_ID(id)),
+      fetchInventory(),
+    ]);
 
-    if (response.data.success) {
+    const stockMap = inventoryData.reduce((acc, item) => {
+      acc[item.sku] = item.currentStock;
+      return acc;
+    }, {});
+
+    if (productResponse.data.success) {
       return {
-        data: transformProductFromBackend(response.data.data),
+        data: transformProductFromBackend(productResponse.data.data, stockMap),
         success: true,
       };
     }
@@ -144,7 +172,7 @@ export const fetchProductById = async (id) => {
     return {
       data: null,
       success: false,
-      error: response.data.message || 'Product not found',
+      error: productResponse.data.message || 'Product not found',
     };
   } catch (error) {
     return {
@@ -154,7 +182,6 @@ export const fetchProductById = async (id) => {
     };
   }
 };
-
 /**
  * Creates a new product
  * @param {Object} productData - Product data
@@ -253,6 +280,7 @@ export const deleteProduct = async (id) => {
   }
 };
 
+
 // =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
@@ -260,9 +288,10 @@ export const deleteProduct = async (id) => {
 /**
  * Transforms backend product data to frontend format
  * @param {Object} backendProduct - Product from backend
+ * @param {Object} stockMap - A map of SKU to current stock
  * @returns {Object} Transformed product
  */
-const transformProductFromBackend = (backendProduct) => ({
+const transformProductFromBackend = (backendProduct, stockMap) => ({
   id: backendProduct.id,
   sku: backendProduct.sku,
   name: backendProduct.name,
@@ -271,7 +300,7 @@ const transformProductFromBackend = (backendProduct) => ({
   costPrice: parseFloat(backendProduct.cost_price) || 0,
   sellingPrice: parseFloat(backendProduct.unit_price) || 0,
   reorderPoint: parseInt(backendProduct.reorder_level) || 0,
-  currentStock: parseInt(backendProduct.reorder_level) || 0, // Using reorder_level as currentStock for now
+  currentStock: stockMap[backendProduct.sku] || 0, // Use stock from inventory map
   description: backendProduct.description || '',
   isActive: backendProduct.is_active || true,
   stockStatus: 'in_stock', // TODO: Calculate based on inventory

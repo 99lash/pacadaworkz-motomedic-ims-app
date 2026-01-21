@@ -28,7 +28,7 @@ const ProductTable = ({ products, onEdit, onDelete, isDeleting }) => (
           Selling Price
         </TableHead>
         <TableHead id="col-stock" className="text-right">
-          Stock
+          Reorder Point
         </TableHead>
         <TableHead id="col-status" className="text-center">
           Stock Status

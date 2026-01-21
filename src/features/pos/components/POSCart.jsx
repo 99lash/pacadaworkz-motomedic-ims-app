@@ -37,20 +37,22 @@ const POSCart = ({
       ) : (
         cart.map((item) => (
           <div
-            key={item.product.id}
+            key={item.id}
             className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
           >
             <div className="flex items-start justify-between mb-2">
               <div className="flex-1">
                 <div className="text-gray-900 dark:text-gray-100 text-sm mb-1 font-medium">
-                  {item.product.name}
+                  {/* Using SKU as name for now, assuming API doesn't return name */}
+                  {item.product.sku}
                 </div>
                 <div className="text-gray-600 dark:text-gray-400 text-xs">
-                  {formatCurrency(item.product.sellingPrice)}
+                  {formatCurrency(item.unit_price)}
                 </div>
               </div>
+              {/* Pass cart item ID */}
               <button
-                onClick={() => onRemoveFromCart(item.product.id)}
+                onClick={() => onRemoveFromCart(item.id)}
                 className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                 aria-label="Remove item"
               >
@@ -59,6 +61,7 @@ const POSCart = ({
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
+                {/* Pass product ID for update */}
                 <button
                   onClick={() => onUpdateQuantity(item.product.id, item.quantity - 1)}
                   className="w-7 h-7 flex items-center justify-center bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-100 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300"
@@ -69,6 +72,7 @@ const POSCart = ({
                 <span className="w-8 text-center text-gray-900 dark:text-gray-100 font-medium">
                   {item.quantity}
                 </span>
+                {/* Pass product ID for update */}
                 <button
                   onClick={() => onUpdateQuantity(item.product.id, item.quantity + 1)}
                   className="w-7 h-7 flex items-center justify-center bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-100 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300"
@@ -78,7 +82,7 @@ const POSCart = ({
                 </button>
               </div>
               <div className="text-gray-900 dark:text-gray-100 font-semibold">
-                {formatCurrency(item.product.sellingPrice * item.quantity)}
+                {formatCurrency(item.unit_price * item.quantity)}
               </div>
             </div>
           </div>
@@ -135,4 +139,3 @@ POSCart.propTypes = {
 };
 
 export default POSCart;
-

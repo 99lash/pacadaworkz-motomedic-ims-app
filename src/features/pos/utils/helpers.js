@@ -18,9 +18,8 @@ export const filterProducts = (products, searchTerm) => {
   return products.filter(
     (product) =>
       product.currentStock > 0 &&
-      (product.name.toLowerCase().includes(term) ||
-        product.sku.toLowerCase().includes(term) ||
-        (product.barcode && product.barcode.includes(term)))
+      (product.sku.toLowerCase().includes(term) || // Changed from product.name to product.sku
+        product.barcode && product.barcode.includes(term))
   );
 };
 
@@ -30,7 +29,11 @@ export const filterProducts = (products, searchTerm) => {
  * @returns {number} Subtotal amount
  */
 export const calculateSubtotal = (cart) => {
-  return cart.reduce((sum, item) => sum + item.product.sellingPrice * item.quantity, 0);
+  return cart.reduce((sum, item) => {
+    const unitPrice = parseFloat(item.unit_price) || 0;
+    const quantity = parseFloat(item.quantity) || 0;
+    return sum + unitPrice * quantity;
+  }, 0);
 };
 
 /**
@@ -61,4 +64,3 @@ export const calculateChange = (amountPaid, total) => {
 export const formatCurrency = (amount) => {
   return `₱${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
-
