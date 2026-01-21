@@ -46,6 +46,8 @@ const POSPage = () => {
     closeCheckout,
   } = usePOS(user);
 
+  console.log('products', products);
+
   return (
     <div className="p-6 space-y-6">
       <POSHeader />
@@ -101,4 +103,3 @@ const POSPage = () => {
 POSPage.propTypes = {};
 
 export default POSPage;
-

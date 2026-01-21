@@ -266,14 +266,12 @@ const transformProductFromBackend = (backendProduct) => ({
   id: backendProduct.id,
   sku: backendProduct.sku,
   name: backendProduct.name,
-  categoryId: backendProduct.category_id, // Note: backend returns category_id in resource
-  brandId: backendProduct.brand_id, // Note: backend returns brand_id in resource
   categoryName: backendProduct.category,
   brandName: backendProduct.brand,
   costPrice: parseFloat(backendProduct.cost_price) || 0,
   sellingPrice: parseFloat(backendProduct.unit_price) || 0,
   reorderPoint: parseInt(backendProduct.reorder_level) || 0,
-  currentStock: parseInt(backendProduct.current_stock) || 0,
+  currentStock: parseInt(backendProduct.reorder_level) || 0, // Using reorder_level as currentStock for now
   description: backendProduct.description || '',
   isActive: backendProduct.is_active || true,
   stockStatus: 'in_stock', // TODO: Calculate based on inventory
