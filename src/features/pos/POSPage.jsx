@@ -1,5 +1,3 @@
-import React from 'react';
-import PropTypes from 'prop-types';
 import { useAuth } from '../auth';
 import { usePOS } from './hooks';
 import {
@@ -46,8 +44,8 @@ const POSPage = () => {
     closeCheckout,
   } = usePOS(user);
 
-  console.log('products', products);
-
+  // console.log('products', products);
+  
   return (
     <div className="p-6 space-y-6">
       <POSHeader />
@@ -67,7 +65,7 @@ const POSPage = () => {
             <POSProductGrid products={products} onAddToCart={addToCart} />
           )}
         </div>
-
+          
         {/* Cart Section */}
         <div className="space-y-4">
           <POSCart

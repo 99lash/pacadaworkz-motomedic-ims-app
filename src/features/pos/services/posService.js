@@ -105,4 +105,3 @@ const posService = {
 };
 
 export default posService;
-
