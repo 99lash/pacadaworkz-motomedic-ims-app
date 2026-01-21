@@ -44,12 +44,17 @@ export const usePOS = (user) => {
   // DATA LOADING
   // ---------------------------------------------------------------------------
 
-  const loadData = useCallback(() => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      setProducts(posService.fetchProducts());
-      setCategories(posService.fetchCategories());
-      setBrands(posService.fetchBrands());
+      const [productsData, categoriesData, brandsData] = await Promise.all([
+        posService.fetchProducts(),
+        posService.fetchCategories(),
+        posService.fetchBrands(),
+      ]);
+      setProducts(productsData);
+      setCategories(categoriesData);
+      setBrands(brandsData);
     } catch (error) {
       console.error('Error loading POS data:', error);
       toast.error('Failed to load products');
