@@ -19,7 +19,6 @@ const SuppliersPage = () => {
     formErrors,
     formMode,
     isFormOpen,
-    selectedSupplier,
 
     // Delete state
     isDeleteOpen,

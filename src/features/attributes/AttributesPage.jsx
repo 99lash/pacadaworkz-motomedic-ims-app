@@ -39,7 +39,6 @@ const AttributesPage = () => {
     formErrors,
     formMode,
     isFormOpen,
-    selectedAttribute,
 
     // Delete state
     isDeleteOpen,

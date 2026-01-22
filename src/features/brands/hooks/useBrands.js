@@ -41,7 +41,10 @@ export const useBrands = () => {
   }, []);
 
   useEffect(() => {
-    fetchBrandsPaginated(currentPage);
+    const loadBrands = async () => {
+      await fetchBrandsPaginated(currentPage);
+    };
+    loadBrands();
   }, [fetchBrandsPaginated, currentPage]);
 
   const handlePageChange = (newPage) => {

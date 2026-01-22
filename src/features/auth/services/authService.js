@@ -58,7 +58,9 @@ export const authService = {
               user: userData,
             },
           };
-        } catch (_userError) {
+        } 
+        // eslint-disable-next-line no-unused-vars
+        catch (_userError) {
           // If getting user fails, still return success with tokens
           // The user can be fetched later using getCurrentUser()
           return {
@@ -103,7 +105,9 @@ export const authService = {
           'Accept': 'application/json',
         },
       });
-    } catch (error) {
+    } 
+    // eslint-disable-next-line no-unused-vars
+    catch (error) {
       // Continue with logout even if API call fails
     } finally {
       // Always clear local storage

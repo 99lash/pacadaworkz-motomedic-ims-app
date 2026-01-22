@@ -10,7 +10,9 @@ const SidebarFooter = ({ user, expanded }) => {
     try {
       await logout();
       navigate('/login');
-    } catch (error) {
+    } 
+    // eslint-disable-next-line no-unused-vars
+    catch (error) {
       // Even if logout fails, navigate to login
       navigate('/login');
     }
