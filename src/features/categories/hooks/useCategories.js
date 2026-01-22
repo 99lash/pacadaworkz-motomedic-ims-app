@@ -163,10 +163,9 @@ export const useCategories = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   }, []);
 
   // Initial load and reload on pagination/search changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadCategories();
-  }, [currentPage, pageSize, debouncedSearchTerm]);
+  }, [currentPage, pageSize, debouncedSearchTerm, loadCategories]);
 
   // Load all categories once for validation
   useEffect(() => {
@@ -180,7 +179,7 @@ export const useCategories = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
       setIsEditDialogOpen(false);
       resetForm();
     };
-  }, []);
+  }, [resetForm]);
 
   // ---------------------------------------------------------------------------
   // FORM HANDLERS

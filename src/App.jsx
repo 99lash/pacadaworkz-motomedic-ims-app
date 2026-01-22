@@ -27,7 +27,7 @@ function App() {
   // Initialize auth state from storage on app load
   useEffect(() => {
     initializeAuth();
-  }, []); // ✅ Fixed: Empty dependency array since initializeAuth doesn't change
+  }, [initializeAuth]);
 
   // Handle logout events from apiClient interceptor
   useEffect(() => {

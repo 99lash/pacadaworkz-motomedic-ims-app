@@ -1,5 +1,5 @@
 import { useSelector, useDispatch } from 'react-redux';
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { 
   loginSuccess, 
   logout as logoutAction, 
@@ -89,7 +89,9 @@ export const useAuth = () => {
       await authService.logout();
       dispatch(logoutAction());
       return { success: true };
-    } catch (_error) {
+    } 
+    // eslint-disable-next-line no-unused-vars
+    catch (_error) {
       // Even if API call fails, clear local state
       dispatch(logoutAction());
       return { success: true };
@@ -126,7 +128,7 @@ export const useAuth = () => {
    * Initialize auth state from storage
    * @returns {boolean} True if auth state was restored
    */
-  const initializeAuth = () => {
+  const initializeAuth = useCallback(() => {
     const storedUser = authService.getStoredUser();
     const token = authService.getAccessToken();
 
@@ -141,7 +143,7 @@ export const useAuth = () => {
       return true;
     }
     return false;
-  };
+  }, [dispatch]);
 
   return {
     user,

@@ -21,7 +21,6 @@ const BrandsPage = () => {
     formErrors,
     formMode,
     isFormOpen,
-    selectedBrand,
 
     // Delete state
     isDeleteOpen,
