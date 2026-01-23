@@ -28,19 +28,23 @@ export const getDateRangeFilter = (dateRange, customStartDate = '', customEndDat
   switch (dateRange) {
     case DATE_RANGE_TYPES.DAILY:
       return { start: today, end: now };
-    case DATE_RANGE_TYPES.WEEKLY:
+    case DATE_RANGE_TYPES.WEEKLY: {
       const weekStart = new Date(today);
       weekStart.setDate(weekStart.getDate() - 7);
       return { start: weekStart, end: now };
-    case DATE_RANGE_TYPES.MONTHLY:
+    }
+    case DATE_RANGE_TYPES.MONTHLY: {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       return { start: monthStart, end: now };
-    case DATE_RANGE_TYPES.QUARTERLY:
+    }
+    case DATE_RANGE_TYPES.QUARTERLY: {
       const quarterStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
       return { start: quarterStart, end: now };
-    case DATE_RANGE_TYPES.YEARLY:
+    }
+    case DATE_RANGE_TYPES.YEARLY: {
       const yearStart = new Date(now.getFullYear(), 0, 1);
       return { start: yearStart, end: now };
+    }
     case DATE_RANGE_TYPES.CUSTOM:
       return {
         start: customStartDate ? new Date(customStartDate) : new Date(0),

@@ -10,11 +10,13 @@ import { toast } from 'sonner';
 import { posService } from '../services';
 import { calculateSubtotal, calculateTotal, calculateChange, filterProducts } from '../utils';
 import { UI_TEXT, PAYMENT_METHODS } from '../utils';
+import * as cartService from '../services/cartService.js';
+
 
 // Activity logger - optional utility
 // TODO: Implement activityLogger utility when available
 // For now, this is a no-op function
-const logActivity = (activity) => {
+const logActivity = () => {
   // Activity logging can be implemented here when the utility is available
   // Example: activityLogger.logActivity(activity);
 };
@@ -29,6 +31,7 @@ export const usePOS = (user) => {
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
   const [cart, setCart] = useState([]);
+  const [isCartLoading, setIsCartLoading] = useState(true);
 
   // UI state
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,17 +47,28 @@ export const usePOS = (user) => {
   // DATA LOADING
   // ---------------------------------------------------------------------------
 
-  const loadData = useCallback(() => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
+    setIsCartLoading(true);
     try {
-      setProducts(posService.fetchProducts());
-      setCategories(posService.fetchCategories());
-      setBrands(posService.fetchBrands());
+      const [productsData, categoriesData, brandsData, cartResponse] = await Promise.all([
+        posService.fetchProducts(),
+        posService.fetchCategories(),
+        posService.fetchBrands(),
+        cartService.getCart(),
+      ]);
+      setProducts(productsData);
+      setCategories(categoriesData);
+      setBrands(brandsData);
+      // Correctly access cart items: cartResponse.data.cart.cart_items
+      const newCart = cartResponse?.data?.cart?.cart_items || [];
+      setCart(newCart); 
     } catch (error) {
       console.error('Error loading POS data:', error);
-      toast.error('Failed to load products');
+      toast.error('Failed to load products or cart');
     } finally {
       setIsLoading(false);
+      setIsCartLoading(false);
     }
   }, []);
 
@@ -67,60 +81,80 @@ export const usePOS = (user) => {
   // ---------------------------------------------------------------------------
 
   const addToCart = useCallback(
-    (product) => {
-      if (product.currentStock <= 0) {
-        toast.error(UI_TEXT.OUT_OF_STOCK);
-        return;
-      }
+    async (product) => {
+      try {
+        const existingItem = cart.find((item) => item.product.id === product.id); // Check against product.id, which comes from the products list
+        const quantityToAdd = existingItem ? existingItem.quantity + 1 : 1;
 
-      const existingItem = cart.find((item) => item.product.id === product.id);
-
-      if (existingItem) {
-        if (existingItem.quantity >= product.currentStock) {
-          toast.error(UI_TEXT.EXCEED_STOCK);
-          return;
-        }
-        updateQuantity(product.id, existingItem.quantity + 1);
-      } else {
-        setCart([...cart, { product, quantity: 1 }]);
+        // The API's addToCart method expects the *total* quantity if the item is already in the cart.
+        // If the API only supports adding '1' at a time, this logic needs adjustment.
+        // Assuming `addToCart` in cartService handles the total quantity for a given product_id.
+        await cartService.addToCart(product.id, quantityToAdd);
         toast.success(UI_TEXT.ADDED_TO_CART);
+        await loadData(); // Refetch all data including the updated cart
+      } catch (error) {
+        console.error('Error adding to cart:', error);
+        toast.error(error.response?.data?.message || 'Failed to add item to cart');
       }
     },
-    [cart]
+    [cart, loadData]
   );
+
+  const removeFromCart = useCallback(async (cartItemId) => {
+    try {
+      await cartService.removeFromCart(cartItemId);
+      toast.success('Item removed from cart.');
+      await loadData(); // Refetch all data including the updated cart
+    } catch (error) {
+      console.error('Error removing from cart:', error);
+      toast.error(error.response?.data?.message || 'Failed to remove item from cart');
+    }
+  }, [loadData]);
+
 
   const updateQuantity = useCallback(
-    (productId, quantity) => {
-      const product = products.find((p) => p.id === productId);
-      if (!product) return;
+    async (productId, quantity) => {
+      // Find the cart item to get its cartItemId
+      // Assuming cart.items has an 'id' property for cart item ID and a 'product' object with 'id'
+      const cartItem = cart.find((item) => item.product.id === productId);
+      if (!cartItem) {
+        toast.error('Item not found in cart.');
+        return;
+      }
+      const cartItemId = cartItem.id; // Get the actual cart item ID
 
       if (quantity <= 0) {
-        removeFromCart(productId);
+        // If quantity is 0 or less, remove the item using the updated removeFromCart
+        await removeFromCart(cartItemId);
         return;
       }
 
-      if (quantity > product.currentStock) {
-        toast.error(UI_TEXT.EXCEED_STOCK);
-        return;
+      try {
+        await cartService.updateCartItem(cartItemId, quantity);
+        toast.success('Cart item quantity updated.');
+        await loadData(); // Refetch all data including the updated cart
+      } catch (error) {
+        console.error('Error updating cart item quantity:', error);
+        toast.error(error.response?.data?.message || 'Failed to update item quantity');
       }
-
-      setCart(
-        cart.map((item) => (item.product.id === productId ? { ...item, quantity } : item))
-      );
     },
-    [products, cart]
+    [cart, loadData, removeFromCart]
   );
 
-  const removeFromCart = useCallback((productId) => {
-    setCart(cart.filter((item) => item.product.id !== productId));
-  }, [cart]);
+  const clearCart = useCallback(async () => {
+    try {
+      await cartService.clearCart();
+      toast.success('Cart cleared.');
+      await loadData(); // Refetch to ensure local state is empty and matches backend
+      setDiscount(0);
+      setAmountPaid(0);
+      setShowCheckout(false);
+    } catch (error) {
+      console.error('Error clearing cart:', error);
+      toast.error(error.response?.data?.message || 'Failed to clear cart');
+    }
+  }, [loadData]);
 
-  const clearCart = useCallback(() => {
-    setCart([]);
-    setDiscount(0);
-    setAmountPaid(0);
-    setShowCheckout(false);
-  }, []);
 
   // ---------------------------------------------------------------------------
   // CALCULATIONS
@@ -150,79 +184,39 @@ export const usePOS = (user) => {
   // PAYMENT PROCESSING
   // ---------------------------------------------------------------------------
 
-  const processSale = useCallback(() => {
+  const processSale = useCallback(async () => {
     if (paymentMethod === PAYMENT_METHODS.CASH && amountPaid < total) {
       toast.error(UI_TEXT.INSUFFICIENT_PAYMENT);
       return;
     }
 
-    // Create transaction
-    const transactionItems = cart.map((item) => ({
-      productId: item.product.id,
-      productName: item.product.name,
-      sku: item.product.sku,
-      quantity: item.quantity,
-      price: item.product.sellingPrice,
-      total: item.product.sellingPrice * item.quantity,
-    }));
+    try {
+        // Call the new checkout API
+        await cartService.checkout(paymentMethod, amountPaid);
 
-    const transaction = {
-      id: crypto.randomUUID(),
-      type: 'sale',
-      date: new Date().toISOString(),
-      userId: user?.id || '',
-      userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
-      items: transactionItems,
-      subtotal,
-      discount,
-      total,
-      paymentMethod,
-      status: 'completed',
-      createdAt: new Date().toISOString(),
-    };
+        // Log activity (consider moving this to backend if not already there)
+        if (logActivity && user) {
+            logActivity({
+                userId: user.id,
+                userName: `${user.firstName} ${user.lastName}`,
+                action: 'sale',
+                module: 'pos',
+                details: `Processed sale of ₱${total.toLocaleString()} (${cart.length} items)`,
+            });
+        }
 
-    // Update stock
-    const updatedProducts = products.map((product) => {
-      const cartItem = cart.find((item) => item.product.id === product.id);
-      if (cartItem) {
-        return {
-          ...product,
-          currentStock: product.currentStock - cartItem.quantity,
-        };
-      }
-      return product;
-    });
-
-    // Save transaction
-    const transactionSaved = posService.saveTransaction(transaction);
-    if (!transactionSaved) {
-      toast.error('Failed to save transaction');
-      return;
+        toast.success(UI_TEXT.SALE_COMPLETED);
+        
+        // Reset local state after successful checkout
+        setDiscount(0);
+        setAmountPaid(0);
+        setShowCheckout(false);
+        await loadData(); // Refetch all data including an empty cart
+    } catch (error) {
+        console.error('Error processing sale:', error);
+        toast.error(error.response?.data?.message || 'Failed to process sale');
     }
-
-    // Save updated products
-    const productsUpdated = posService.updateProductsStock(updatedProducts);
-    if (!productsUpdated) {
-      toast.error('Failed to update product stock');
-      return;
-    }
-
-    setProducts(updatedProducts);
-
-    // Log activity
-    if (logActivity && user) {
-      logActivity({
-        userId: user.id,
-        userName: `${user.firstName} ${user.lastName}`,
-        action: 'sale',
-        module: 'pos',
-        details: `Processed sale of ₱${total.toLocaleString()} (${cart.length} items)`,
-      });
-    }
-
-    toast.success(UI_TEXT.SALE_COMPLETED);
-    clearCart();
-  }, [cart, subtotal, discount, total, paymentMethod, amountPaid, products, user, clearCart]);
+  }, [cart, total, paymentMethod, amountPaid, user, loadData, setDiscount, setAmountPaid, setShowCheckout]);
 
   // ---------------------------------------------------------------------------
   // HANDLERS
@@ -262,13 +256,14 @@ export const usePOS = (user) => {
   // RETURN
   // ---------------------------------------------------------------------------
 
-  return {
+  const returnedValue = {
     // Data
     products: filteredProducts,
     categories,
     brands,
     cart,
     isLoading,
+    isCartLoading, // Expose cart loading state
 
     // UI state
     searchTerm,
@@ -297,7 +292,8 @@ export const usePOS = (user) => {
     openCheckout,
     closeCheckout,
   };
+
+  return returnedValue;
 };
 
 export default usePOS;
-

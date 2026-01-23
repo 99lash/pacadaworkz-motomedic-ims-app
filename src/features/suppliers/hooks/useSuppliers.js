@@ -71,7 +71,7 @@ export const useSuppliers = () => {
     }
 
     if (formMode === 'create') {
-      const newSupplier = supplierService.createSupplier(formData);
+      supplierService.createSupplier(formData);
       setSuppliers(supplierService.fetchSuppliers());
       closeFormDialog();
       toast.success(UI_TEXT.TOAST_CREATE);

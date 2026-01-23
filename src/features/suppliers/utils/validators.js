@@ -4,7 +4,7 @@
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export const validateSupplierForm = (formData, suppliers = [], currentSupplierId = null) => {
+export const validateSupplierForm = (formData) => {
   const errors = {};
   const trimmedCompanyName = formData.companyName?.trim() || '';
   const trimmedEmail = formData.email?.trim() || '';

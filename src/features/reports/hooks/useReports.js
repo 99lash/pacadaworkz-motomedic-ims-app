@@ -271,26 +271,24 @@ export const useReports = () => {
   // PROFIT & LOSS DATA
   // ---------------------------------------------------------------------------
 
-  const profitLossData = useMemo(() => {
-    const filteredSales = transactions.filter(
-      (t) => t.type === 'sale' && t.status === 'completed' && filterByDate(t.date)
-    );
-    const filteredPurchases = purchaseOrders.filter((po) => filterByDate(po.createdAt));
-    const filteredAdjustments = stockAdjustments.filter((adj) => filterByDate(adj.createdAt));
-
-    const revenue = filteredSales.reduce((sum, t) => sum + t.total, 0);
-
-    // Calculate COGS from sales
-    const cogs = filteredSales.reduce((sum, t) => {
-      t.items.forEach((item) => {
-        const product = products.find((p) => p.id === item.productId);
-        if (product) {
-          sum += item.quantity * product.costPrice;
-        }
-      });
-      return sum;
-    }, 0);
-
+      const profitLossData = useMemo(() => {
+        const filteredSales = transactions.filter(
+          (t) => t.type === 'sale' && t.status === 'completed' && filterByDate(t.date)
+        );
+        const filteredAdjustments = stockAdjustments.filter((adj) => filterByDate(adj.createdAt));
+    
+        const revenue = filteredSales.reduce((sum, t) => sum + t.total, 0);
+    
+        // Calculate COGS from sales
+        const cogs = filteredSales.reduce((sum, t) => {
+          t.items.forEach((item) => {
+            const product = products.find((p) => p.id === item.productId);
+            if (product) {
+              sum += item.quantity * product.costPrice;
+            }
+          });
+          return sum;
+        }, 0);
     const grossProfit = revenue - cogs;
 
     // Calculate adjustment losses
@@ -315,7 +313,7 @@ export const useReports = () => {
       netProfit,
       profitMargin,
     };
-  }, [transactions, purchaseOrders, stockAdjustments, products, filterByDate]);
+  }, [transactions, stockAdjustments, products, filterByDate]);
 
   // ---------------------------------------------------------------------------
   // HANDLERS

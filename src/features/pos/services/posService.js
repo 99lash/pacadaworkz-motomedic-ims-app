@@ -1,11 +1,6 @@
-/**
- * POS Service
- * Handles all data operations for the POS feature
- * 
- * This service uses localStorage for persistence.
- * Replace with actual API calls when backend is ready.
- */
-
+import { productService } from '../../products/services';
+import { categoryService } from '../../categories/services';
+import { brandService } from '../../brands/services';
 import { STORAGE_KEYS } from '../utils';
 
 // =============================================================================
@@ -37,36 +32,42 @@ const saveToStorage = (key, data) => {
 
 /**
  * Fetches all products
- * @returns {Array} Products array
+ * @returns {Promise<Array>} Products array
  */
-export const fetchProducts = () => {
-  return readFromStorage(STORAGE_KEYS.PRODUCTS, []);
+export const fetchProducts = async () => {
+  const { data, success } = await productService.fetchProducts();
+  return success ? data : [];
 };
 
 /**
  * Fetches all categories
- * @returns {Array} Categories array
+ * @returns {Promise<Array>} Categories array
  */
-export const fetchCategories = () => {
-  return readFromStorage(STORAGE_KEYS.CATEGORIES, []);
+export const fetchCategories = async () => {
+  const { data, success } = await categoryService.fetchCategories();
+  return success ? data : [];
 };
 
 /**
  * Fetches all brands
- * @returns {Array} Brands array
+ * @returns {Promise<Array>} Brands array
  */
-export const fetchBrands = () => {
-  return readFromStorage(STORAGE_KEYS.BRANDS, []);
+export const fetchBrands = async () => {
+  const { data, success } = await brandService.fetchBrands();
+  return success ? data : [];
 };
 
 /**
  * Updates product stock after sale
  * @param {Array} products - Updated products array
- * @returns {boolean} Success status
+ * @returns {Promise<boolean>} Success status
  */
-export const updateProductsStock = (products) => {
+export const updateProductsStock = async (products) => {
   try {
-    saveToStorage(STORAGE_KEYS.PRODUCTS, products);
+    const updatePromises = products.map(product => 
+      productService.updateProduct(product.id, { current_stock: product.currentStock })
+    );
+    await Promise.all(updatePromises);
     return true;
   } catch (error) {
     console.error('Error updating products stock:', error);
@@ -104,4 +105,3 @@ const posService = {
 };
 
 export default posService;
-

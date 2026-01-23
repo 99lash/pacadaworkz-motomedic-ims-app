@@ -10,7 +10,7 @@ import logo from '../../../assets/logo-dark.png';
 
 const MainLayout = () => {
   const location = useLocation();
-  const { user, userRole } = useAuth();
+  useAuth();
   const filteredMenu = useFilteredMenu();
   const { isMobile, isMenuOpen, closeMenu, toggleMenu } = useMobileMenu();
 
