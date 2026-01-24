@@ -1,11 +1,4 @@
-/**
- * useAttributes Hook
- * 
- * Custom hook that encapsulates all attribute-related state management
- * and business logic. Separates concerns from UI components.
- */
-
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { attributeService } from '../services';
 import {
@@ -16,8 +9,9 @@ import {
 } from '../utils';
 
 export const useAttributes = () => {
-  const [attributes, setAttributes] = useState(() => attributeService.fetchAttributes());
-  const isLoading = false;
+  const [attributes, setAttributes] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Dialog states
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -29,6 +23,25 @@ export const useAttributes = () => {
   // Form state
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [formErrors, setFormErrors] = useState(INITIAL_FORM_ERRORS);
+
+  const fetchAllAttributes = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await attributeService.fetchAttributes();
+      setAttributes(data);
+    } catch (err) {
+      setError(err);
+      toast.error('Failed to fetch attributes.');
+      console.error('Failed to fetch attributes:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAllAttributes();
+  }, [fetchAllAttributes]);
 
   const resetForm = useCallback(() => {
     setFormData(INITIAL_FORM_STATE);
@@ -65,7 +78,7 @@ export const useAttributes = () => {
     }
   }, [formErrors]);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     const { isValid, errors } = validateAttributeForm(formData, attributes, selectedAttribute?.id);
     if (!isValid) {
       setFormErrors(errors);
@@ -73,21 +86,23 @@ export const useAttributes = () => {
       return false;
     }
 
-    if (formMode === 'create') {
-      attributeService.createAttribute(formData);
-      setAttributes(attributeService.fetchAttributes());
-      closeFormDialog();
-      toast.success(UI_TEXT.TOAST_CREATE);
-    } else {
-      const updated = attributeService.updateAttribute(selectedAttribute.id, formData);
-      if (updated) {
-        setAttributes(attributeService.fetchAttributes());
-        closeFormDialog();
+    try {
+      if (formMode === 'create') {
+        await attributeService.createAttribute(formData);
+        toast.success(UI_TEXT.TOAST_CREATE);
+      } else {
+        await attributeService.updateAttribute(selectedAttribute.id, formData);
         toast.success(UI_TEXT.TOAST_UPDATE);
       }
+      closeFormDialog();
+      fetchAllAttributes(); // Refresh the list
+      return true;
+    } catch (err) {
+      toast.error(`Failed to ${formMode} attribute.`);
+      console.error(`Failed to ${formMode} attribute:`, err);
+      return false;
     }
-    return true;
-  }, [formData, attributes, selectedAttribute, formMode, closeFormDialog]);
+  }, [formData, attributes, selectedAttribute, formMode, closeFormDialog, fetchAllAttributes]);
 
   const openDeleteDialog = useCallback((attribute) => {
     setAttributeToDelete(attribute);
@@ -99,22 +114,26 @@ export const useAttributes = () => {
     setIsDeleteOpen(false);
   }, []);
 
-  const handleDelete = useCallback(() => {
+  const handleDelete = useCallback(async () => {
     if (!attributeToDelete) return false;
-    const success = attributeService.deleteAttribute(attributeToDelete.id);
-    if (success) {
-      setAttributes(attributeService.fetchAttributes());
-      closeDeleteDialog();
+    try {
+      await attributeService.deleteAttribute(attributeToDelete.id);
       toast.success(UI_TEXT.TOAST_DELETE);
+      closeDeleteDialog();
+      fetchAllAttributes(); // Refresh the list
       return true;
+    } catch (err) {
+      toast.error('Failed to delete attribute.');
+      console.error('Failed to delete attribute:', err);
+      return false;
     }
-    return false;
-  }, [attributeToDelete, closeDeleteDialog]);
+  }, [attributeToDelete, closeDeleteDialog, fetchAllAttributes]);
 
   return {
     // Data
     attributes,
     isLoading,
+    error,
 
     // Form state
     formData,
