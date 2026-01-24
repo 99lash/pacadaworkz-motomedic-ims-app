@@ -1,38 +1,32 @@
-/**
- * Attribute Service
- * Handles all data operations for the attributes feature
- * 
- * This service uses localStorage for persistence.
- * Replace with actual API calls when backend is ready.
- */
+import apiClient from '../../../shared/services/apiClient';
 
-const ATTRIBUTE_STORAGE_KEY = 'motomedic_attributes';
+const ATTRIBUTE_CACHE_KEY = 'motomedic_attributes_cache';
+const ATTRIBUTE_API_ENDPOINT = '/attributes';
 
 // =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
 
-const readFromStorage = (key, fallback = []) => {
-  if (typeof window === 'undefined') return fallback;
+const getCachedAttributes = () => {
   try {
-    const stored = window.localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : fallback;
-  } catch {
-    return fallback;
-  }
-};
-
-const saveToStorage = (key, data) => {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(key, JSON.stringify(data));
+    const cached = sessionStorage.getItem(ATTRIBUTE_CACHE_KEY);
+    return cached ? JSON.parse(cached) : null;
   } catch (error) {
-    console.error('Error saving to storage:', error);
+    console.error('Error reading from attribute cache:', error);
+    return null;
   }
 };
 
-const generateAttributeId = () => {
-  return crypto.randomUUID ? crypto.randomUUID() : `attr_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+const cacheAttributes = (data) => {
+  try {
+    sessionStorage.setItem(ATTRIBUTE_CACHE_KEY, JSON.stringify(data));
+  } catch (error) {
+    console.error('Error writing to attribute cache:', error);
+  }
+};
+
+const clearAttributeCache = () => {
+  sessionStorage.removeItem(ATTRIBUTE_CACHE_KEY);
 };
 
 // =============================================================================
@@ -40,87 +34,64 @@ const generateAttributeId = () => {
 // =============================================================================
 
 /**
- * Fetches all attributes
- * @returns {Array} Attributes array
+ * Fetches all attributes, using cache if available.
+ * @param {boolean} forceRefresh - Ignore cache and fetch from API
+ * @returns {Promise<Array>} Attributes array
  */
-export const fetchAttributes = () => {
-  return readFromStorage(ATTRIBUTE_STORAGE_KEY, []);
+export const fetchAttributes = async (forceRefresh = false) => {
+  const cached = getCachedAttributes();
+  if (cached && !forceRefresh) {
+    return cached;
+  }
+  
+  const response = await apiClient.get(ATTRIBUTE_API_ENDPOINT);
+  const attributes = response.data.data; // The API wraps data in a 'data' property
+  cacheAttributes(attributes);
+  return attributes;
 };
 
 /**
- * Fetches a single attribute by ID
+ * Fetches a single attribute by ID from the cache.
+ * Note: For real-time data, you might want a dedicated API call.
  * @param {string} id - Attribute ID
- * @returns {Object|null} Attribute object or null
+ * @returns {Promise<Object|null>} Attribute object or null
  */
-export const fetchAttributeById = (id) => {
-  const attributes = fetchAttributes();
+export const fetchAttributeById = async (id) => {
+  const attributes = await fetchAttributes();
   return attributes.find(attribute => attribute.id === id) || null;
 };
 
 /**
- * Creates a new attribute
- * @param {Object} attributeData - Attribute data
- * @returns {Object} Created attribute
+ * Creates a new attribute.
+ * @param {Object} attributeData - { name, description }
+ * @returns {Promise<Object>} Created attribute
  */
-export const createAttribute = (attributeData) => {
-  const attributes = fetchAttributes();
-  const newAttribute = {
-    id: generateAttributeId(),
-    name: attributeData.name?.trim() || '',
-    description: attributeData.description?.trim() || '',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-  
-  const updatedAttributes = [...attributes, newAttribute];
-  saveToStorage(ATTRIBUTE_STORAGE_KEY, updatedAttributes);
-  return newAttribute;
+export const createAttribute = async (attributeData) => {
+  const response = await apiClient.post(ATTRIBUTE_API_ENDPOINT, attributeData);
+  clearAttributeCache(); // Invalidate cache
+  return response.data.data;
 };
 
 /**
- * Updates an existing attribute
+ * Updates an existing attribute.
  * @param {string} id - Attribute ID
- * @param {Object} attributeData - Updated attribute data
- * @returns {Object|null} Updated attribute or null
+ * @param {Object} attributeData - { name, description }
+ * @returns {Promise<Object>} Updated attribute
  */
-export const updateAttribute = (id, attributeData) => {
-  const attributes = fetchAttributes();
-  const index = attributes.findIndex(attribute => attribute.id === id);
-  
-  if (index === -1) return null;
-  
-  const updatedAttribute = {
-    ...attributes[index],
-    name: attributeData.name?.trim() || '',
-    description: attributeData.description?.trim() || '',
-    updatedAt: new Date().toISOString(),
-  };
-  
-  const updatedAttributes = [
-    ...attributes.slice(0, index),
-    updatedAttribute,
-    ...attributes.slice(index + 1),
-  ];
-  
-  saveToStorage(ATTRIBUTE_STORAGE_KEY, updatedAttributes);
-  return updatedAttribute;
+export const updateAttribute = async (id, attributeData) => {
+  const response = await apiClient.put(`${ATTRIBUTE_API_ENDPOINT}/${id}`, attributeData);
+  clearAttributeCache(); // Invalidate cache
+  return response.data.data;
 };
 
 /**
- * Deletes an attribute
+ * Deletes an attribute.
  * @param {string} id - Attribute ID
- * @returns {boolean} Success status
+ * @returns {Promise<void>}
  */
-export const deleteAttribute = (id) => {
-  const attributes = fetchAttributes();
-  const filteredAttributes = attributes.filter(attribute => attribute.id !== id);
-  
-  if (filteredAttributes.length === attributes.length) {
-    return false; // Attribute not found
-  }
-  
-  saveToStorage(ATTRIBUTE_STORAGE_KEY, filteredAttributes);
-  return true;
+export const deleteAttribute = async (id) => {
+  await apiClient.delete(`${ATTRIBUTE_API_ENDPOINT}/${id}`);
+  clearAttributeCache(); // Invalidate cache
 };
 
 // =============================================================================
