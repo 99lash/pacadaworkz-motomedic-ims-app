@@ -1,7 +1,7 @@
 import apiClient from '../../../shared/services/apiClient';
 
 const ATTRIBUTE_CACHE_KEY = 'motomedic_attributes_cache';
-const ATTRIBUTE_API_ENDPOINT = '/attributes';
+const ATTRIBUTE_API_ENDPOINT = '/v1/attributes';
 
 // =============================================================================
 // HELPER FUNCTIONS
