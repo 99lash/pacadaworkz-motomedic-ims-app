@@ -4,6 +4,19 @@ import { brandService } from '../../brands/services';
 import { STORAGE_KEYS } from '../utils';
 
 // =============================================================================
+// CACHE
+// =============================================================================
+
+const cache = {
+  products: null,
+  categories: null,
+  brands: null,
+  last_update: null,
+};
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
 
@@ -31,30 +44,70 @@ const saveToStorage = (key, data) => {
 // =============================================================================
 
 /**
- * Fetches all products
+ * Invalidates the cache
+ */
+export const invalidateCache = () => {
+  cache.products = null;
+  cache.categories = null;
+  cache.brands = null;
+  cache.last_update = null;
+};
+
+/**
+ * Fetches all products, using cache if available
  * @returns {Promise<Array>} Products array
  */
 export const fetchProducts = async () => {
+  const now = Date.now();
+  if (cache.products && cache.last_update && now - cache.last_update < CACHE_DURATION) {
+    return cache.products;
+  }
+
   const { data, success } = await productService.fetchProducts();
-  return success ? data : [];
+  if (success) {
+    cache.products = data;
+    cache.last_update = now;
+    return data;
+  }
+  return [];
 };
 
 /**
- * Fetches all categories
+ * Fetches all categories, using cache if available
  * @returns {Promise<Array>} Categories array
  */
 export const fetchCategories = async () => {
+  const now = Date.now();
+  if (cache.categories && cache.last_update && now - cache.last_update < CACHE_DURATION) {
+    return cache.categories;
+  }
+
   const { data, success } = await categoryService.fetchCategories();
-  return success ? data : [];
+  if (success) {
+    cache.categories = data;
+    cache.last_update = now;
+    return data;
+  }
+  return [];
 };
 
 /**
- * Fetches all brands
+ * Fetches all brands, using cache if available
  * @returns {Promise<Array>} Brands array
  */
 export const fetchBrands = async () => {
+  const now = Date.now();
+  if (cache.brands && cache.last_update && now - cache.last_update < CACHE_DURATION) {
+    return cache.brands;
+  }
+
   const { data, success } = await brandService.fetchBrands();
-  return success ? data : [];
+  if (success) {
+    cache.brands = data;
+    cache.last_update = now;
+    return data;
+  }
+  return [];
 };
 
 /**
@@ -68,6 +121,7 @@ export const updateProductsStock = async (products) => {
       productService.updateProduct(product.id, { current_stock: product.currentStock })
     );
     await Promise.all(updatePromises);
+    invalidateCache(); // Invalidate cache after stock update
     return true;
   } catch (error) {
     console.error('Error updating products stock:', error);
@@ -102,6 +156,7 @@ const posService = {
   fetchBrands,
   updateProductsStock,
   saveTransaction,
+  invalidateCache,
 };
 
 export default posService;
