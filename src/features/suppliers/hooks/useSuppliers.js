@@ -95,12 +95,14 @@ export const useSuppliers = () => {
     }
 
     setIsSaving(true);
-    const serviceAction = isEditing
-      ? supplierService.updateSupplier
-      : supplierService.createSupplier;
-    const id = isEditing ? selectedSupplier.id : null;
 
-    const response = await serviceAction(id, formData);
+    let response;
+    if (isEditing) {
+      response = await supplierService.updateSupplier(selectedSupplier.id, formData);
+    } else {
+      response = await supplierService.createSupplier(formData);
+    }
+
     setIsSaving(false);
 
     if (response.success) {

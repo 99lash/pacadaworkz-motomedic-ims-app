@@ -32,7 +32,7 @@ const transformSupplierFromBackend = (supplier) => ({
 const transformSupplierToBackend = (supplier) => ({
   name: supplier.companyName,
   contact_person: supplier.contactPerson,
-  contact_number: supplier.phone,
+  phone: supplier.phone,
   email: supplier.email,
   address: supplier.address,
   payment_terms: supplier.paymentTerms,
