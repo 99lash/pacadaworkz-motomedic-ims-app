@@ -17,7 +17,8 @@ const SuppliersPage = () => {
     // Form state
     formData,
     formErrors,
-    formMode,
+    isEditing,
+    isSaving,
     isFormOpen,
 
     // Delete state
@@ -55,7 +56,8 @@ const SuppliersPage = () => {
 
       <SupplierFormDialog
         isOpen={isFormOpen}
-        mode={formMode}
+        isEditing={isEditing}
+        isSaving={isSaving}
         formData={formData}
         formErrors={formErrors}
         onClose={closeFormDialog}

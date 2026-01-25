@@ -15,18 +15,26 @@ import { UI_TEXT } from '../utils';
 
 const SupplierFormDialog = ({
   isOpen,
-  mode,
+  isEditing,
+  isSaving,
   formData,
   formErrors,
   onClose,
   onSubmit,
   onFieldChange,
 }) => {
-  const title = mode === 'create' ? UI_TEXT.FORM_TITLE_CREATE : UI_TEXT.FORM_TITLE_EDIT;
+  const title = isEditing ? UI_TEXT.FORM_TITLE_EDIT : UI_TEXT.FORM_TITLE_CREATE;
+  const submitText = isEditing ? 'Update' : 'Create';
 
   const handleOpenChange = (open) => {
-    if (!open) {
+    if (!open && !isSaving) {
       onClose();
+    }
+  };
+
+  const handleInteractOutside = (event) => {
+    if (isSaving) {
+      event.preventDefault();
     }
   };
 
@@ -36,7 +44,10 @@ const SupplierFormDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent
+        className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+        onInteractOutside={handleInteractOutside}
+      >
         <DialogHeader className="pb-4 border-b border-gray-200 dark:border-gray-800">
           <DialogTitle className="text-xl text-gray-900 dark:text-gray-100">{title}</DialogTitle>
           <DialogDescription className="mt-1.5 text-gray-600 dark:text-gray-400">
@@ -58,6 +69,7 @@ const SupplierFormDialog = ({
                   placeholder={UI_TEXT.PLACEHOLDER_COMPANY_NAME}
                   aria-invalid={Boolean(formErrors.companyName)}
                   className={formErrors.companyName ? 'border-destructive' : ''}
+                  disabled={isSaving}
                 />
                 {formErrors.companyName && (
                   <p className="text-sm text-destructive mt-1.5" role="alert">
@@ -75,6 +87,7 @@ const SupplierFormDialog = ({
                   value={formData.contactPerson}
                   onChange={(e) => onFieldChange('contactPerson', e.target.value)}
                   placeholder={UI_TEXT.PLACEHOLDER_CONTACT_PERSON}
+                  disabled={isSaving}
                 />
               </div>
             </div>
@@ -90,6 +103,7 @@ const SupplierFormDialog = ({
                   value={formData.phone}
                   onChange={(e) => onFieldChange('phone', e.target.value)}
                   placeholder={UI_TEXT.PLACEHOLDER_PHONE}
+                  disabled={isSaving}
                 />
               </div>
 
@@ -105,6 +119,7 @@ const SupplierFormDialog = ({
                   placeholder={UI_TEXT.PLACEHOLDER_EMAIL}
                   aria-invalid={Boolean(formErrors.email)}
                   className={formErrors.email ? 'border-destructive' : ''}
+                  disabled={isSaving}
                 />
                 {formErrors.email && (
                   <p className="text-sm text-destructive mt-1.5" role="alert">
@@ -123,6 +138,7 @@ const SupplierFormDialog = ({
                 value={formData.address}
                 onChange={(e) => onFieldChange('address', e.target.value)}
                 placeholder={UI_TEXT.PLACEHOLDER_ADDRESS}
+                disabled={isSaving}
               />
             </div>
 
@@ -135,6 +151,7 @@ const SupplierFormDialog = ({
                 value={formData.paymentTerms}
                 onChange={(e) => onFieldChange('paymentTerms', e.target.value)}
                 placeholder={UI_TEXT.PLACEHOLDER_PAYMENT_TERMS}
+                disabled={isSaving}
               />
             </div>
           </div>
@@ -149,6 +166,7 @@ const SupplierFormDialog = ({
               onClose();
             }}
             className="w-full sm:w-auto"
+            disabled={isSaving}
           >
             Cancel
           </Button>
@@ -156,8 +174,9 @@ const SupplierFormDialog = ({
             type="button"
             onClick={onSubmit}
             className="w-full sm:w-auto"
+            disabled={isSaving}
           >
-            {mode === 'create' ? 'Create' : 'Update'}
+            {isSaving ? 'Saving...' : submitText}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -167,7 +186,8 @@ const SupplierFormDialog = ({
 
 SupplierFormDialog.propTypes = {
   isOpen: PropTypes.bool.isRequired,
-  mode: PropTypes.oneOf(['create', 'edit']).isRequired,
+  isEditing: PropTypes.bool.isRequired,
+  isSaving: PropTypes.bool.isRequired,
   formData: PropTypes.shape({
     companyName: PropTypes.string.isRequired,
     contactPerson: PropTypes.string,

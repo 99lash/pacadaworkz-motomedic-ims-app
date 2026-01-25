@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supplierService } from '../services';
 import {
@@ -9,19 +9,40 @@ import {
 } from '../utils';
 
 export const useSuppliers = () => {
-  const [suppliers, setSuppliers] = useState(() => supplierService.fetchSuppliers());
-  const isLoading = false;
+  const [suppliers, setSuppliers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Dialog states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [formMode, setFormMode] = useState('create');
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [supplierToDelete, setSupplierToDelete] = useState(null);
 
   // Form state
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [formErrors, setFormErrors] = useState(INITIAL_FORM_ERRORS);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const isEditing = !!selectedSupplier;
+
+  const loadSuppliers = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    const response = await supplierService.fetchSuppliers();
+    if (response.success) {
+      setSuppliers(response.data);
+    } else {
+      setError(response.error);
+      toast.error(response.error);
+    }
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadSuppliers();
+  }, [loadSuppliers]);
 
   const resetForm = useCallback(() => {
     setFormData(INITIAL_FORM_STATE);
@@ -30,25 +51,28 @@ export const useSuppliers = () => {
   }, []);
 
   const openCreateDialog = useCallback(() => {
-    setFormMode('create');
     resetForm();
     setIsFormOpen(true);
   }, [resetForm]);
 
-  const openEditDialog = useCallback((supplier) => {
-    setFormMode('edit');
-    setSelectedSupplier(supplier);
-    setFormData({
-      companyName: supplier.companyName || '',
-      contactPerson: supplier.contactPerson || '',
-      phone: supplier.phone || '',
-      email: supplier.email || '',
-      address: supplier.address || '',
-      paymentTerms: supplier.paymentTerms || '',
-    });
-    setFormErrors(INITIAL_FORM_ERRORS);
-    setIsFormOpen(true);
-  }, []);
+  const openEditDialog = useCallback(async (supplier) => {
+    resetForm();
+    const response = await supplierService.fetchSupplierById(supplier.id);
+    if (response.success) {
+      setSelectedSupplier(response.data);
+      setFormData({
+        companyName: response.data.companyName || '',
+        contactPerson: response.data.contactPerson || '',
+        phone: response.data.phone || '',
+        email: response.data.email || '',
+        address: response.data.address || '',
+        paymentTerms: response.data.paymentTerms || '',
+      });
+      setIsFormOpen(true);
+    } else {
+      toast.error(response.error);
+    }
+  }, [resetForm]);
 
   const closeFormDialog = useCallback(() => {
     setIsFormOpen(false);
@@ -62,29 +86,33 @@ export const useSuppliers = () => {
     }
   }, [formErrors]);
 
-  const handleSubmit = useCallback(() => {
-    const { isValid, errors } = validateSupplierForm(formData, suppliers, selectedSupplier?.id);
+  const handleSubmit = useCallback(async () => {
+    const { isValid, errors } = validateSupplierForm(formData);
     if (!isValid) {
       setFormErrors(errors);
       toast.error(UI_TEXT.TOAST_FORM_ERROR);
       return false;
     }
 
-    if (formMode === 'create') {
-      supplierService.createSupplier(formData);
-      setSuppliers(supplierService.fetchSuppliers());
+    setIsSaving(true);
+    const serviceAction = isEditing
+      ? supplierService.updateSupplier
+      : supplierService.createSupplier;
+    const id = isEditing ? selectedSupplier.id : null;
+
+    const response = await serviceAction(id, formData);
+    setIsSaving(false);
+
+    if (response.success) {
+      toast.success(isEditing ? UI_TEXT.TOAST_UPDATE : UI_TEXT.TOAST_CREATE);
       closeFormDialog();
-      toast.success(UI_TEXT.TOAST_CREATE);
-    } else {
-      const updated = supplierService.updateSupplier(selectedSupplier.id, formData);
-      if (updated) {
-        setSuppliers(supplierService.fetchSuppliers());
-        closeFormDialog();
-        toast.success(UI_TEXT.TOAST_UPDATE);
-      }
+      await loadSuppliers();
+      return true;
     }
-    return true;
-  }, [formData, suppliers, selectedSupplier, formMode, closeFormDialog]);
+
+    toast.error(response.error);
+    return false;
+  }, [formData, isEditing, selectedSupplier, closeFormDialog, loadSuppliers]);
 
   const openDeleteDialog = useCallback((supplier) => {
     setSupplierToDelete(supplier);
@@ -96,27 +124,30 @@ export const useSuppliers = () => {
     setIsDeleteOpen(false);
   }, []);
 
-  const handleDelete = useCallback(() => {
+  const handleDelete = useCallback(async () => {
     if (!supplierToDelete) return false;
-    const success = supplierService.deleteSupplier(supplierToDelete.id);
-    if (success) {
-      setSuppliers(supplierService.fetchSuppliers());
-      closeDeleteDialog();
+    const response = await supplierService.deleteSupplier(supplierToDelete.id);
+    if (response.success) {
       toast.success(UI_TEXT.TOAST_DELETE);
+      closeDeleteDialog();
+      await loadSuppliers();
       return true;
     }
+    toast.error(response.error);
     return false;
-  }, [supplierToDelete, closeDeleteDialog]);
+  }, [supplierToDelete, closeDeleteDialog, loadSuppliers]);
 
   return {
     // Data
     suppliers,
     isLoading,
+    error,
 
     // Form state
     formData,
     formErrors,
-    formMode,
+    isEditing,
+    isSaving,
     isFormOpen,
     selectedSupplier,
 
