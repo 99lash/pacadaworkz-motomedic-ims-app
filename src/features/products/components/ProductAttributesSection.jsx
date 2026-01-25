@@ -33,10 +33,14 @@ const ProductAttributesSection = ({
 
   // Load available attributes
   useEffect(() => {
-    const loadAttributes = () => {
+    const loadAttributes = async () => {
       try {
-        const attrs = attributeService.fetchAttributes();
-        setAvailableAttributes(attrs);
+        const attrs = await attributeService.fetchAttributes();
+        if (Array.isArray(attrs)) {
+          setAvailableAttributes(attrs);
+        } else {
+          setAvailableAttributes([]);
+        }
       } catch (error) {
         console.error('Error loading attributes:', error);
         setAvailableAttributes([]);
