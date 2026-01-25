@@ -1,134 +1,126 @@
-/**
- * Supplier Service
- * Handles all data operations for the suppliers feature
- * 
- * This service uses localStorage for persistence.
- * Replace with actual API calls when backend is ready.
- */
+import { apiClient } from '../../../shared/services';
+import { extractErrorMessage } from '../../../shared/utils/errorHandler';
+import { API_ENDPOINTS } from '../utils';
 
-const SUPPLIER_STORAGE_KEY = 'motomedic_suppliers';
+// =============================================================================
+// CACHE
+// =============================================================================
+
+const cache = {
+  suppliers: null,
+  last_update: null,
+};
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
 
-const readFromStorage = (key, fallback = []) => {
-  if (typeof window === 'undefined') return fallback;
-  try {
-    const stored = window.localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : fallback;
-  } catch {
-    return fallback;
-  }
-};
+const transformSupplierFromBackend = (supplier) => ({
+  id: supplier.id,
+  companyName: supplier.name,
+  contactPerson: supplier.contact_person,
+  phone: supplier.phone,
+  email: supplier.email,
+  address: supplier.address,
+  paymentTerms: supplier.payment_terms,
+  createdAt: supplier.created_at,
+  updatedAt: supplier.updated_at,
+});
 
-const saveToStorage = (key, data) => {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(key, JSON.stringify(data));
-  } catch (error) {
-    console.error('Error saving to storage:', error);
-  }
-};
-
-const generateSupplierId = () => {
-  return crypto.randomUUID ? crypto.randomUUID() : `supplier_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-};
+const transformSupplierToBackend = (supplier) => ({
+  name: supplier.companyName,
+  contact_person: supplier.contactPerson,
+  phone: supplier.phone,
+  email: supplier.email,
+  address: supplier.address,
+  payment_terms: supplier.paymentTerms,
+});
 
 // =============================================================================
 // SERVICE METHODS
 // =============================================================================
 
-/**
- * Fetches all suppliers
- * @returns {Array} Suppliers array
- */
-export const fetchSuppliers = () => {
-  return readFromStorage(SUPPLIER_STORAGE_KEY, []);
+export const invalidateCache = () => {
+  cache.suppliers = null;
+  cache.last_update = null;
 };
 
-/**
- * Fetches a single supplier by ID
- * @param {string} id - Supplier ID
- * @returns {Object|null} Supplier object or null
- */
-export const fetchSupplierById = (id) => {
-  const suppliers = fetchSuppliers();
-  return suppliers.find(supplier => supplier.id === id) || null;
-};
-
-/**
- * Creates a new supplier
- * @param {Object} supplierData - Supplier data
- * @returns {Object} Created supplier
- */
-export const createSupplier = (supplierData) => {
-  const suppliers = fetchSuppliers();
-  const newSupplier = {
-    id: generateSupplierId(),
-    companyName: supplierData.companyName?.trim() || '',
-    contactPerson: supplierData.contactPerson?.trim() || '',
-    phone: supplierData.phone?.trim() || '',
-    email: supplierData.email?.trim() || '',
-    address: supplierData.address?.trim() || '',
-    paymentTerms: supplierData.paymentTerms?.trim() || '',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-  
-  const updatedSuppliers = [...suppliers, newSupplier];
-  saveToStorage(SUPPLIER_STORAGE_KEY, updatedSuppliers);
-  return newSupplier;
-};
-
-/**
- * Updates an existing supplier
- * @param {string} id - Supplier ID
- * @param {Object} supplierData - Updated supplier data
- * @returns {Object|null} Updated supplier or null
- */
-export const updateSupplier = (id, supplierData) => {
-  const suppliers = fetchSuppliers();
-  const index = suppliers.findIndex(supplier => supplier.id === id);
-  
-  if (index === -1) return null;
-  
-  const updatedSupplier = {
-    ...suppliers[index],
-    companyName: supplierData.companyName?.trim() || '',
-    contactPerson: supplierData.contactPerson?.trim() || '',
-    phone: supplierData.phone?.trim() || '',
-    email: supplierData.email?.trim() || '',
-    address: supplierData.address?.trim() || '',
-    paymentTerms: supplierData.paymentTerms?.trim() || '',
-    updatedAt: new Date().toISOString(),
-  };
-  
-  const updatedSuppliers = [
-    ...suppliers.slice(0, index),
-    updatedSupplier,
-    ...suppliers.slice(index + 1),
-  ];
-  
-  saveToStorage(SUPPLIER_STORAGE_KEY, updatedSuppliers);
-  return updatedSupplier;
-};
-
-/**
- * Deletes a supplier
- * @param {string} id - Supplier ID
- * @returns {boolean} Success status
- */
-export const deleteSupplier = (id) => {
-  const suppliers = fetchSuppliers();
-  const filteredSuppliers = suppliers.filter(supplier => supplier.id !== id);
-  
-  if (filteredSuppliers.length === suppliers.length) {
-    return false; // Supplier not found
+export const fetchSuppliers = async () => {
+  const now = Date.now();
+  if (cache.suppliers && cache.last_update && now - cache.last_update < CACHE_DURATION) {
+    return { success: true, data: cache.suppliers };
   }
-  
-  saveToStorage(SUPPLIER_STORAGE_KEY, filteredSuppliers);
-  return true;
+
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.SUPPLIERS);
+    if (response.data.success) {
+      const suppliers = response.data.data.map(transformSupplierFromBackend);
+      cache.suppliers = suppliers;
+      cache.last_update = now;
+      return { success: true, data: suppliers };
+    }
+    return { success: false, error: response.data.message || 'Failed to fetch suppliers' };
+  } catch (error) {
+    return { success: false, error: extractErrorMessage(error, 'Failed to fetch suppliers') };
+  }
+};
+
+export const fetchSupplierById = async (id) => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.SUPPLIER_BY_ID(id));
+    if (response.data.success) {
+      const supplier = transformSupplierFromBackend(response.data.data);
+      return { success: true, data: supplier };
+    }
+    return { success: false, error: response.data.message || 'Supplier not found' };
+  } catch (error) {
+    return { success: false, error: extractErrorMessage(error, 'Failed to fetch supplier') };
+  }
+};
+
+export const createSupplier = async (supplierData) => {
+  try {
+    const payload = transformSupplierToBackend(supplierData);
+    const response = await apiClient.post(API_ENDPOINTS.SUPPLIERS, payload);
+    if (response.data.success) {
+      invalidateCache();
+      const supplier = transformSupplierFromBackend(response.data.data);
+      return { success: true, data: supplier };
+    }
+    return { success: false, error: response.data.message || 'Failed to create supplier' };
+  } catch (error) {
+    return { success: false, error: extractErrorMessage(error, 'Failed to create supplier') };
+  }
+};
+
+export const updateSupplier = async (id, supplierData) => {
+  try {
+    const payload = transformSupplierToBackend(supplierData);
+    const response = await apiClient.patch(API_ENDPOINTS.SUPPLIER_BY_ID(id), payload);
+    if (response.data.success) {
+      invalidateCache();
+      const supplier = transformSupplierFromBackend(response.data.data);
+      return { success: true, data: supplier };
+    }
+    return { success: false, error: response.data.message || 'Failed to update supplier' };
+  } catch (error) {
+    return { success: false, error: extractErrorMessage(error, 'Failed to update supplier') };
+  }
+};
+
+export const deleteSupplier = async (id) => {
+  try {
+    const response = await apiClient.delete(API_ENDPOINTS.SUPPLIER_BY_ID(id));
+    if (response.data.success) {
+      invalidateCache();
+      return { success: true };
+    }
+    return { success: false, error: response.data.message || 'Failed to delete supplier' };
+  } catch (error) {
+    return { success: false, error: extractErrorMessage(error, 'Failed to delete supplier') };
+  }
 };
 
 // =============================================================================
@@ -141,7 +133,7 @@ const supplierService = {
   createSupplier,
   updateSupplier,
   deleteSupplier,
+  invalidateCache,
 };
 
 export default supplierService;
-

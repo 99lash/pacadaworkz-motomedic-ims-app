@@ -14,11 +14,11 @@ const SupplierTable = ({ suppliers, onEdit, onDelete }) => {
       <Table>
         <TableHeader>
           <TableRow className="bg-gray-50 dark:bg-gray-900/50">
-            <TableHead className="text-gray-700 dark:text-gray-300">Company</TableHead>
+            <TableHead className="text-gray-700 dark:text-gray-300">Name</TableHead>
             <TableHead className="text-gray-700 dark:text-gray-300">Contact Person</TableHead>
             <TableHead className="text-gray-700 dark:text-gray-300">Phone</TableHead>
             <TableHead className="text-gray-700 dark:text-gray-300">Email</TableHead>
-            <TableHead className="text-gray-700 dark:text-gray-300">Payment Terms</TableHead>
+            <TableHead className="text-gray-700 dark:text-gray-300">Address</TableHead>
             <TableHead className="text-gray-700 dark:text-gray-300 text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -41,7 +41,7 @@ const SupplierTable = ({ suppliers, onEdit, onDelete }) => {
                 {supplier.email || '-'}
               </TableCell>
               <TableCell className="text-gray-600 dark:text-gray-400">
-                {supplier.paymentTerms || '-'}
+                {supplier.address || '-'}
               </TableCell>
               <TableCell>
                 <div className="flex items-center justify-end gap-2">
