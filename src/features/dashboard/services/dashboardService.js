@@ -138,12 +138,38 @@ export const fetchInventoryOverview = async () => {
   }
 };
 
+/**
+ * Fetches recent system activities
+ * @returns {Promise<Object>} Recent activities data
+ */
+export const fetchRecentActivities = async () => {
+  try {
+    const response = await apiClient.get(API_CONFIG.ENDPOINTS.DASHBOARD.RECENT_ACTIVITIES);
+    if (response.data.success) {
+      return {
+        success: true,
+        data: response.data.data,
+      };
+    }
+    return {
+      success: false,
+      error: response.data.message || 'Failed to fetch recent activities',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: extractErrorMessage(error, 'Failed to fetch recent activities'),
+    };
+  }
+};
+
 const dashboardService = {
   fetchStats,
   fetchSalesTrend,
   fetchTopProducts,
   fetchRevenueByCategory,
   fetchInventoryOverview,
+  fetchRecentActivities,
 };
 
 export default dashboardService;

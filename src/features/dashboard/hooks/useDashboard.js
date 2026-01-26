@@ -8,14 +8,14 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { dashboardService } from '../services';
 
-export const useDashboard = (user) => {
+export const useDashboard = (user, userRole) => {
   // ---------------------------------------------------------------------------
   // STATE
   // ---------------------------------------------------------------------------
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalSales: 0,
@@ -26,7 +26,7 @@ export const useDashboard = (user) => {
     activeUsers: 0,
     inventoryValue: 0,
   });
-  
+
   const [topProducts, setTopProducts] = useState([]);
   const [revenueByCategory, setRevenueByCategory] = useState([]);
   const [salesTrend, setSalesTrend] = useState([]);
@@ -38,8 +38,8 @@ export const useDashboard = (user) => {
   // ---------------------------------------------------------------------------
 
   const isAdminOrSuper = useMemo(
-    () => user?.role === 'admin' || user?.role === 'superadmin',
-    [user]
+    () => userRole === 'admin' || userRole === 'superadmin',
+    [userRole]
   );
 
   // ---------------------------------------------------------------------------
@@ -51,13 +51,14 @@ export const useDashboard = (user) => {
 
     setIsLoading(true);
     setError(null);
-    
+
     try {
       // Prepare promises for parallel execution
       const promises = [
         dashboardService.fetchStats(),
         dashboardService.fetchSalesTrend(), // defaults to 'week'
         dashboardService.fetchTopProducts(),
+        dashboardService.fetchRecentActivities(),
       ];
 
       // Add admin-only calls
@@ -68,9 +69,14 @@ export const useDashboard = (user) => {
 
       const results = await Promise.all(promises);
 
-      const [statsRes, salesTrendRes, topProductsRes, revenueRes, inventoryRes] = results;
+      const [statsRes, salesTrendRes, topProductsRes, activitiesRes, revenueRes, inventoryRes] = results;
 
-      // Handle Stats
+
+      // Handle Activities
+      if (activitiesRes && activitiesRes.success) {
+        // console.log(activitiesRes);
+        setRecentActivities(activitiesRes.data || []);
+      }
       if (statsRes && statsRes.success) {
         const rawStats = statsRes.data || {};
         // Map snake_case from API to camelCase for UI
@@ -78,11 +84,11 @@ export const useDashboard = (user) => {
           totalProducts: rawStats.total_products ?? rawStats.totalProducts ?? 0,
           totalSales: rawStats.total_sales ?? rawStats.totalSales ?? 0,
           totalRevenue: rawStats.total_revenue ?? rawStats.totalRevenue ?? 0,
-          lowStockCount: rawStats.low_stock_count ?? rawStats.lowStockCount ?? 0,
-          outOfStockCount: rawStats.out_of_stock_count ?? rawStats.outOfStockCount ?? 0,
+          lowStockCount: rawStats.low_stock ?? rawStats.lowStockCount ?? 0,
+          outOfStockCount: rawStats.out_of_stock ?? rawStats.outOfStock ?? 0,
           totalTransactions: rawStats.total_transactions ?? rawStats.totalTransactions ?? 0,
           activeUsers: rawStats.active_users ?? rawStats.activeUsers ?? 0,
-          inventoryValue: rawStats.inventory_value ?? rawStats.inventoryValue ?? 0,
+          inventoryValue: inventoryRes.total_inventory_value ?? inventoryRes.totalInventoryValue ?? 0,
         };
         setStats(prev => ({ ...prev, ...mappedStats }));
       } else if (statsRes) {
@@ -127,28 +133,28 @@ export const useDashboard = (user) => {
       if (isAdminOrSuper) {
         if (revenueRes && revenueRes.success) {
           const rawData = revenueRes.data || {};
+          let transformedData = [];
+
           if (Array.isArray(rawData)) {
-            setRevenueByCategory(rawData);
+            // Map potential API keys to component expected keys { name, value }
+            transformedData = rawData.map(item => ({
+              name: item.name || item.category || item.category_name || 'Unknown Category',
+              value: Number(item.value || item.revenue || item.total_revenue || item.total || 0)
+            }));
           } else if (typeof rawData === 'object' && rawData !== null) {
             // Transform { "Category A": 100 } to [{ name: "Category A", value: 100 }]
-            const transformed = Object.entries(rawData).map(([name, value]) => ({
+            transformedData = Object.entries(rawData).map(([name, value]) => ({
               name,
-              value
+              value: Number(value)
             }));
-            setRevenueByCategory(transformed);
-          } else {
-            setRevenueByCategory([]);
           }
+
+          setRevenueByCategory(transformedData);
         }
         if (inventoryRes && inventoryRes.success) {
           setInventoryOverview(inventoryRes.data);
         }
       }
-
-      // TODO: Implement fetchRecentActivities when endpoint is available
-      // For now, we leave it empty or mock it if strictly necessary, 
-      // but keeping it empty is safer than using broken local storage logic.
-      setRecentActivities([]);
 
     } catch (err) {
       console.error('Error loading dashboard data:', err);
@@ -174,7 +180,7 @@ export const useDashboard = (user) => {
     salesTrend,
     inventoryOverview,
     recentActivities,
-    
+
     // Status
     isLoading,
     error,

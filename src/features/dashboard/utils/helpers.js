@@ -106,11 +106,44 @@ export const calculateRevenueByCategory = (transactions, products, categories) =
 /**
  * Formats date for activity display
  * @param {string|Date} date - Date to format
- * @returns {string} Formatted date string
+ * @returns {string} Formatted date string in PH time
  */
 export const formatActivityDate = (date) => {
   if (!date) return '';
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  return dateObj.toLocaleString();
+  
+  let dateObj;
+  
+  if (typeof date === 'string') {
+    // If the date string doesn't contain timezone information (like 'Z' or '+08:00' or 'UTC' or 'GMT'),
+    // we assume it is UTC.
+    if (!date.includes('Z') && !date.includes('+') && !date.includes('UTC') && !date.includes('GMT')) {
+       const utcDate = new Date(`${date} UTC`);
+       // Check if appending UTC resulted in a valid date
+       if (!isNaN(utcDate.getTime())) {
+         dateObj = utcDate;
+       } else {
+         dateObj = new Date(date);
+       }
+    } else {
+       dateObj = new Date(date);
+    }
+  } else {
+    dateObj = date;
+  }
+  
+  if (isNaN(dateObj.getTime())) {
+    return date; // Return original if parsing fails
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+    timeZone: 'Asia/Manila',
+    hour12: true
+  }).format(dateObj);
 };
 

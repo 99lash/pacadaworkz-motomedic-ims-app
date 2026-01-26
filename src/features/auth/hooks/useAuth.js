@@ -151,7 +151,7 @@ export const useAuth = () => {
     loading,
     error,
     accessToken,
-    userRole: user ? roleMap[user.role_id] : null,
+    userRole: user?.role?.role_name || (user?.role_id ? roleMap[user.role_id] : null),
     login,
     logout,
     getCurrentUser,
