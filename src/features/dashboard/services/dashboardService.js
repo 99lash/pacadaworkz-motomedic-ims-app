@@ -1,88 +1,175 @@
+import { apiClient } from '../../../shared/services';
+import { API_CONFIG } from '../../../shared/config/api';
+import { extractErrorMessage } from '../../../shared/utils/errorHandler';
+
 /**
  * Dashboard Service
- * Handles all data operations for the dashboard feature
- * 
- * This service uses localStorage for persistence.
- * Replace with actual API calls when backend is ready.
+ * Handles all data operations for the dashboard feature using API endpoints.
  */
 
-const STORAGE_KEYS = {
-  PRODUCTS: 'motomedic_products',
-  TRANSACTIONS: 'motomedic_transactions',
-  USERS: 'motomedic_users',
-  CATEGORIES: 'motomedic_categories',
-  ACTIVITY_LOGS: 'motomedic_activity_logs',
-};
-
-// =============================================================================
-// HELPER FUNCTIONS
-// =============================================================================
-
-const readFromStorage = (key, fallback = []) => {
-  if (typeof window === 'undefined') return fallback;
+/**
+ * Fetches dashboard KPI statistics
+ * @returns {Promise<Object>} Stats object
+ */
+export const fetchStats = async () => {
   try {
-    const stored = window.localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : fallback;
-  } catch {
-    return fallback;
+    const response = await apiClient.get(API_CONFIG.ENDPOINTS.DASHBOARD.STATS);
+    if (response.data.success) {
+      return {
+        success: true,
+        data: response.data.data,
+      };
+    }
+    return {
+      success: false,
+      error: response.data.message || 'Failed to fetch dashboard stats',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: extractErrorMessage(error, 'Failed to fetch dashboard stats'),
+    };
   }
 };
 
-// =============================================================================
-// SERVICE METHODS
-// =============================================================================
-
 /**
- * Fetches all products
- * @returns {Array} Products array
+ * Fetches sales trend chart data
+ * @param {string} period - 'week', 'month', 'year' (default: 'week')
+ * @returns {Promise<Object>} Sales trend data
  */
-export const fetchProducts = () => {
-  return readFromStorage(STORAGE_KEYS.PRODUCTS, []);
+export const fetchSalesTrend = async (period = 'week') => {
+  try {
+    const response = await apiClient.get(API_CONFIG.ENDPOINTS.DASHBOARD.SALES_TREND, {
+      params: { period },
+    });
+    if (response.data.success) {
+      return {
+        success: true,
+        data: response.data.data,
+      };
+    }
+    return {
+      success: false,
+      error: response.data.message || 'Failed to fetch sales trend',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: extractErrorMessage(error, 'Failed to fetch sales trend'),
+    };
+  }
 };
 
 /**
- * Fetches all transactions
- * @returns {Array} Transactions array
+ * Fetches top selling products
+ * @param {number} limit - Number of products to fetch (default: 5)
+ * @returns {Promise<Object>} Top products data
  */
-export const fetchTransactions = () => {
-  return readFromStorage(STORAGE_KEYS.TRANSACTIONS, []);
+export const fetchTopProducts = async (limit = 5) => {
+  try {
+    const response = await apiClient.get(API_CONFIG.ENDPOINTS.DASHBOARD.TOP_PRODUCTS, {
+      params: { limit },
+    });
+    if (response.data.success) {
+      return {
+        success: true,
+        data: response.data.data,
+      };
+    }
+    return {
+      success: false,
+      error: response.data.message || 'Failed to fetch top products',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: extractErrorMessage(error, 'Failed to fetch top products'),
+    };
+  }
 };
 
 /**
- * Fetches all users
- * @returns {Array} Users array
+ * Fetches revenue breakdown by category (Admin only)
+ * @returns {Promise<Object>} Revenue by category data
  */
-export const fetchUsers = () => {
-  return readFromStorage(STORAGE_KEYS.USERS, []);
+export const fetchRevenueByCategory = async () => {
+  try {
+    const response = await apiClient.get(API_CONFIG.ENDPOINTS.DASHBOARD.REVENUE_BY_CATEGORY);
+    if (response.data.success) {
+      return {
+        success: true,
+        data: response.data.data,
+      };
+    }
+    return {
+      success: false,
+      error: response.data.message || 'Failed to fetch revenue by category',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: extractErrorMessage(error, 'Failed to fetch revenue by category'),
+    };
+  }
 };
 
 /**
- * Fetches all categories
- * @returns {Array} Categories array
+ * Fetches inventory status overview (Admin only)
+ * @returns {Promise<Object>} Inventory overview data
  */
-export const fetchCategories = () => {
-  return readFromStorage(STORAGE_KEYS.CATEGORIES, []);
+export const fetchInventoryOverview = async () => {
+  try {
+    const response = await apiClient.get(API_CONFIG.ENDPOINTS.DASHBOARD.INVENTORY_OVERVIEW);
+    if (response.data.success) {
+      return {
+        success: true,
+        data: response.data.data,
+      };
+    }
+    return {
+      success: false,
+      error: response.data.message || 'Failed to fetch inventory overview',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: extractErrorMessage(error, 'Failed to fetch inventory overview'),
+    };
+  }
 };
 
 /**
- * Fetches activity logs
- * @returns {Array} Activity logs array
+ * Fetches recent system activities
+ * @returns {Promise<Object>} Recent activities data
  */
-export const fetchActivityLogs = () => {
-  return readFromStorage(STORAGE_KEYS.ACTIVITY_LOGS, []);
+export const fetchRecentActivities = async () => {
+  try {
+    const response = await apiClient.get(API_CONFIG.ENDPOINTS.DASHBOARD.RECENT_ACTIVITIES);
+    if (response.data.success) {
+      return {
+        success: true,
+        data: response.data.data,
+      };
+    }
+    return {
+      success: false,
+      error: response.data.message || 'Failed to fetch recent activities',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: extractErrorMessage(error, 'Failed to fetch recent activities'),
+    };
+  }
 };
-
-// =============================================================================
-// SERVICE EXPORT
-// =============================================================================
 
 const dashboardService = {
-  fetchProducts,
-  fetchTransactions,
-  fetchUsers,
-  fetchCategories,
-  fetchActivityLogs,
+  fetchStats,
+  fetchSalesTrend,
+  fetchTopProducts,
+  fetchRevenueByCategory,
+  fetchInventoryOverview,
+  fetchRecentActivities,
 };
 
 export default dashboardService;
-

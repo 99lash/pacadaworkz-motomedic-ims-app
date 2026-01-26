@@ -22,17 +22,18 @@ import {
 } from './components';
 import { UI_TEXT, STAT_COLORS, formatCurrency } from './utils';
 
-const DashboardPage = ({ onNewProductClick }) => {
-  const { user } = useAuth();
+const DashboardPage = () => {
+  const { user, userRole } = useAuth();
   const {
     stats,
     topProducts,
     revenueByCategory,
     salesTrend,
+    inventoryOverview,
     recentActivities,
     isLoading,
     isAdminOrSuper,
-  } = useDashboard(user);
+  } = useDashboard(user, userRole);
 
   if (isLoading) {
     return (
@@ -44,9 +45,11 @@ const DashboardPage = ({ onNewProductClick }) => {
     );
   }
 
+  // console.log(recentActivities);
+
   return (
     <div className="p-6 space-y-6">
-      <DashboardHeader isAdminOrSuper={isAdminOrSuper} onNewProductClick={onNewProductClick} />
+      <DashboardHeader />
 
       {/* KPI Cards - Primary Metrics */}
       <section aria-label="Key Performance Indicators">
@@ -120,7 +123,7 @@ const DashboardPage = ({ onNewProductClick }) => {
       <section aria-label="Business Insights">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <RevenueCategoryChart data={revenueByCategory} />
-          <InventoryOverview stats={stats} />
+          <InventoryOverview data={inventoryOverview} />
         </div>
       </section>
 
@@ -130,14 +133,6 @@ const DashboardPage = ({ onNewProductClick }) => {
       </section>
     </div>
   );
-};
-
-DashboardPage.propTypes = {
-  onNewProductClick: PropTypes.func,
-};
-
-DashboardPage.defaultProps = {
-  onNewProductClick: () => {},
 };
 
 export default DashboardPage;

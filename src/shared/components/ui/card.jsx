@@ -16,7 +16,8 @@ export const Card = React.forwardRef(({
   return (
     <div
       ref={ref}
-      className={`rounded-lg border bg-card text-card-foreground shadow-sm pt-4 ${className}`}
+      // className={`rounded-lg border border-gray-200 bg-card text-card-foreground shadow-sm pt-4 ${className}`}
+      className={`rounded-lg border dark:border-gray-500 bg-card shadow-sm pt-4 ${className}`} 
       {...props}
     >
       {children}

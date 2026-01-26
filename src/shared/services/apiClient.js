@@ -53,7 +53,7 @@ apiClient.interceptors.response.use(
           );
 
           // The API returns access_token in response.data.data (wrapped in resource)
-          const newAccessToken = response.data.data?.access_token || response.data.access_token;
+          const newAccessToken = response.data.data?.new_access_token || response.data.new_access_token;
           
           if (newAccessToken) {
             // Store new access token

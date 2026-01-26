@@ -77,7 +77,9 @@ const ProfileTab = ({ user, profileData, isSaving, onFieldChange, onSave }) => {
         <Card>
           <CardContent className="p-4 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
             <p className="text-blue-900 dark:text-blue-100">
-              {UI_TEXT.PROFILE_ROLE}: <span className="font-medium">{user?.role?.toUpperCase()}</span>
+              {UI_TEXT.PROFILE_ROLE}: <span className="font-medium">
+                {(typeof user?.role === 'object' ? user?.role?.role_name : user?.role)?.toUpperCase() || 'USER'}
+              </span>
             </p>
             <p className="text-blue-700 dark:text-blue-300 text-sm mt-1">
               {UI_TEXT.PROFILE_ROLE_HELP}
