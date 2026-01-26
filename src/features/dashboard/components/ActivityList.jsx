@@ -1,8 +1,13 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/components/ui/card';
-import { Activity } from 'lucide-react';
-import { UI_TEXT, formatActivityDate } from '../utils';
+import React from "react";
+import PropTypes from "prop-types";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../../shared/components/ui/card";
+import { Activity } from "lucide-react";
+import { UI_TEXT, formatActivityDate } from "../utils";
 
 const ActivityList = ({ activities }) => (
   <Card>
@@ -11,7 +16,10 @@ const ActivityList = ({ activities }) => (
         <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           {UI_TEXT.ACTIVITY_TITLE}
         </CardTitle>
-        <Activity className="w-5 h-5 text-muted-foreground dark:text-gray-400" aria-hidden="true" />
+        <Activity
+          className="w-5 h-5 text-muted-foreground dark:text-gray-400"
+          aria-hidden="true"
+        />
       </div>
     </CardHeader>
     <CardContent>
@@ -21,9 +29,9 @@ const ActivityList = ({ activities }) => (
             {UI_TEXT.ACTIVITY_EMPTY}
           </p>
         ) : (
-          activities.map((activity) => (
+          activities.map((activity, index) => (
             <div
-              key={activity.id || activity.timestamp}
+              key={activity.id || `${activity.timestamp}-${index}`}
               className="flex items-start gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
             >
               <div
@@ -32,10 +40,11 @@ const ActivityList = ({ activities }) => (
               />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {activity.details}
+                  {activity.description}
                 </p>
                 <p className="text-xs text-muted-foreground dark:text-gray-400 mt-1">
-                  {activity.userName} • {activity.module} • {formatActivityDate(activity.timestamp)}
+                  {activity.user} • {activity.module} •{" "}
+                  {formatActivityDate(activity.timestamp)}
                 </p>
               </div>
             </div>
@@ -51,4 +60,3 @@ ActivityList.propTypes = {
 };
 
 export default ActivityList;
-
