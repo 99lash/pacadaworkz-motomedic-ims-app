@@ -52,8 +52,6 @@ export const validateLoginCredentials = (credentials) => {
 
   if (!isRequired(credentials.password)) {
     errors.password = 'Password is required';
-  } else if (!isValidPassword(credentials.password)) {
-    errors.password = 'Password must be at least 6 characters';
   }
 
   return {
@@ -68,4 +66,3 @@ export default {
   isRequired,
   validateLoginCredentials,
 };
-
