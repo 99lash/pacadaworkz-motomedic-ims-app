@@ -18,8 +18,9 @@ export const filterProducts = (products, searchTerm) => {
   return products.filter(
     (product) =>
       product.currentStock > 0 &&
-      (product.sku.toLowerCase().includes(term) || // Changed from product.name to product.sku
-        product.barcode && product.barcode.includes(term))
+      (product.name.toLowerCase().includes(term) ||
+        product.sku.toLowerCase().includes(term) ||
+        (product.barcode && product.barcode.includes(term)))
   );
 };
 
