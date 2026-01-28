@@ -9,11 +9,13 @@ import { loginSuccess } from "../features/auth/authSlice";
 import storageService from "../shared/services/storageService";
 import { STORAGE_KEYS } from "../shared/config/storage";
 import { authService } from "../features/auth/services/authService";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [googleError, setGoogleError] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleGoogleLoginSuccess = async (credentialResponse) => {
     try {
@@ -83,11 +85,8 @@ export default function LoginPage() {
   };
 
   // Get display error (validation, Google error, or API error)
-  const displayError = 
-    Object.values(validationErrors)[0] || 
-    googleError ||
-    error || 
-    null;
+  const displayError =
+    Object.values(validationErrors)[0] || googleError || error || null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center p-4">
@@ -95,24 +94,24 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="flex justify-center mb-4">
           <div className="bg-blue-600 rounded-full p-4">
-            <svg 
-              className="w-8 h-8 text-white" 
-              fill="currentColor" 
+            <svg
+              className="w-8 h-8 text-white"
+              fill="currentColor"
               viewBox="0 0 24 24"
             >
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-              <circle cx="7" cy="12" r="1.5"/>
-              <circle cx="17" cy="12" r="1.5"/>
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
+              <circle cx="7" cy="12" r="1.5" />
+              <circle cx="17" cy="12" r="1.5" />
             </svg>
           </div>
         </div>
 
         {/* Title */}
         <h1 className="text-center text-xl font-semibold text-gray-800 mb-1">
-          Pacawork MotoMedic
+          Pacadaworkz Moto Medic
         </h1>
         <p className="text-center text-sm text-gray-600 mb-6">
-          Motor Parts & Accessories Authorized Seller
+          Inventory Management System
         </p>
 
         {/* Form */}
@@ -193,7 +192,7 @@ export default function LoginPage() {
               </span>
 
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={formData.password}
                 onChange={(e) => {
                   updateField("password", e.target.value);
@@ -202,13 +201,25 @@ export default function LoginPage() {
                 }}
                 placeholder="Enter your password"
                 disabled={loading}
-                className={`w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                className={`w-full pl-10 pr-10 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
                   validationErrors.password
                     ? "border-red-300"
                     : "border-gray-300"
                 }`}
                 required
               />
+
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+              >
+                {showPassword ? (
+                  <EyeOff className="w-5 h-5" />
+                ) : (
+                  <Eye className="w-5 h-5" />
+                )}
+              </button>
             </div>
 
             {validationErrors.password && (
