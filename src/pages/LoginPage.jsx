@@ -1,22 +1,25 @@
-import { useNavigate } from 'react-router-dom';
-import { useLoginForm } from '../features/auth/hooks/useLoginForm';
-import { ROUTES } from '../shared/utils/routes';
-import { GoogleLogin } from '@react-oauth/google';
-import apiClient from '../shared/services/apiClient';
-import { useDispatch } from 'react-redux';
-import { loginSuccess } from '../features/auth/authSlice';
-import storageService from '../shared/services/storageService';
-import { STORAGE_KEYS } from '../shared/config/storage';
-import { authService } from '../features/auth/services/authService';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useLoginForm } from "../features/auth/hooks/useLoginForm";
+import { ROUTES } from "../shared/utils/routes";
+import { GoogleLogin } from "@react-oauth/google";
+import apiClient from "../shared/services/apiClient";
+import { useDispatch } from "react-redux";
+import { loginSuccess } from "../features/auth/authSlice";
+import storageService from "../shared/services/storageService";
+import { STORAGE_KEYS } from "../shared/config/storage";
+import { authService } from "../features/auth/services/authService";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const [googleError, setGoogleError] = useState(null);
 
   const handleGoogleLoginSuccess = async (credentialResponse) => {
     try {
+      setGoogleError(null);
       // 1. Send Google credential to the backend
-      const response = await apiClient.post('/v1/auth/login/google', {
+      const response = await apiClient.post("/v1/auth/login/google", {
         credential: credentialResponse.credential,
       });
 
@@ -27,34 +30,42 @@ export default function LoginPage() {
       if (refresh_token) {
         storageService.set(STORAGE_KEYS.REFRESH_TOKEN, refresh_token);
       }
-      
+
       // 3. Fetch the user data from the /me endpoint to ensure consistency
       const userResponse = await authService.getCurrentUser();
       if (!userResponse.success) {
-        throw new Error('Failed to fetch user data after Google login.');
+        throw new Error("Failed to fetch user data after Google login.");
       }
       const user = userResponse.data;
 
       // 4. Dispatch success with consistent user object and tokens
-      dispatch(loginSuccess({ user, accessToken: access_token, refreshToken: refresh_token }));
+      dispatch(
+        loginSuccess({
+          user,
+          accessToken: access_token,
+          refreshToken: refresh_token,
+        }),
+      );
 
-      navigate(ROUTES.DASHBOARD || '/');
+      navigate(ROUTES.DASHBOARD || "/");
     } catch (error) {
-      console.error('Google login failed:', error);
+      console.error("Google login failed:", error);
       // Clean up on failure
       authService.clearAuthData();
-      // Handle login error (e.g., show a notification to the user)
+
+      // Handle login error with generic message
+      setGoogleError("Invalid google credentials");
     }
   };
 
   const handleGoogleLoginError = () => {
-    console.error('Google login failed');
-    // Handle login error (e.g., show a notification to the user)
+    console.error("Google login failed");
+    setGoogleError("Invalid google credentials");
   };
 
   // Handle successful login
   const handleLoginSuccess = () => {
-    navigate(ROUTES.DASHBOARD || '/');
+    navigate(ROUTES.DASHBOARD || "/");
   };
 
   const {
@@ -63,12 +74,18 @@ export default function LoginPage() {
     loading,
     error,
     updateField,
-    handleSubmit,
+    handleSubmit: originalHandleSubmit,
   } = useLoginForm(handleLoginSuccess);
 
-  // Get display error (validation or API error)
+  const handleFormSubmit = (e) => {
+    setGoogleError(null);
+    originalHandleSubmit(e);
+  };
+
+  // Get display error (validation, Google error, or API error)
   const displayError = 
     Object.values(validationErrors)[0] || 
+    googleError ||
     error || 
     null;
 
@@ -99,7 +116,7 @@ export default function LoginPage() {
         </p>
 
         {/* Form */}
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleFormSubmit}>
           {/* Error Message */}
           {displayError && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
@@ -108,58 +125,96 @@ export default function LoginPage() {
           )}
 
           {/* Email Field */}
+
           <div className="mb-4">
-            <label className="block text-sm text-gray-700 mb-2">
-              Email
-            </label>
+            <label className="block text-sm text-gray-700 mb-2">Email</label>
+
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.8a2.5 2.5 0 11-5 0" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.8a2.5 2.5 0 11-5 0"
+                  />
                 </svg>
               </span>
+
               <input
                 type="email"
                 value={formData.email}
-                onChange={(e) => updateField('email', e.target.value)}
+                onChange={(e) => {
+                  updateField("email", e.target.value);
+
+                  setGoogleError(null);
+                }}
                 placeholder="Enter your email"
                 disabled={loading}
                 className={`w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                  validationErrors.email ? 'border-red-300' : 'border-gray-300'
+                  validationErrors.email ? "border-red-300" : "border-gray-300"
                 }`}
                 required
               />
             </div>
+
             {validationErrors.email && (
-              <p className="mt-1 text-sm text-red-600">{validationErrors.email}</p>
+              <p className="mt-1 text-sm text-red-600">
+                {validationErrors.email}
+              </p>
             )}
           </div>
 
           {/* Password Field */}
+
           <div className="mb-6">
-            <label className="block text-sm text-gray-700 mb-2">
-              Password
-            </label>
+            <label className="block text-sm text-gray-700 mb-2">Password</label>
+
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
                 </svg>
               </span>
+
               <input
                 type="password"
                 value={formData.password}
-                onChange={(e) => updateField('password', e.target.value)}
+                onChange={(e) => {
+                  updateField("password", e.target.value);
+
+                  setGoogleError(null);
+                }}
                 placeholder="Enter your password"
                 disabled={loading}
                 className={`w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                  validationErrors.password ? 'border-red-300' : 'border-gray-300'
+                  validationErrors.password
+                    ? "border-red-300"
+                    : "border-gray-300"
                 }`}
                 required
               />
             </div>
+
             {validationErrors.password && (
-              <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
+              <p className="mt-1 text-sm text-red-600">
+                {validationErrors.password}
+              </p>
             )}
           </div>
 
@@ -171,14 +226,30 @@ export default function LoginPage() {
           >
             {loading ? (
               <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
                 Signing in...
               </>
             ) : (
-              'Sign In'
+              "Sign In"
             )}
           </button>
         </form>
@@ -196,6 +267,8 @@ export default function LoginPage() {
             onSuccess={handleGoogleLoginSuccess}
             onError={handleGoogleLoginError}
             useOneTap
+            locale="en_US"
+            text="signin_with"
           />
         </div>
       </div>
