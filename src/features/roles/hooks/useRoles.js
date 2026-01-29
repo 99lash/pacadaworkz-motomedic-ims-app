@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { roleService } from '../services';
 import {
@@ -10,9 +10,31 @@ import {
 } from '../utils';
 
 export const useRoles = () => {
-  const [roles, setRoles] = useState(() => roleService.fetchRoles());
-  const [users] = useState(() => roleService.fetchUsers());
-  const isLoading = false;
+  const [roles, setRoles] = useState([]);
+  const [users, setUsers] = useState([]); // This will also need to be fetched from an API eventually
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadRoles = async () => {
+      setIsLoading(true);
+      const response = await roleService.fetchRoles();
+      if (response.success) {
+        // Map the backend 'role' field to the frontend 'name' field
+        const mappedRoles = response.data.map(role => ({
+          ...role,
+          name: role.role, // Mapping
+          permissions: role.role_permissions || [], // Ensure permissions is an array
+        }));
+        setRoles(mappedRoles);
+      } else {
+        toast.error(response.error || 'Failed to load roles.');
+      }
+      setIsLoading(false);
+    };
+
+    loadRoles();
+  }, []);
+
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -114,33 +136,39 @@ export const useRoles = () => {
   );
 
   const handleSubmit = useCallback(() => {
-    const { isValid, errors } = validateRoleForm(formData, roles, selectedRole?.id);
-    if (!isValid) {
-      setFormErrors(errors);
-      return false;
-    }
-
-    const payload = {
-      id: selectedRole?.id ?? roleService.generateRoleId(),
-      name: formData.name.trim(),
-      description: formData.description.trim(),
-      permissions: formData.permissions,
-      createdAt: selectedRole?.createdAt ?? new Date().toISOString(),
-    };
-
-    const updated =
-      formMode === 'edit'
-        ? roles.map((role) => (role.id === payload.id ? payload : role))
-        : [...roles, payload];
-
-    roleService.saveRoles(updated);
-    setRoles(updated);
+    // This is now broken and needs to be reimplemented with API calls
+    console.warn("Submit handler is not implemented for API yet.");
+    toast.warning("Saving is not yet implemented.");
     closeFormDialog();
-    toast.success(formMode === 'edit' ? UI_TEXT.TOAST_UPDATE : UI_TEXT.TOAST_CREATE);
+    // const { isValid, errors } = validateRoleForm(formData, roles, selectedRole?.id);
+    // if (!isValid) {
+    //   setFormErrors(errors);
+    //   return false;
+    // }
+
+    // const payload = {
+    //   id: selectedRole?.id ?? roleService.generateRoleId(),
+    //   name: formData.name.trim(),
+    //   description: formData.description.trim(),
+    //   permissions: formData.permissions,
+    //   createdAt: selectedRole?.createdAt ?? new Date().toISOString(),
+    // };
+
+    // const updated =
+    //   formMode === 'edit'
+    //     ? roles.map((role) => (role.id === payload.id ? payload : role))
+    //     : [...roles, payload];
+
+    // roleService.saveRoles(updated);
+    // setRoles(updated);
+    // closeFormDialog();
+    // toast.success(formMode === 'edit' ? UI_TEXT.TOAST_UPDATE : UI_TEXT.TOAST_CREATE);
     return true;
   }, [formData, roles, selectedRole, formMode, closeFormDialog]);
 
   const openDeleteDialog = useCallback((role) => {
+    // This is likely broken as `users` is an empty array.
+    console.warn("Delete handler is not fully implemented for API yet.");
     const assignedUsers = users.filter((user) => user.role?.toLowerCase() === role.name.toLowerCase());
     if (assignedUsers.length > 0) {
       toast.error(UI_TEXT.TOAST_DELETE_BLOCKED.replace('{count}', assignedUsers.length));
@@ -156,12 +184,10 @@ export const useRoles = () => {
   }, []);
 
   const handleDelete = useCallback(() => {
-    if (!roleToDelete) return false;
-    const updated = roles.filter((role) => role.id !== roleToDelete.id);
-    roleService.saveRoles(updated);
-    setRoles(updated);
+    // This is now broken and needs to be reimplemented with API calls
+    console.warn("Delete handler is not implemented for API yet.");
+    toast.warning("Deleting is not yet implemented.");
     closeDeleteDialog();
-    toast.success(UI_TEXT.TOAST_DELETE);
     return true;
   }, [roleToDelete, roles, closeDeleteDialog]);
 

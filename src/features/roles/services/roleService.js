@@ -1,64 +1,62 @@
-const ROLE_STORAGE_KEY = 'motomedic_roles';
-const USER_STORAGE_KEY = 'motomedic_users';
+import apiClient from '../../../shared/services/apiClient';
 
-const MOCK_ROLES = [
-  {
-    id: 'role_superadmin',
-    name: 'SuperAdmin',
-    description: 'Full system access',
-    permissions: [{ module: 'roles', actions: ['view', 'create', 'edit', 'delete'] }],
-    createdAt: '2024-01-01T00:00:00Z',
-  },
-  {
-    id: 'role_admin',
-    name: 'Admin',
-    description: 'Manage settings and users',
-    permissions: [{ module: 'users', actions: ['view', 'create', 'edit'] }],
-    createdAt: '2024-01-01T00:00:00Z',
-  },
-  {
-    id: 'role_staff',
-    name: 'Staff',
-    description: 'Limited operational access',
-    permissions: [{ module: 'products', actions: ['view', 'edit'] }],
-    createdAt: '2024-01-01T00:00:00Z',
-  },
-];
-
-const readFromStorage = (key, fallback = []) => {
-  if (typeof window === 'undefined') return fallback;
+/**
+ * Fetches all roles from the API
+ */
+export const fetchRoles = async () => {
   try {
-    const stored = window.localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : fallback;
-  } catch {
-    return fallback;
+    const response = await apiClient.get('/v1/roles');
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch roles:', error);
+    // Returning an empty array or a structured error object is often better
+    // than re-throwing, to allow the UI to handle the empty state gracefully.
+    return { success: false, data: [], error: 'Failed to fetch roles' };
   }
 };
 
-export const fetchRoles = () => {
-  const stored = readFromStorage(ROLE_STORAGE_KEY, MOCK_ROLES);
-  if (stored.length === 0 && typeof window !== 'undefined') {
-    window.localStorage.setItem(ROLE_STORAGE_KEY, JSON.stringify(MOCK_ROLES));
-    return MOCK_ROLES;
-  }
-  return stored;
+/**
+ * Fetches a single role by ID
+ */
+export const fetchRoleById = async (id) => {
+  // To be implemented
+  console.log('fetchRoleById not implemented', id);
+  return null;
 };
 
-export const fetchUsers = () => readFromStorage(USER_STORAGE_KEY);
-
-export const saveRoles = (roles) => {
-  window.localStorage.setItem(ROLE_STORAGE_KEY, JSON.stringify(roles));
-  return roles;
+/**
+ * Creates a new role
+ */
+export const createRole = async (roleData) => {
+  // To be implemented
+  console.log('createRole not implemented', roleData);
+  return null;
 };
 
-export const generateRoleId = () =>
-  `role_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+/**
+ * Updates an existing role
+ */
+export const updateRole = async (id, roleData) => {
+  // To be implemented
+  console.log('updateRole not implemented', id, roleData);
+  return null;
+};
+
+/**
+ * Deletes a role
+ */
+export const deleteRole = async (id) => {
+  // To be implemented
+  console.log('deleteRole not implemented', id);
+  return null;
+};
 
 const roleService = {
   fetchRoles,
-  fetchUsers,
-  saveRoles,
-  generateRoleId,
+  fetchRoleById,
+  createRole,
+  updateRole,
+  deleteRole,
 };
 
 export default roleService;
