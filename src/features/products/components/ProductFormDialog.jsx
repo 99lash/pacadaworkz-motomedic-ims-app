@@ -28,6 +28,16 @@ const ProductFormDialog = ({
   categoryOptions,
   brandOptions,
 }) => {
+  if (isOpen) {
+    console.log('ProductFormDialog Debug Data:', {
+      formData,
+      categoryOptions,
+      brandOptions,
+      isEditing,
+      formErrors
+    });
+  }
+
   const nameId = useId();
   const skuId = useId();
   const categoryId = useId();

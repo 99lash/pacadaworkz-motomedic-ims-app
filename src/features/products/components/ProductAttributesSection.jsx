@@ -31,11 +31,16 @@ const ProductAttributesSection = ({
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newAttribute, setNewAttribute] = useState({ attributeId: '', value: '' });
 
+  useEffect(() => {
+    console.log('ProductAttributesSection: Current Product Attributes', attributes);
+  }, [attributes]);
+
   // Load available attributes
   useEffect(() => {
     const loadAttributes = async () => {
       try {
         const attrs = await attributeService.fetchAttributes();
+        console.log('ProductAttributesSection: Available Attributes from Service', attrs);
         if (Array.isArray(attrs)) {
           setAvailableAttributes(attrs);
         } else {

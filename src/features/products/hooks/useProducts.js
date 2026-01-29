@@ -44,6 +44,7 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   // dialog + form
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
@@ -164,11 +165,28 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   }, [resetForm]);
 
   const openEditDialog = useCallback((product) => {
+    console.log('openEditDialog: Product to Edit', product);
+
+    // Lookup IDs based on names since backend only returns names
+    const foundCategory = filterOptions.categories.find(
+      (c) => c.label === product.categoryName
+    );
+    const foundBrand = filterOptions.brands.find(
+      (b) => b.label === product.brandName
+    );
+
+    const categoryId = foundCategory ? foundCategory.value : '';
+    const brandId = foundBrand ? foundBrand.value : '';
+
     setEditingProduct(product);
-    setFormData(mapProductToFormState(product));
+    setFormData({
+      ...mapProductToFormState(product),
+      categoryId,
+      brandId,
+    });
     setFormErrors(createInitialFormErrors());
     setIsFormDialogOpen(true);
-  }, []);
+  }, [filterOptions]);
 
   const closeFormDialog = useCallback(() => {
     setIsFormDialogOpen(false);
@@ -285,6 +303,95 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     }
   }, [debouncedSearchTerm, normalizedFilters]);
 
+  // import CSV
+  const handleImportProducts = useCallback(async (file) => {
+    if (!file) return;
+
+    setIsImporting(true);
+    const reader = new FileReader();
+
+    reader.onload = async (e) => {
+      try {
+        const text = e.target.result;
+        const rows = text.split('\n').filter(row => row.trim()).map(row => {
+          // Handle simple CSV (comma separated, no escaped commas)
+          return row.split(',').map(cell => cell.trim().replace(/^["']|["']$/g, ''));
+        });
+
+        if (rows.length < 2) {
+          toast.error('CSV file is empty or missing data');
+          setIsImporting(false);
+          return;
+        }
+
+        const headers = rows[0].map(h => h.toLowerCase());
+        const dataRows = rows.slice(1);
+        
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const row of dataRows) {
+          const productData = {
+            attributes: [],
+          };
+          
+          headers.forEach((header, index) => {
+            const value = row[index] || '';
+            if (header.includes('sku')) productData.sku = value;
+            else if (header.includes('name')) productData.name = value;
+            else if (header.includes('category')) {
+              const found = filterOptions.categories.find(c => c.label.toLowerCase() === value.toLowerCase());
+              productData.categoryId = found ? found.value : '';
+            }
+            else if (header.includes('brand')) {
+              const found = filterOptions.brands.find(b => b.label.toLowerCase() === value.toLowerCase());
+              productData.brandId = found ? found.value : '';
+            }
+            else if (header.includes('selling') || header.includes('unit price')) productData.sellingPrice = value;
+            else if (header.includes('cost')) productData.costPrice = value;
+            else if (header.includes('description')) productData.description = value;
+            else if (header.includes('reorder')) productData.reorderPoint = value;
+          });
+
+          // Validation & Defaults
+          if (!productData.name || !productData.sku) {
+            errorCount++;
+            continue;
+          }
+          
+          if (!productData.reorderPoint) productData.reorderPoint = '10';
+          if (!productData.costPrice) productData.costPrice = '0';
+          if (!productData.sellingPrice) productData.sellingPrice = '0';
+
+          const result = await productService.createProduct(productData);
+          if (result.success) successCount++;
+          else errorCount++;
+        }
+
+        if (successCount > 0) {
+          toast.success(`${successCount} products imported successfully`);
+          await loadProducts();
+        }
+        if (errorCount > 0) {
+          toast.error(`${errorCount} products failed to import`);
+        }
+      } catch (err) {
+        console.error('Import failed', err);
+        toast.error(UI_TEXT.TOAST_IMPORT_ERROR);
+      } finally {
+        setIsImporting(false);
+        // Reset file input if needed (handled in component)
+      }
+    };
+
+    reader.onerror = () => {
+      toast.error(UI_TEXT.TOAST_IMPORT_ERROR);
+      setIsImporting(false);
+    };
+
+    reader.readAsText(file);
+  }, [filterOptions, loadProducts]);
+
   // filter handlers
   const handleCategoryFilterChange = useCallback(
     (value) => {
@@ -329,6 +436,7 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     isSaving,
     isDeleting,
     isExporting,
+    isImporting,
     error,
     isFormDialogOpen,
     isEditing: Boolean(editingProduct),
@@ -342,6 +450,7 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     handleSubmitProduct,
     handleDeleteProduct,
     handleExportProducts,
+    handleImportProducts,
     handleCategoryFilterChange,
     handleBrandFilterChange,
     handleStatusFilterChange,

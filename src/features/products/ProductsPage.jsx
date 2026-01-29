@@ -53,12 +53,14 @@ const ProductsPage = () => {
     // Mutations
     handleDeleteProduct,
     handleExportProducts,
+    handleImportProducts,
 
     // States
     isLoading,
     isSaving,
     isDeleting,
     isExporting,
+    isImporting,
     error,
   } = useProducts({ initialPageSize: 10 });
 
@@ -69,7 +71,9 @@ const ProductsPage = () => {
           <ProductHeader
             onAddClick={openCreateDialog}
             onExportClick={handleExportProducts}
+            onImportClick={handleImportProducts}
             isExportDisabled
+            isImportDisabled
           />
           <ProductLoadingState />
         </div>
@@ -78,7 +82,9 @@ const ProductsPage = () => {
           <ProductHeader
             onAddClick={openCreateDialog}
             onExportClick={handleExportProducts}
+            onImportClick={handleImportProducts}
             isExportDisabled={isExporting}
+            isImportDisabled={isImporting}
           />
           <Card>
             <CardContent className="py-12">
@@ -102,7 +108,9 @@ const ProductsPage = () => {
           <ProductHeader
             onAddClick={openCreateDialog}
             onExportClick={handleExportProducts}
+            onImportClick={handleImportProducts}
             isExportDisabled={isExporting || totalItems === 0}
+            isImportDisabled={isImporting}
             totalProducts={totalItems}
           />
 

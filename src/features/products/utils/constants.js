@@ -40,7 +40,9 @@ export const UI_TEXT = {
   BTN_UPDATE_PRODUCT: 'Update product',
   BTN_CANCEL: 'Cancel',
   BTN_EXPORT: 'Export CSV',
+  BTN_IMPORT: 'Import CSV',
   BTN_SAVING: 'Saving...',
+  BTN_IMPORTING: 'Importing...',
   BTN_DELETE: 'Delete',
   BTN_DELETING: 'Deleting...',
 
@@ -65,6 +67,9 @@ export const UI_TEXT = {
   TOAST_SAVE_ERROR: 'Failed to save product. Please try again.',
   TOAST_EXPORT_SUCCESS: 'Products exported successfully',
   TOAST_EXPORT_ERROR: 'Unable to export products right now.',
+  TOAST_IMPORT_SUCCESS: 'Products imported successfully',
+  TOAST_IMPORT_PARTIAL_SUCCESS: 'Import completed with some errors',
+  TOAST_IMPORT_ERROR: 'Failed to import products. Please check your CSV format.',
 
   VALIDATION_NAME_REQUIRED: 'Product name is required.',
   VALIDATION_NAME_LENGTH: 'Product name must be between 3 and 80 characters.',
