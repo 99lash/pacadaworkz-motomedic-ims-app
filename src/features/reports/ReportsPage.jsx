@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 import { useReports } from './hooks';
 import {
   ReportsHeader,
@@ -11,7 +11,7 @@ import {
   StockAdjustmentReport,
   ProfitLossReport,
 } from './components';
-import { REPORT_TYPES, exportReportToCSV } from './utils';
+import { REPORT_TYPES } from './utils';
 
 const ReportsPage = () => {
   const {
@@ -31,36 +31,8 @@ const ReportsPage = () => {
     handleDateRangeChange,
     handleCustomStartDateChange,
     handleCustomEndDateChange,
+    exportCurrentReport,
   } = useReports();
-
-  const handleExport = useCallback(() => {
-    let reportData = {};
-
-    switch (reportType) {
-      case REPORT_TYPES.SALES:
-        reportData = salesData;
-        break;
-      case REPORT_TYPES.PURCHASE:
-        reportData = purchaseData;
-        break;
-      case REPORT_TYPES.INVENTORY:
-        reportData = { ...inventoryData, products };
-        break;
-      case REPORT_TYPES.PRODUCT_PERFORMANCE:
-        reportData = productPerformanceData;
-        break;
-      case REPORT_TYPES.STOCK_ADJUSTMENT:
-        reportData = stockAdjustmentData;
-        break;
-      case REPORT_TYPES.PROFIT_LOSS:
-        reportData = profitLossData;
-        break;
-      default:
-        return;
-    }
-
-    exportReportToCSV(reportType, reportData, dateRange);
-  }, [reportType, dateRange, salesData, purchaseData, inventoryData, productPerformanceData, stockAdjustmentData, profitLossData, products]);
 
   if (isLoading) {
     return (
@@ -93,7 +65,7 @@ const ReportsPage = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <ReportsHeader onExportClick={handleExport} />
+      <ReportsHeader onExportClick={exportCurrentReport} />
 
       <ReportTypeSelector selectedType={reportType} onTypeChange={handleReportTypeChange} />
 

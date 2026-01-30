@@ -2,76 +2,106 @@
  * Reports Service
  * Handles all data operations for the reports feature
  * 
- * This service uses localStorage for persistence.
- * Replace with actual API calls when backend is ready.
+ * This service uses the backend API for data fetching.
  */
 
-import { STORAGE_KEYS } from '../utils';
-
-// =============================================================================
-// HELPER FUNCTIONS
-// =============================================================================
-
-const readFromStorage = (key, fallback = []) => {
-  if (typeof window === 'undefined') return fallback;
-  try {
-    const stored = window.localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : fallback;
-  } catch {
-    return fallback;
-  }
-};
+import apiClient from '../../../shared/services/apiClient';
 
 // =============================================================================
 // SERVICE METHODS
 // =============================================================================
 
 /**
- * Fetches all transactions
- * @returns {Array} Transactions array
+ * Fetches sales report data
+ * @param {string} startDate - Start date (YYYY-MM-DD)
+ * @param {string} endDate - End date (YYYY-MM-DD)
+ * @returns {Promise<Object>} Sales report data
  */
-export const fetchTransactions = () => {
-  return readFromStorage(STORAGE_KEYS.TRANSACTIONS, []);
+export const fetchSalesReport = async (startDate, endDate) => {
+  const response = await apiClient.get('/v1/reports/sales', {
+    params: { start_date: startDate, end_date: endDate },
+  });
+  return response.data.data;
 };
 
 /**
- * Fetches all products
- * @returns {Array} Products array
+ * Fetches purchase report data
+ * @param {string} startDate - Start date (YYYY-MM-DD)
+ * @param {string} endDate - End date (YYYY-MM-DD)
+ * @returns {Promise<Object>} Purchase report data
  */
-export const fetchProducts = () => {
-  return readFromStorage(STORAGE_KEYS.PRODUCTS, []);
+export const fetchPurchaseReport = async (startDate, endDate) => {
+  const response = await apiClient.get('/v1/reports/purchases', {
+    params: { start_date: startDate, end_date: endDate },
+  });
+  return response.data.data;
 };
 
 /**
- * Fetches all purchase orders
- * @returns {Array} Purchase orders array
+ * Fetches inventory report data
+ * @param {string} startDate - Start date (YYYY-MM-DD)
+ * @param {string} endDate - End date (YYYY-MM-DD)
+ * @returns {Promise<Object>} Inventory report data
  */
-export const fetchPurchaseOrders = () => {
-  return readFromStorage(STORAGE_KEYS.PURCHASE_ORDERS, []);
+export const fetchInventoryReport = async (startDate, endDate) => {
+  const response = await apiClient.get('/v1/reports/inventory', {
+    params: { start_date: startDate, end_date: endDate },
+  });
+  return response.data.data;
 };
 
 /**
- * Fetches all stock adjustments
- * @returns {Array} Stock adjustments array
+ * Fetches product performance report data
+ * @param {string} startDate - Start date (YYYY-MM-DD)
+ * @param {string} endDate - End date (YYYY-MM-DD)
+ * @returns {Promise<Object>} Product performance report data
  */
-export const fetchStockAdjustments = () => {
-  return readFromStorage(STORAGE_KEYS.STOCK_ADJUSTMENTS, []);
+export const fetchProductPerformanceReport = async (startDate, endDate) => {
+  const response = await apiClient.get('/v1/reports/product-performance', {
+    params: { start_date: startDate, end_date: endDate },
+  });
+  return response.data.data;
 };
 
 /**
- * Fetches all categories
- * @returns {Array} Categories array
+ * Fetches stock adjustments report data
+ * @param {string} startDate - Start date (YYYY-MM-DD)
+ * @param {string} endDate - End date (YYYY-MM-DD)
+ * @returns {Promise<Object>} Stock adjustments report data
  */
-export const fetchCategories = () => {
-  return readFromStorage(STORAGE_KEYS.CATEGORIES, []);
+export const fetchStockAdjustmentReport = async (startDate, endDate) => {
+  const response = await apiClient.get('/v1/reports/stock-adjustments', {
+    params: { start_date: startDate, end_date: endDate },
+  });
+  return response.data.data;
 };
 
 /**
- * Fetches all brands
- * @returns {Array} Brands array
+ * Fetches profit & loss report data
+ * @param {string} startDate - Start date (YYYY-MM-DD)
+ * @param {string} endDate - End date (YYYY-MM-DD)
+ * @returns {Promise<Object>} Profit & loss report data
  */
-export const fetchBrands = () => {
-  return readFromStorage(STORAGE_KEYS.BRANDS, []);
+export const fetchProfitLossReport = async (startDate, endDate) => {
+  const response = await apiClient.get('/v1/reports/profit-loss', {
+    params: { start_date: startDate, end_date: endDate },
+  });
+  return response.data.data;
+};
+
+/**
+ * Exports report to CSV
+ * @param {string} type - Report type
+ * @param {string} startDate - Start date (YYYY-MM-DD)
+ * @param {string} endDate - End date (YYYY-MM-DD)
+ * @returns {Promise<Blob>} File blob
+ */
+export const exportReport = async (type, startDate, endDate) => {
+  const response = await apiClient.get(`/v1/reports/${type}/export`, {
+    params: { start_date: startDate, end_date: endDate },
+    responseType: 'blob',
+  });
+  return response.data;
 };
 
 // =============================================================================
@@ -79,12 +109,13 @@ export const fetchBrands = () => {
 // =============================================================================
 
 const reportsService = {
-  fetchTransactions,
-  fetchProducts,
-  fetchPurchaseOrders,
-  fetchStockAdjustments,
-  fetchCategories,
-  fetchBrands,
+  fetchSalesReport,
+  fetchPurchaseReport,
+  fetchInventoryReport,
+  fetchProductPerformanceReport,
+  fetchStockAdjustmentReport,
+  fetchProfitLossReport,
+  exportReport,
 };
 
 export default reportsService;

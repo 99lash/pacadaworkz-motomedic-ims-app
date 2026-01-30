@@ -5,9 +5,60 @@
  * and business logic. Separates concerns from UI components.
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { reportsService } from '../services';
-import { filterByDateRange, REPORT_TYPES, DATE_RANGE_TYPES } from '../utils';
+import { REPORT_TYPES, DATE_RANGE_TYPES, getDateRangeFilter } from '../utils';
+
+// Default initial states to prevent UI crashes
+const DEFAULT_SALES_DATA = {
+  totalSales: 0,
+  totalRevenue: 0,
+  transactionCount: 0,
+  salesByStaff: {},
+  trendData: [],
+};
+
+const DEFAULT_PURCHASE_DATA = {
+  totalPurchases: 0,
+  poCount: 0,
+  purchaseBySupplier: {},
+  trendData: [],
+};
+
+const DEFAULT_INVENTORY_DATA = {
+  totalProducts: 0,
+  lowStock: 0,
+  outOfStock: 0,
+  overStock: 0,
+  totalValue: 0,
+  lowStockItems: [],
+  outOfStockItems: [],
+  overStockItems: [],
+};
+
+const DEFAULT_PERFORMANCE_DATA = {
+  topProducts: [],
+  worstProducts: [],
+  revenueByCategory: {},
+  revenueByBrand: {},
+};
+
+const DEFAULT_STOCK_ADJUSTMENT_DATA = {
+  totalAdjustments: 0,
+  adjustmentByReason: {},
+  adjustmentByStaff: {},
+  adjustmentValue: 0,
+  adjustments: [],
+};
+
+const DEFAULT_PROFIT_LOSS_DATA = {
+  revenue: 0,
+  cogs: 0,
+  grossProfit: 0,
+  adjustmentLosses: 0,
+  netProfit: 0,
+  profitMargin: 0,
+};
 
 export const useReports = () => {
   // ---------------------------------------------------------------------------
@@ -19,301 +70,150 @@ export const useReports = () => {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
 
-  const [transactions, setTransactions] = useState([]);
+  const [salesData, setSalesData] = useState(DEFAULT_SALES_DATA);
+  const [purchaseData, setPurchaseData] = useState(DEFAULT_PURCHASE_DATA);
+  const [inventoryData, setInventoryData] = useState(DEFAULT_INVENTORY_DATA);
+  const [productPerformanceData, setProductPerformanceData] = useState(DEFAULT_PERFORMANCE_DATA);
+  const [stockAdjustmentData, setStockAdjustmentData] = useState(DEFAULT_STOCK_ADJUSTMENT_DATA);
+  const [profitLossData, setProfitLossData] = useState(DEFAULT_PROFIT_LOSS_DATA);
+
+  // Products state is kept for potential future use or if we decide to fetch it alongside
   const [products, setProducts] = useState([]);
-  const [purchaseOrders, setPurchaseOrders] = useState([]);
-  const [stockAdjustments, setStockAdjustments] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [brands, setBrands] = useState([]);
 
   const [isLoading, setIsLoading] = useState(true);
+
+  // ---------------------------------------------------------------------------
+  // HELPERS
+  // ---------------------------------------------------------------------------
+
+  const formatDateForApi = (date) => {
+    if (!date) return null;
+    const d = new Date(date);
+    // Format to YYYY-MM-DD, handling timezone offset if necessary, 
+    // or just use local date components to avoid shifting
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
   // ---------------------------------------------------------------------------
   // DATA LOADING
   // ---------------------------------------------------------------------------
 
-  const loadData = useCallback(() => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      setTransactions(reportsService.fetchTransactions());
-      setProducts(reportsService.fetchProducts());
-      setPurchaseOrders(reportsService.fetchPurchaseOrders());
-      setStockAdjustments(reportsService.fetchStockAdjustments());
-      setCategories(reportsService.fetchCategories());
-      setBrands(reportsService.fetchBrands());
+      const { start, end } = getDateRangeFilter(dateRange, customStartDate, customEndDate);
+      const startDate = formatDateForApi(start);
+      const endDate = formatDateForApi(end);
+
+      switch (reportType) {
+        case REPORT_TYPES.SALES: {
+          const data = await reportsService.fetchSalesReport(startDate, endDate);
+          setSalesData({
+            totalSales: Number(data.total_sales) || 0,
+            totalRevenue: Number(data.total_sales) || 0,
+            transactionCount: Number(data.transactions) || 0,
+            salesByStaff: {}, // Not provided by backend
+            trendData: (data.trend || []).map(t => ({
+              date: t.date,
+              sales: Number(t.total) || 0
+            })),
+          });
+          break;
+        }
+        case REPORT_TYPES.PURCHASE: {
+          const data = await reportsService.fetchPurchaseReport(startDate, endDate);
+          setPurchaseData({
+            totalPurchases: Number(data.total_purchases) || 0,
+            poCount: Number(data.purchase_orders) || 0,
+            purchaseBySupplier: {}, // Not provided by backend
+            trendData: (data.trend || []).map(t => ({
+              date: t.date,
+              cost: Number(t.total) || 0
+            })),
+          });
+          break;
+        }
+        case REPORT_TYPES.INVENTORY: {
+          const data = await reportsService.fetchInventoryReport(startDate, endDate);
+          setInventoryData({
+            totalProducts: Number(data.total_products) || 0,
+            lowStock: Number(data.low_stock) || 0,
+            outOfStock: Number(data.out_of_stock) || 0,
+            overStock: 0, // Not provided by backend
+            totalValue: Number(data.total_value) || 0,
+            lowStockItems: [], // Not provided by backend report endpoint
+            outOfStockItems: [], // Not provided by backend report endpoint
+            overStockItems: [], // Not provided by backend
+          });
+          break;
+        }
+        case REPORT_TYPES.PRODUCT_PERFORMANCE: {
+          const data = await reportsService.fetchProductPerformanceReport(startDate, endDate);
+          
+          // Transform array to object for charts
+          const revenueByCategory = (data.revenue_by_category || []).reduce((acc, curr) => {
+            acc[curr.name] = Number(curr.total) || 0;
+            return acc;
+          }, {});
+
+          const revenueByBrand = (data.revenue_by_brand || []).reduce((acc, curr) => {
+            acc[curr.name] = Number(curr.total) || 0;
+            return acc;
+          }, {});
+
+          setProductPerformanceData({
+            topProducts: [], // Not provided by backend
+            worstProducts: [], // Not provided by backend
+            revenueByCategory,
+            revenueByBrand,
+          });
+          break;
+        }
+        case REPORT_TYPES.STOCK_ADJUSTMENT: {
+          const data = await reportsService.fetchStockAdjustmentReport(startDate, endDate);
+          
+          const adjustmentByReason = (data.adjustments_by_reason || []).reduce((acc, curr) => {
+            acc[curr.reason] = Number(curr.num_reasons) || 0;
+            return acc;
+          }, {});
+
+          setStockAdjustmentData({
+            totalAdjustments: Number(data.total_adjustments) || 0,
+            adjustmentByReason,
+            adjustmentByStaff: {}, // Not provided by backend
+            adjustmentValue: Number(data.adjustments_value) || 0,
+            adjustments: [], // Not provided by backend
+          });
+          break;
+        }
+        case REPORT_TYPES.PROFIT_LOSS: {
+          const data = await reportsService.fetchProfitLossReport(startDate, endDate);
+          setProfitLossData({
+            revenue: Number(data.revenue) || 0,
+            cogs: Number(data.cost_of_goods) || 0,
+            grossProfit: Number(data.gross_profit) || 0,
+            adjustmentLosses: Number(data.adjustment_loss) || 0,
+            netProfit: Number(data.net_profit) || 0,
+            profitMargin: Number(data.profit_margin) || 0,
+          });
+          break;
+        }
+        default:
+          break;
+      }
     } catch (error) {
       console.error('Error loading reports data:', error);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [reportType, dateRange, customStartDate, customEndDate]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
-
-  // ---------------------------------------------------------------------------
-  // FILTER HELPER
-  // ---------------------------------------------------------------------------
-
-  const filterByDate = useCallback(
-    (date) => {
-      return filterByDateRange(date, dateRange, customStartDate, customEndDate);
-    },
-    [dateRange, customStartDate, customEndDate]
-  );
-
-  // ---------------------------------------------------------------------------
-  // SALES REPORT DATA
-  // ---------------------------------------------------------------------------
-
-  const salesData = useMemo(() => {
-    const filteredSales = transactions.filter(
-      (t) => t.type === 'sale' && t.status === 'completed' && filterByDate(t.date)
-    );
-
-    const totalSales = filteredSales.reduce((sum, t) => sum + t.total, 0);
-    const transactionCount = filteredSales.length;
-
-    // Group by staff
-    const salesByStaff = filteredSales.reduce((acc, t) => {
-      acc[t.userName] = (acc[t.userName] || 0) + t.total;
-      return acc;
-    }, {});
-
-    // Group by date for trend
-    const salesByDate = filteredSales.reduce((acc, t) => {
-      const date = new Date(t.date).toLocaleDateString();
-      acc[date] = (acc[date] || 0) + t.total;
-      return acc;
-    }, {});
-
-    const trendData = Object.entries(salesByDate).map(([date, sales]) => ({
-      date,
-      sales,
-    }));
-
-    return {
-      totalSales,
-      totalRevenue: totalSales,
-      transactionCount,
-      salesByStaff,
-      trendData,
-    };
-  }, [transactions, filterByDate]);
-
-  // ---------------------------------------------------------------------------
-  // PURCHASE REPORT DATA
-  // ---------------------------------------------------------------------------
-
-  const purchaseData = useMemo(() => {
-    const filteredPurchases = purchaseOrders.filter((po) => filterByDate(po.createdAt));
-
-    const totalPurchases = filteredPurchases.reduce((sum, po) => sum + po.total, 0);
-    const poCount = filteredPurchases.length;
-
-    // Group by supplier
-    const purchaseBySupplier = filteredPurchases.reduce((acc, po) => {
-      acc[po.supplierName] = (acc[po.supplierName] || 0) + po.total;
-      return acc;
-    }, {});
-
-    // Group by date for trend
-    const purchaseByDate = filteredPurchases.reduce((acc, po) => {
-      const date = new Date(po.createdAt).toLocaleDateString();
-      acc[date] = (acc[date] || 0) + po.total;
-      return acc;
-    }, {});
-
-    const trendData = Object.entries(purchaseByDate).map(([date, cost]) => ({
-      date,
-      cost,
-    }));
-
-    return {
-      totalPurchases,
-      poCount,
-      purchaseBySupplier,
-      trendData,
-    };
-  }, [purchaseOrders, filterByDate]);
-
-  // ---------------------------------------------------------------------------
-  // INVENTORY REPORT DATA
-  // ---------------------------------------------------------------------------
-
-  const inventoryData = useMemo(() => {
-    const lowStock = products.filter((p) => p.currentStock <= p.reorderPoint);
-    const outOfStock = products.filter((p) => p.currentStock === 0);
-    const overStock = products.filter((p) => p.currentStock > p.reorderPoint * 3);
-    const totalValue = products.reduce((sum, p) => sum + p.currentStock * p.costPrice, 0);
-
-    return {
-      totalProducts: products.length,
-      lowStock: lowStock.length,
-      outOfStock: outOfStock.length,
-      overStock: overStock.length,
-      totalValue,
-      lowStockItems: lowStock,
-      outOfStockItems: outOfStock,
-      overStockItems: overStock,
-    };
-  }, [products]);
-
-  // ---------------------------------------------------------------------------
-  // PRODUCT PERFORMANCE DATA
-  // ---------------------------------------------------------------------------
-
-  const productPerformanceData = useMemo(() => {
-    const filteredSales = transactions.filter(
-      (t) => t.type === 'sale' && t.status === 'completed' && filterByDate(t.date)
-    );
-
-    // Sales by product
-    const productSales = filteredSales.reduce((acc, t) => {
-      t.items.forEach((item) => {
-        if (!acc[item.productId]) {
-          acc[item.productId] = {
-            productName: item.productName,
-            quantity: 0,
-            revenue: 0,
-          };
-        }
-        acc[item.productId].quantity += item.quantity;
-        acc[item.productId].revenue += item.total;
-      });
-      return acc;
-    }, {});
-
-    const sortedProducts = Object.entries(productSales)
-      .map(([id, data]) => ({ id, ...data }))
-      .sort((a, b) => b.revenue - a.revenue);
-
-    const topProducts = sortedProducts.slice(0, 10);
-    const worstProducts = sortedProducts.slice(-10).reverse();
-
-    // Revenue by category
-    const revenueByCategory = filteredSales.reduce((acc, t) => {
-      t.items.forEach((item) => {
-        const product = products.find((p) => p.id === item.productId);
-        if (product) {
-          const category = categories.find((c) => c.id === product.categoryId);
-          const categoryName = category?.name || 'Uncategorized';
-          acc[categoryName] = (acc[categoryName] || 0) + item.total;
-        }
-      });
-      return acc;
-    }, {});
-
-    // Revenue by brand
-    const revenueByBrand = filteredSales.reduce((acc, t) => {
-      t.items.forEach((item) => {
-        const product = products.find((p) => p.id === item.productId);
-        if (product) {
-          const brand = brands.find((b) => b.id === product.brandId);
-          const brandName = brand?.name || 'Unknown';
-          acc[brandName] = (acc[brandName] || 0) + item.total;
-        }
-      });
-      return acc;
-    }, {});
-
-    return {
-      topProducts,
-      worstProducts,
-      revenueByCategory,
-      revenueByBrand,
-    };
-  }, [transactions, products, categories, brands, filterByDate]);
-
-  // ---------------------------------------------------------------------------
-  // STOCK ADJUSTMENT DATA
-  // ---------------------------------------------------------------------------
-
-  const stockAdjustmentData = useMemo(() => {
-    const filteredAdjustments = stockAdjustments.filter((adj) =>
-      filterByDate(adj.createdAt)
-    );
-
-    const totalAdjustments = filteredAdjustments.length;
-
-    // Group by reason
-    const adjustmentByReason = filteredAdjustments.reduce((acc, adj) => {
-      acc[adj.reason] = (acc[adj.reason] || 0) + 1;
-      return acc;
-    }, {});
-
-    // Group by staff
-    const adjustmentByStaff = filteredAdjustments.reduce((acc, adj) => {
-      acc[adj.userName] = (acc[adj.userName] || 0) + 1;
-      return acc;
-    }, {});
-
-    // Calculate value of adjustments
-    const adjustmentValue = filteredAdjustments.reduce((sum, adj) => {
-      const product = products.find((p) => p.id === adj.productId);
-      if (product) {
-        return sum + Math.abs(adj.adjustmentQuantity) * product.costPrice;
-      }
-      return sum;
-    }, 0);
-
-    return {
-      totalAdjustments,
-      adjustmentByReason,
-      adjustmentByStaff,
-      adjustmentValue,
-      adjustments: filteredAdjustments,
-    };
-  }, [stockAdjustments, products, filterByDate]);
-
-  // ---------------------------------------------------------------------------
-  // PROFIT & LOSS DATA
-  // ---------------------------------------------------------------------------
-
-      const profitLossData = useMemo(() => {
-        const filteredSales = transactions.filter(
-          (t) => t.type === 'sale' && t.status === 'completed' && filterByDate(t.date)
-        );
-        const filteredAdjustments = stockAdjustments.filter((adj) => filterByDate(adj.createdAt));
-    
-        const revenue = filteredSales.reduce((sum, t) => sum + t.total, 0);
-    
-        // Calculate COGS from sales
-        const cogs = filteredSales.reduce((sum, t) => {
-          t.items.forEach((item) => {
-            const product = products.find((p) => p.id === item.productId);
-            if (product) {
-              sum += item.quantity * product.costPrice;
-            }
-          });
-          return sum;
-        }, 0);
-    const grossProfit = revenue - cogs;
-
-    // Calculate adjustment losses
-    const adjustmentLosses = filteredAdjustments.reduce((sum, adj) => {
-      if (adj.adjustmentQuantity < 0) {
-        const product = products.find((p) => p.id === adj.productId);
-        if (product) {
-          return sum + Math.abs(adj.adjustmentQuantity) * product.costPrice;
-        }
-      }
-      return sum;
-    }, 0);
-
-    const netProfit = grossProfit - adjustmentLosses;
-    const profitMargin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
-
-    return {
-      revenue,
-      cogs,
-      grossProfit,
-      adjustmentLosses,
-      netProfit,
-      profitMargin,
-    };
-  }, [transactions, stockAdjustments, products, filterByDate]);
 
   // ---------------------------------------------------------------------------
   // HANDLERS
@@ -335,6 +235,30 @@ export const useReports = () => {
     setCustomEndDate(date);
   }, []);
 
+  const exportCurrentReport = useCallback(async () => {
+    try {
+      const { start, end } = getDateRangeFilter(dateRange, customStartDate, customEndDate);
+      const startDate = formatDateForApi(start);
+      const endDate = formatDateForApi(end);
+
+      const blob = await reportsService.exportReport(reportType, startDate, endDate);
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${reportType}_report_${startDate}_${endDate}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting report:', error);
+    }
+  }, [reportType, dateRange, customStartDate, customEndDate]);
+
   // ---------------------------------------------------------------------------
   // RETURN
   // ---------------------------------------------------------------------------
@@ -348,7 +272,7 @@ export const useReports = () => {
     isLoading,
 
     // Data
-    products,
+    products, // Kept empty for now
     salesData,
     purchaseData,
     inventoryData,
@@ -361,6 +285,7 @@ export const useReports = () => {
     handleDateRangeChange,
     handleCustomStartDateChange,
     handleCustomEndDateChange,
+    exportCurrentReport,
     refreshData: loadData,
   };
 };
