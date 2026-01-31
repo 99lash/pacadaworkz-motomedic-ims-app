@@ -24,10 +24,14 @@ const getInitials = (name) => {
 
 const getRoleBadge = (role) => {
   switch (role) {
+    case 'Super Admin':
+      return <Badge variant="default" className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">Super Admin</Badge>;
     case 'Admin':
       return <Badge variant="default" className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Admin</Badge>;
     case 'Manager':
       return <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">Manager</Badge>;
+    case 'Staff':
+      return <Badge variant="secondary" className="bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300">Staff</Badge>;
     case 'User':
       return <Badge variant="outline" className="border-gray-300 dark:border-gray-700">User</Badge>;
     default:
