@@ -28,7 +28,7 @@ export const UI_TEXT = {
 export const INITIAL_FORM_STATE = {
   name: '',
   email: '',
-  role: 'User',
+  role: 'Staff',
   status: 'Active',
   password: '',
   permissions: {},
@@ -41,7 +41,7 @@ export const INITIAL_FORM_ERRORS = {
   password: '',
 };
 
-export const USER_ROLES = ['Admin', 'Manager', 'User'];
+export const USER_ROLES = ['Super Admin', 'Admin', 'Staff'];
 
 export const USER_STATUSES = ['Active', 'Inactive'];
 
