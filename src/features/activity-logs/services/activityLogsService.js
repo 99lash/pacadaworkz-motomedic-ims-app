@@ -1,38 +1,32 @@
 /**
  * Activity Logs Service
  * Handles all data operations for the activity logs feature
- * 
- * This service uses localStorage for persistence.
- * Replace with actual API calls when backend is ready.
  */
 
-import { STORAGE_KEYS } from '../utils';
-
-// =============================================================================
-// HELPER FUNCTIONS
-// =============================================================================
-
-const readFromStorage = (key, fallback = []) => {
-  if (typeof window === 'undefined') return fallback;
-  try {
-    const stored = window.localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : fallback;
-  } catch (error) {
-    console.error('Error reading from storage:', error);
-    return fallback;
-  }
-};
+import apiClient from '../../../shared/services/apiClient';
 
 // =============================================================================
 // SERVICE METHODS
 // =============================================================================
 
 /**
- * Fetches all activity logs from storage
- * @returns {Array} Activity logs array
+ * Fetches all activity logs from API
+ * @param {Object} params - Query parameters (search, user_id, page, etc.)
+ * @returns {Promise<Object>} API response containing data and meta
  */
-export const fetchActivityLogs = () => {
-  return readFromStorage(STORAGE_KEYS.ACTIVITY_LOGS, []);
+export const fetchActivityLogs = async (params = {}) => {
+  const response = await apiClient.get('/v1/activity-logs', { params });
+  
+  // Backend resource doesn't include ID, so we generate one for the frontend key
+  const logs = response.data.data.map((log, index) => ({
+    ...log,
+    id: log.id || `log-${Date.now()}-${index}`,
+  }));
+
+  return {
+    ...response.data,
+    data: logs,
+  };
 };
 
 // =============================================================================
