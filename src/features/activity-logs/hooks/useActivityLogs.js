@@ -13,7 +13,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { activityLogsService } from '../services';
-import { filterLogs, getUniqueModules, filterLogsByUserRole } from '../utils';
+import { filterLogs, getUniqueModules } from '../utils';
 
 // =============================================================================
 // HOOK IMPLEMENTATION
@@ -39,15 +39,14 @@ export const useActivityLogs = (user) => {
   // ---------------------------------------------------------------------------
 
   useEffect(() => {
-    const loadLogs = () => {
+    const loadLogs = async () => {
       try {
         setIsLoading(true);
-        const allLogs = activityLogsService.fetchActivityLogs();
+        const response = await activityLogsService.fetchActivityLogs();
         
-        // Filter logs based on user role
-        const filteredLogs = filterLogsByUserRole(allLogs, user);
-        
-        setLogs(filteredLogs);
+        if (response?.success) {
+          setLogs(response.data || []);
+        }
       } catch (error) {
         console.error('Error loading activity logs:', error);
         setLogs([]);
@@ -85,15 +84,19 @@ export const useActivityLogs = (user) => {
     setFilterModule(value);
   }, []);
 
-  const refreshLogs = useCallback(() => {
+  const refreshLogs = useCallback(async () => {
     try {
-      const allLogs = activityLogsService.fetchActivityLogs();
-      const filteredLogs = filterLogsByUserRole(allLogs, user);
-      setLogs(filteredLogs);
+      setIsLoading(true);
+      const response = await activityLogsService.fetchActivityLogs();
+      if (response?.success) {
+        setLogs(response.data || []);
+      }
     } catch (error) {
       console.error('Error refreshing activity logs:', error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [user]);
+  }, []);
 
   // ---------------------------------------------------------------------------
   // RETURN
