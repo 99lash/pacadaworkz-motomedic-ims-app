@@ -1,3 +1,8 @@
+export const API_ENDPOINTS = {
+  PURCHASES: '/v1/purchases',
+  PURCHASE_BY_ID: (id) => `/v1/purchases/${id}`,
+};
+
 export const UI_TEXT = {
   PAGE_TITLE: 'Purchase Orders',
   PAGE_SUBTITLE: 'Manage stock in and purchase orders',

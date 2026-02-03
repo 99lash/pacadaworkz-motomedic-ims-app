@@ -42,7 +42,7 @@ const PurchaseTable = ({ purchaseOrders, onMarkAsReceived, getStatusBadge }) => 
                 className="hover:bg-gray-50 dark:hover:bg-gray-900/50"
               >
                 <TableCell className="font-medium text-gray-900 dark:text-gray-100">
-                  #{po.id.slice(0, 8)}
+                  #{String(po.id).slice(0, 8)}
                 </TableCell>
                 <TableCell className="text-gray-900 dark:text-gray-100">
                   {po.supplierName}
