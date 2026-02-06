@@ -1,7 +1,7 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import { ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react';
-import { UI_TEXT, formatCurrency } from '../utils';
+import React from "react";
+import PropTypes from "prop-types";
+import { ShoppingCart, Plus, Minus, Trash2 } from "lucide-react";
+import { UI_TEXT, formatCurrency } from "../utils";
 
 const POSCart = ({
   cart,
@@ -19,7 +19,9 @@ const POSCart = ({
 }) => (
   <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
     <div className="flex items-center justify-between mb-4">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{UI_TEXT.CART_TITLE}</h3>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+        {UI_TEXT.CART_TITLE}
+      </h3>
       {cart.length > 0 && (
         <button
           onClick={onClearCart}
@@ -46,8 +48,7 @@ const POSCart = ({
             <div className="flex items-start justify-between mb-2">
               <div className="flex-1">
                 <div className="text-gray-900 dark:text-gray-100 text-sm mb-1 font-medium">
-                  {/* Using SKU as name for now, assuming API doesn't return name */}
-                  {item.product.sku}
+                  {item.product.name}
                 </div>
                 <div className="text-gray-600 dark:text-gray-400 text-xs">
                   {formatCurrency(item.unit_price)}
@@ -66,7 +67,9 @@ const POSCart = ({
               <div className="flex items-center gap-2">
                 {/* Pass product ID for update */}
                 <button
-                  onClick={() => onUpdateQuantity(item.product.id, item.quantity - 1)}
+                  onClick={() =>
+                    onUpdateQuantity(item.product.id, item.quantity - 1)
+                  }
                   className="w-7 h-7 flex items-center justify-center bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-100 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300"
                   aria-label="Decrease quantity"
                 >
@@ -77,7 +80,9 @@ const POSCart = ({
                 </span>
                 {/* Pass product ID for update */}
                 <button
-                  onClick={() => onUpdateQuantity(item.product.id, item.quantity + 1)}
+                  onClick={() =>
+                    onUpdateQuantity(item.product.id, item.quantity + 1)
+                  }
                   className="w-7 h-7 flex items-center justify-center bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-100 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300"
                   aria-label="Increase quantity"
                 >
@@ -101,12 +106,14 @@ const POSCart = ({
             <span>{UI_TEXT.SUBTOTAL}</span>
             <span>{formatCurrency(subtotal)}</span>
           </div>
-          
+
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-gray-600 dark:text-gray-400 text-sm">{UI_TEXT.DISCOUNT}</label>
+              <label className="text-gray-600 dark:text-gray-400 text-sm">
+                {UI_TEXT.DISCOUNT}
+              </label>
               <div className="flex items-center gap-1">
-                <select 
+                <select
                   value={discountType}
                   onChange={(e) => onDiscountTypeChange(e.target.value)}
                   className="px-1 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 outline-none"
@@ -117,7 +124,7 @@ const POSCart = ({
                 <input
                   type="number"
                   min="0"
-                  value={discount === 0 ? '' : discount}
+                  value={discount === 0 ? "" : discount}
                   onChange={(e) => onDiscountChange(e.target.value)}
                   placeholder="0"
                   className="w-20 px-2 py-1 text-right border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
@@ -151,7 +158,8 @@ const POSCart = ({
 
 POSCart.propTypes = {
   cart: PropTypes.array.isRequired,
-  discount: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+  discount: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
+    .isRequired,
   discountType: PropTypes.string.isRequired,
   subtotal: PropTypes.number.isRequired,
   total: PropTypes.number.isRequired,
