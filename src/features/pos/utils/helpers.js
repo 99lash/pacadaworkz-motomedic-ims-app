@@ -11,16 +11,15 @@
  */
 export const filterProducts = (products, searchTerm) => {
   if (!searchTerm.trim()) {
-    return products.filter((product) => product.currentStock > 0);
+    return products;
   }
 
   const term = searchTerm.toLowerCase();
   return products.filter(
     (product) =>
-      product.currentStock > 0 &&
-      (product.name.toLowerCase().includes(term) ||
-        product.sku.toLowerCase().includes(term) ||
-        (product.barcode && product.barcode.includes(term)))
+      product.name.toLowerCase().includes(term) ||
+      product.sku.toLowerCase().includes(term) ||
+      (product.barcode && product.barcode.includes(term))
   );
 };
 
@@ -40,10 +39,15 @@ export const calculateSubtotal = (cart) => {
 /**
  * Calculates total after discount
  * @param {number} subtotal - Subtotal amount
- * @param {number} discount - Discount amount
+ * @param {number} discount - Discount value
+ * @param {string} discountType - Type of discount (fixed or percentage)
  * @returns {number} Total amount
  */
-export const calculateTotal = (subtotal, discount) => {
+export const calculateTotal = (subtotal, discount, discountType = 'fixed') => {
+  if (discountType === 'percentage') {
+    const discountAmount = subtotal * (discount / 100);
+    return Math.max(0, subtotal - discountAmount);
+  }
   return Math.max(0, subtotal - discount);
 };
 

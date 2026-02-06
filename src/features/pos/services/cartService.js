@@ -6,7 +6,8 @@ const API_ENDPOINTS = {
   UPDATE_CART_ITEM: (id) => `/v1/pos/cart/update-item/${id}`,
   REMOVE_FROM_CART: (id) => `/v1/pos/cart/remove-item/${id}`,
   CLEAR_CART: '/v1/pos/cart/clear',
-  CHECKOUT: '/v1/pos/checkout', // Added checkout endpoint
+  CHECKOUT: '/v1/pos/checkout', 
+  APPLY_DISCOUNT: '/v1/pos/cart/apply-discount',
 };
 /**
  * Fetches the user's cart
@@ -14,6 +15,20 @@ const API_ENDPOINTS = {
  */
 export const getCart = async () => {
   const response = await apiClient.get(API_ENDPOINTS.GET_CART);
+  return response.data;
+};
+
+/**
+ * Applies a discount to the cart
+ * @param {number} discount - The discount value
+ * @param {string} discountType - The type of discount (fixed or percentage)
+ * @returns {Promise<Object>}
+ */
+export const applyDiscount = async (discount, discountType) => {
+  const response = await apiClient.post(API_ENDPOINTS.APPLY_DISCOUNT, {
+    discount,
+    discount_type: discountType,
+  });
   return response.data;
 };
 
@@ -89,7 +104,8 @@ const cartService = {
   updateCartItem,
   removeFromCart,
   clearCart,
-  checkout, // Export the new checkout function
+  checkout, 
+  applyDiscount,
 };
 
 export default cartService;

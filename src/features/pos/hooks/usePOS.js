@@ -35,7 +35,9 @@ export const usePOS = (user) => {
 
   // UI state
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
   const [discount, setDiscount] = useState(0);
+  const [discountType, setDiscountType] = useState('fixed'); // 'fixed' or 'percentage'
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS.CASH);
   const [amountPaid, setAmountPaid] = useState(0);
   const [showCheckout, setShowCheckout] = useState(false);
@@ -51,8 +53,18 @@ export const usePOS = (user) => {
     setIsCartLoading(true);
     try {
       const cartResponse = await cartService.getCart();
-      const newCart = cartResponse?.data?.cart?.cart_items || [];
+      const cartData = cartResponse?.data?.cart || cartResponse?.data;
+      const newCart = cartData?.cart_items || [];
+      
       setCart(newCart);
+      
+      // Sync discount states from backend if available
+      if (cartData?.discount !== undefined) {
+        setDiscount(parseFloat(cartData.discount));
+      }
+      if (cartData?.discount_type) {
+        setDiscountType(cartData.discount_type);
+      }
     } catch (error) {
       console.error('Error loading cart data:', error);
       toast.error('Failed to load cart');
@@ -92,34 +104,79 @@ export const usePOS = (user) => {
   const addToCart = useCallback(
     async (product) => {
       try {
-        const existingItem = cart.find((item) => item.product.id === product.id);
+        const existingItem = cart.find((item) => item.product.id == product.id);
         const quantityToAdd = existingItem ? existingItem.quantity + 1 : 1;
-        await cartService.addToCart(product.id, quantityToAdd);
+        const response = await cartService.addToCart(product.id, quantityToAdd);
+        
+        if (response.success && response.data) {
+          const newItem = response.data;
+          const updatedStock = newItem.product?.current_stock;
+
+          // 1. Update Cart State
+          setCart(prevCart => {
+            const itemIndex = prevCart.findIndex(item => item.product.id == product.id);
+            if (itemIndex > -1) {
+              const updatedCart = [...prevCart];
+              updatedCart[itemIndex] = { 
+                ...updatedCart[itemIndex], 
+                ...newItem,
+                product: { ...updatedCart[itemIndex].product, ...newItem.product }
+              };
+              return updatedCart;
+            }
+            return [...prevCart, newItem];
+          });
+
+          // 2. Update Products State (Reflect stock in grid)
+          if (updatedStock !== undefined) {
+            setProducts(prevProducts => 
+              prevProducts.map(p => p.id == product.id ? { ...p, currentStock: updatedStock } : p)
+            );
+          }
+        }
+        
         toast.success(UI_TEXT.ADDED_TO_CART);
-        await loadCart();
       } catch (error) {
         console.error('Error adding to cart:', error);
         toast.error(error.response?.data?.message || 'Failed to add item to cart');
       }
     },
-    [cart, loadCart]
+    [cart]
   );
 
   const removeFromCart = useCallback(async (cartItemId) => {
     try {
-      await cartService.removeFromCart(cartItemId);
+      // 1. Find the item BEFORE removing it to know the quantity and product ID
+      const itemToRemove = cart.find(item => item.id == cartItemId);
+      const response = await cartService.removeFromCart(cartItemId);
+      
+      if (response.success) {
+        // 2. Update Cart State
+        setCart(prevCart => prevCart.filter(item => item.id != cartItemId));
+        
+        // 3. Manual Stock Update (Return quantity back to grid)
+        // This is safe because it only touches the specific product being removed
+        if (itemToRemove) {
+          setProducts(prevProducts => 
+            prevProducts.map(p => 
+              p.id == itemToRemove.product.id 
+                ? { ...p, currentStock: p.currentStock + itemToRemove.quantity } 
+                : p
+            )
+          );
+        }
+      }
       toast.success('Item removed from cart.');
-      await loadCart();
     } catch (error) {
       console.error('Error removing from cart:', error);
       toast.error(error.response?.data?.message || 'Failed to remove item from cart');
     }
-  }, [loadCart]);
+  }, [cart]);
 
 
   const updateQuantity = useCallback(
     async (productId, quantity) => {
-      const cartItem = cart.find((item) => item.product.id === productId);
+      const cartItem = cart.find((item) => item.product.id == productId);
       if (!cartItem) {
         toast.error('Item not found in cart.');
         return;
@@ -132,22 +189,58 @@ export const usePOS = (user) => {
       }
 
       try {
-        await cartService.updateCartItem(cartItemId, quantity);
+        const response = await cartService.updateCartItem(cartItemId, quantity);
+        if (response.success && response.data) {
+          const updatedItem = response.data;
+          const updatedStock = updatedItem.product?.current_stock;
+
+          // 1. Update Cart State
+          setCart(prevCart => 
+            prevCart.map(item => 
+              item.id == cartItemId 
+                ? { ...item, ...updatedItem, product: { ...item.product, ...updatedItem.product } }
+                : item
+            )
+          );
+
+          // 2. Update Products State (Reflect stock in grid)
+          if (updatedStock !== undefined) {
+            setProducts(prevProducts => 
+              prevProducts.map(p => p.id == productId ? { ...p, currentStock: updatedStock } : p)
+            );
+          }
+        }
         toast.success('Cart item quantity updated.');
-        await loadCart();
       } catch (error) {
         console.error('Error updating cart item quantity:', error);
         toast.error(error.response?.data?.message || 'Failed to update item quantity');
       }
     },
-    [cart, loadCart, removeFromCart]
+    [cart, removeFromCart]
   );
 
   const clearCart = useCallback(async () => {
     try {
+      const currentCart = [...cart];
       await cartService.clearCart();
+      
+      // Update Products (Return ALL items in the current cart back to grid)
+      setProducts(prevProducts => {
+        const newProducts = [...prevProducts];
+        currentCart.forEach(cartItem => {
+          const productIndex = newProducts.findIndex(p => p.id == cartItem.product.id);
+          if (productIndex > -1) {
+            newProducts[productIndex] = {
+              ...newProducts[productIndex],
+              currentStock: newProducts[productIndex].currentStock + cartItem.quantity
+            };
+          }
+        });
+        return newProducts;
+      });
+
+      setCart([]); 
       toast.success('Cart cleared.');
-      await loadCart();
       setDiscount(0);
       setAmountPaid(0);
       setShowCheckout(false);
@@ -155,7 +248,7 @@ export const usePOS = (user) => {
       console.error('Error clearing cart:', error);
       toast.error(error.response?.data?.message || 'Failed to clear cart');
     }
-  }, [loadCart]);
+  }, [cart]);
 
 
   // ---------------------------------------------------------------------------
@@ -164,7 +257,7 @@ export const usePOS = (user) => {
 
   const subtotal = useMemo(() => calculateSubtotal(cart), [cart]);
 
-  const total = useMemo(() => calculateTotal(subtotal, discount), [subtotal, discount]);
+  const total = useMemo(() => calculateTotal(subtotal, discount, discountType), [subtotal, discount, discountType]);
 
   const change = useMemo(() => {
     if (paymentMethod === PAYMENT_METHODS.CASH) {
@@ -177,10 +270,34 @@ export const usePOS = (user) => {
   // FILTERED PRODUCTS
   // ---------------------------------------------------------------------------
 
-  const filteredProducts = useMemo(
-    () => filterProducts(products, searchTerm),
-    [products, searchTerm]
-  );
+  const filteredProducts = useMemo(() => {
+    let result = filterProducts(products, searchTerm);
+
+    if (selectedCategoryIds.length > 0) {
+      result = result.filter((product) =>
+        selectedCategoryIds.includes(product.categoryId?.toString())
+      );
+    }
+
+    return result;
+  }, [products, searchTerm, selectedCategoryIds]);
+
+  // ---------------------------------------------------------------------------
+  // CATEGORY COUNTS
+  // ---------------------------------------------------------------------------
+
+  const categoryCounts = useMemo(() => {
+    const counts = {};
+    products.forEach(product => {
+      const categoryId = product.categoryId?.toString();
+      if (categoryId) {
+        counts[categoryId] = (counts[categoryId] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [products]);
+
+  const totalProductsCount = useMemo(() => products.length, [products]);
 
   // ---------------------------------------------------------------------------
   // PAYMENT PROCESSING
@@ -208,6 +325,7 @@ export const usePOS = (user) => {
         toast.success(UI_TEXT.SALE_COMPLETED);
         
         setDiscount(0);
+        setDiscountType('fixed');
         setAmountPaid(0);
         setShowCheckout(false);
         await loadCart();
@@ -227,22 +345,66 @@ export const usePOS = (user) => {
     setSearchTerm(value);
   }, []);
 
+  const toggleCategory = useCallback((categoryId) => {
+    const id = categoryId.toString();
+    setSelectedCategoryIds((prev) =>
+      prev.includes(id) ? [] : [id]
+    );
+  }, []);
+
+  const clearCategories = useCallback(() => {
+    setSelectedCategoryIds([]);
+  }, []);
+
   const handleDiscountChange = useCallback((value) => {
-    const numValue = parseFloat(value) || 0;
-    const maxDiscount = subtotal;
-    setDiscount(Math.min(Math.max(0, numValue), maxDiscount));
-  }, [subtotal]);
+    // Allow empty string to let user clear the input
+    if (value === '') {
+      setDiscount('');
+      return;
+    }
+    const numValue = parseFloat(value);
+    setDiscount(isNaN(numValue) ? 0 : numValue);
+  }, []);
+
+  const handleDiscountTypeChange = useCallback((type) => {
+    setDiscountType(type);
+  }, []);
+
+  const applyDiscountAction = useCallback(async () => {
+    const finalDiscount = parseFloat(discount) || 0;
+    
+    // Client-side validation: Bawal greater than subtotal ang discount
+    if (discountType === 'fixed' && finalDiscount > subtotal) {
+      toast.error('Discount cannot be greater than subtotal');
+      return;
+    }
+    if (discountType === 'percentage' && finalDiscount > 100) {
+      toast.error('Discount percentage cannot exceed 100%');
+      return;
+    }
+
+    try {
+      await cartService.applyDiscount(finalDiscount, discountType);
+      setDiscount(finalDiscount); // Ensure it's a number after applying
+      toast.success('Discount applied to cart');
+    } catch (error) {
+      console.error('Error applying discount:', error);
+      toast.error(error.response?.data?.message || 'Failed to apply discount');
+    }
+  }, [discount, discountType, subtotal]);
 
   const handlePaymentMethodChange = useCallback((method) => {
     setPaymentMethod(method);
-    if (method !== PAYMENT_METHODS.CASH) {
-      setAmountPaid(0);
-    }
+    // Removed the reset of amountPaid to maintain UI persistence for auditing
   }, []);
 
   const handleAmountPaidChange = useCallback((value) => {
-    const numValue = parseFloat(value) || 0;
-    setAmountPaid(Math.max(0, numValue));
+    if (value === '') {
+      setAmountPaid('');
+      return;
+    }
+    const numValue = parseFloat(value);
+    setAmountPaid(isNaN(numValue) ? 0 : numValue);
   }, []);
 
   const openCheckout = useCallback(() => {
@@ -262,13 +424,17 @@ export const usePOS = (user) => {
     products: filteredProducts,
     categories,
     brands,
+    categoryCounts,
+    totalProductsCount,
     cart,
     isLoading,
     isCartLoading, // Expose cart loading state
 
     // UI state
     searchTerm,
+    selectedCategoryIds,
     discount,
+    discountType,
     paymentMethod,
     amountPaid,
     showCheckout,
@@ -284,10 +450,14 @@ export const usePOS = (user) => {
     removeFromCart,
     clearCart,
     processSale,
+    applyDiscountAction,
 
     // Handlers
     handleSearchChange,
+    toggleCategory,
+    clearCategories,
     handleDiscountChange,
+    handleDiscountTypeChange,
     handlePaymentMethodChange,
     handleAmountPaidChange,
     openCheckout,
