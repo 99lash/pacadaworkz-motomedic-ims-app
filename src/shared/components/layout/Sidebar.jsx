@@ -30,6 +30,10 @@ const Sidebar = ({
 
   const handleMenuItemClick = () => {
     if (isMobile && onCloseMenu) {
+      // Blur the focused element to prevent focus from being trapped in the hidden sidebar
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
       onCloseMenu();
     }
   };
@@ -62,7 +66,7 @@ const Sidebar = ({
         id="mobile-sidebar"
         className={getSidebarClasses()}
         aria-label="Main navigation"
-        aria-hidden={isMobile && !isMenuOpen}
+        inert={isMobile && !isMenuOpen ? true : undefined}
       >
         <nav className="h-full flex flex-col bg-white border-r shadow-sm text-gray-900 dark:bg-gray-950 dark:text-gray-100 dark:border-gray-800">
           <SidebarHeader 
