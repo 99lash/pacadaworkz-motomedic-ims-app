@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/components/ui/card';
+import { ShoppingCart } from 'lucide-react';
 import {
   LineChart,
   Line,
@@ -17,6 +18,20 @@ import { ReportSummaryCard } from './';
 import { UI_TEXT, formatCurrency } from '../utils';
 
 const PurchaseReport = ({ purchaseData }) => {
+  if (purchaseData.poCount === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+        <div className="p-4 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400">
+          <ShoppingCart className="w-12 h-12" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{UI_TEXT.NO_PURCHASE_DATA}</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Try selecting a different date range.</p>
+        </div>
+      </div>
+    );
+  }
+
   const averagePOValue =
     purchaseData.poCount > 0
       ? formatCurrency(purchaseData.totalPurchases / purchaseData.poCount)
