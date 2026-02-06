@@ -105,6 +105,33 @@ export const exportReport = async (type, startDate, endDate) => {
   return response.data;
 };
 
+/**
+ * Fetches raw inventory data for detailed reporting
+ * @returns {Promise<Array>} Inventory data
+ */
+export const fetchRawInventory = async () => {
+  const response = await apiClient.get('/v1/inventory');
+  return response.data.data;
+};
+
+/**
+ * Fetches raw stock adjustments for detailed reporting
+ * @returns {Promise<Array>} Adjustments data
+ */
+export const fetchRawStockAdjustments = async () => {
+  const response = await apiClient.get('/v1/stock-adjustments');
+  return response.data.data;
+};
+
+/**
+ * Fetches top products from dashboard (quantity based)
+ * @returns {Promise<Object>} Key-value pair of Product Name -> Quantity
+ */
+export const fetchDashboardTopProducts = async () => {
+  const response = await apiClient.get('/v1/dashboard/charts/top-products');
+  return response.data.data;
+};
+
 // =============================================================================
 // SERVICE EXPORT
 // =============================================================================
@@ -117,6 +144,9 @@ const reportsService = {
   fetchStockAdjustmentReport,
   fetchProfitLossReport,
   exportReport,
+  fetchRawInventory,
+  fetchRawStockAdjustments,
+  fetchDashboardTopProducts,
 };
 
 export default reportsService;

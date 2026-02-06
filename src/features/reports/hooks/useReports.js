@@ -7,7 +7,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { reportsService } from '../services';
-import { REPORT_TYPES, DATE_RANGE_TYPES, getDateRangeFilter } from '../utils';
+import { productService } from '../../products/services';
+import { REPORT_TYPES, DATE_RANGE_TYPES, getDateRangeFilter, filterByDateRange } from '../utils';
 
 // Default initial states to prevent UI crashes
 const DEFAULT_SALES_DATA = {
@@ -78,7 +79,7 @@ export const useReports = () => {
   const [profitLossData, setProfitLossData] = useState(DEFAULT_PROFIT_LOSS_DATA);
 
   // Products state is kept for potential future use or if we decide to fetch it alongside
-  const [products, setProducts] = useState([]);
+  const [products] = useState([]);
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -103,6 +104,15 @@ export const useReports = () => {
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
+    
+    // Reset all data to defaults to prevent stale data display
+    setSalesData(DEFAULT_SALES_DATA);
+    setPurchaseData(DEFAULT_PURCHASE_DATA);
+    setInventoryData(DEFAULT_INVENTORY_DATA);
+    setProductPerformanceData(DEFAULT_PERFORMANCE_DATA);
+    setStockAdjustmentData(DEFAULT_STOCK_ADJUSTMENT_DATA);
+    setProfitLossData(DEFAULT_PROFIT_LOSS_DATA);
+
     try {
       const { start, end } = getDateRangeFilter(dateRange, customStartDate, customEndDate);
       const startDate = formatDateForApi(start);
@@ -137,21 +147,44 @@ export const useReports = () => {
           break;
         }
         case REPORT_TYPES.INVENTORY: {
-          const data = await reportsService.fetchInventoryReport(startDate, endDate);
+          const [reportData, rawInventory] = await Promise.all([
+            reportsService.fetchInventoryReport(startDate, endDate),
+            reportsService.fetchRawInventory()
+          ]);
+
+          const mappedInventory = (rawInventory || []).map(item => ({
+            id: item.id,
+            name: item.product_name,
+            sku: item.sku,
+            currentStock: Number(item.quantity) || 0,
+            reorderPoint: Number(item.reorder_level) || 0,
+          }));
+
+          const lowStockItems = mappedInventory.filter(item => 
+            item.currentStock > 0 && item.currentStock <= item.reorderPoint
+          );
+          const outOfStockItems = mappedInventory.filter(item => 
+            item.currentStock <= 0
+          );
+
           setInventoryData({
-            totalProducts: Number(data.total_products) || 0,
-            lowStock: Number(data.low_stock) || 0,
-            outOfStock: Number(data.out_of_stock) || 0,
-            overStock: 0, // Not provided by backend
-            totalValue: Number(data.total_value) || 0,
-            lowStockItems: [], // Not provided by backend report endpoint
-            outOfStockItems: [], // Not provided by backend report endpoint
-            overStockItems: [], // Not provided by backend
+            totalProducts: Number(reportData.total_products) || 0,
+            lowStock: Number(reportData.low_stock) || 0,
+            outOfStock: Number(reportData.out_of_stock) || 0,
+            overStock: 0,
+            totalValue: Number(reportData.total_value) || 0,
+            lowStockItems,
+            outOfStockItems,
+            overStockItems: [],
           });
           break;
         }
         case REPORT_TYPES.PRODUCT_PERFORMANCE: {
-          const data = await reportsService.fetchProductPerformanceReport(startDate, endDate);
+          const [data, dashboardTopProducts, allProducts] = await Promise.all([
+            reportsService.fetchProductPerformanceReport(startDate, endDate),
+            reportsService.fetchDashboardTopProducts(),
+            productService.fetchProducts()
+          ]);
           
           // Transform array to object for charts
           const revenueByCategory = (data.revenue_by_category || []).reduce((acc, curr) => {
@@ -164,8 +197,20 @@ export const useReports = () => {
             return acc;
           }, {});
 
+          // Map dashboard top products (quantity) to revenue using product price
+          const topProducts = Object.entries(dashboardTopProducts || {}).map(([name, quantity]) => {
+            const product = (allProducts.data || []).find(p => p.name === name);
+            const price = product ? (Number(product.sellingPrice) || 0) : 0;
+            return {
+              id: product?.id || name, // Use name as fallback ID if product not found
+              productName: name,
+              quantity: Number(quantity),
+              revenue: Number(quantity) * price
+            };
+          }).sort((a, b) => b.revenue - a.revenue).slice(0, 10); // Top 10 by revenue
+
           setProductPerformanceData({
-            topProducts: [], // Not provided by backend
+            topProducts,
             worstProducts: [], // Not provided by backend
             revenueByCategory,
             revenueByBrand,
@@ -173,19 +218,34 @@ export const useReports = () => {
           break;
         }
         case REPORT_TYPES.STOCK_ADJUSTMENT: {
-          const data = await reportsService.fetchStockAdjustmentReport(startDate, endDate);
+          const [reportData, rawAdjustments] = await Promise.all([
+            reportsService.fetchStockAdjustmentReport(startDate, endDate),
+            reportsService.fetchRawStockAdjustments()
+          ]);
           
-          const adjustmentByReason = (data.adjustments_by_reason || []).reduce((acc, curr) => {
+          const adjustmentByReason = (reportData.adjustments_by_reason || []).reduce((acc, curr) => {
             acc[curr.reason] = Number(curr.num_reasons) || 0;
             return acc;
           }, {});
 
+          // Filter adjustments by selected date range
+          const filteredAdjustments = (rawAdjustments || [])
+            .filter(adj => filterByDateRange(adj.created_at, dateRange, customStartDate, customEndDate))
+            .map(adj => ({
+              id: adj.id,
+              productName: adj.product_name,
+              adjustmentQuantity: Number(adj.quantity) || 0,
+              reason: adj.reason,
+              userName: adj.user_name || 'System',
+              createdAt: adj.created_at,
+            }));
+
           setStockAdjustmentData({
-            totalAdjustments: Number(data.total_adjustments) || 0,
+            totalAdjustments: Number(reportData.total_adjustments) || 0,
             adjustmentByReason,
             adjustmentByStaff: {}, // Not provided by backend
-            adjustmentValue: Number(data.adjustments_value) || 0,
-            adjustments: [], // Not provided by backend
+            adjustmentValue: Number(reportData.adjustments_value) || 0,
+            adjustments: filteredAdjustments,
           });
           break;
         }
