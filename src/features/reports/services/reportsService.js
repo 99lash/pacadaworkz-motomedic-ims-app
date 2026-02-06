@@ -47,7 +47,6 @@ export const fetchInventoryReport = async (startDate, endDate) => {
   const response = await apiClient.get('/v1/reports/inventory', {
     params: { start_date: startDate, end_date: endDate },
   });
-  console.log(response.data.data);
   return response.data.data;
 };
 
