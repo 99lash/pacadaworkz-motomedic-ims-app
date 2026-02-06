@@ -20,3 +20,5 @@ export * from './utils';
 // Components
 export * from './components';
 
+export { default as dashboardReducer } from './dashboardSlice';
+

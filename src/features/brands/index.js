@@ -17,3 +17,5 @@ export * from './services';
 // Utils
 export * from './utils';
 
+export { default as brandsReducer } from './brandsSlice';
+

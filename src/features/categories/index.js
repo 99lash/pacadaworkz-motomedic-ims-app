@@ -23,3 +23,5 @@ export * from './components';
 // Utilities
 export * from './utils';
 
+export { default as categoriesReducer } from './categoriesSlice';
+

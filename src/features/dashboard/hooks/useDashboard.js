@@ -2,36 +2,35 @@
  * useDashboard Hook
  * 
  * Custom hook that encapsulates all dashboard-related state management
- * and business logic. Fetches data from the API.
+ * and business logic. Fetches data from the API and manages state via Redux.
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { dashboardService } from '../services';
+import { 
+  fetchDashboardStart, 
+  fetchDashboardSuccess, 
+  fetchDashboardFailure 
+} from '../dashboardSlice';
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export const useDashboard = (user, userRole) => {
-  // ---------------------------------------------------------------------------
-  // STATE
-  // ---------------------------------------------------------------------------
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const [stats, setStats] = useState({
-    totalProducts: 0,
-    totalSales: 0,
-    totalRevenue: 0,
-    lowStockCount: 0,
-    outOfStockCount: 0,
-    totalTransactions: 0,
-    activeUsers: 0,
-    inventoryValue: 0,
-  });
-
-  const [topProducts, setTopProducts] = useState([]);
-  const [revenueByCategory, setRevenueByCategory] = useState([]);
-  const [salesTrend, setSalesTrend] = useState([]);
-  const [inventoryOverview, setInventoryOverview] = useState(null);
-  const [recentActivities, setRecentActivities] = useState([]);
+  const dispatch = useDispatch();
+  
+  // Select state from Redux
+  const {
+    stats,
+    topProducts,
+    revenueByCategory,
+    salesTrend,
+    inventoryOverview,
+    recentActivities,
+    isLoading,
+    error,
+    lastFetched
+  } = useSelector((state) => state.dashboard);
 
   // ---------------------------------------------------------------------------
   // COMPUTED VALUES
@@ -46,11 +45,16 @@ export const useDashboard = (user, userRole) => {
   // DATA LOADING
   // ---------------------------------------------------------------------------
 
-  const loadDashboardData = useCallback(async () => {
+  const loadDashboardData = useCallback(async (forceRefresh = false) => {
     if (!user) return;
 
-    setIsLoading(true);
-    setError(null);
+    // Cache check
+    const now = Date.now();
+    if (!forceRefresh && lastFetched && (now - lastFetched < CACHE_DURATION)) {
+      return; // Data is fresh, don't fetch
+    }
+
+    dispatch(fetchDashboardStart());
 
     try {
       // Prepare promises for parallel execution
@@ -71,16 +75,13 @@ export const useDashboard = (user, userRole) => {
 
       const [statsRes, salesTrendRes, topProductsRes, activitiesRes, revenueRes, inventoryRes] = results;
 
-
-      // Handle Activities
-      if (activitiesRes && activitiesRes.success) {
-        // console.log(activitiesRes);
-        setRecentActivities(activitiesRes.data || []);
-      }
+      // Process Data
+      const newRecentActivities = (activitiesRes && activitiesRes.success) ? (activitiesRes.data || []) : [];
+      
+      let newStats = {};
       if (statsRes && statsRes.success) {
         const rawStats = statsRes.data || {};
-        // Map snake_case from API to camelCase for UI
-        const mappedStats = {
+        newStats = {
           totalProducts: rawStats.total_products ?? rawStats.totalProducts ?? 0,
           totalSales: rawStats.total_sales ?? rawStats.totalSales ?? 0,
           totalRevenue: rawStats.total_revenue ?? rawStats.totalRevenue ?? 0,
@@ -88,81 +89,75 @@ export const useDashboard = (user, userRole) => {
           outOfStockCount: rawStats.out_of_stock ?? rawStats.outOfStock ?? 0,
           totalTransactions: rawStats.total_transactions ?? rawStats.totalTransactions ?? 0,
           activeUsers: rawStats.active_users ?? rawStats.activeUsers ?? 0,
-          inventoryValue: inventoryRes.total_inventory_value ?? inventoryRes.totalInventoryValue ?? 0,
+          inventoryValue: (inventoryRes?.data?.total_inventory_value ?? inventoryRes?.data?.totalInventoryValue ?? 0),
         };
-        setStats(prev => ({ ...prev, ...mappedStats }));
       } else if (statsRes) {
         console.error('Failed to fetch stats:', statsRes.error);
       }
 
-      // Handle Sales Trend
+      let newSalesTrend = [];
       if (salesTrendRes && salesTrendRes.success) {
         const rawData = salesTrendRes.data || {};
         if (Array.isArray(rawData)) {
-          setSalesTrend(rawData);
+          newSalesTrend = rawData;
         } else if (typeof rawData === 'object' && rawData !== null) {
-          // Transform { "2023-01-01": 100 } to [{ date: "2023-01-01", sales: 100 }]
-          const transformed = Object.entries(rawData).map(([date, amount]) => ({
+          newSalesTrend = Object.entries(rawData).map(([date, amount]) => ({
             date,
             sales: amount
           }));
-          setSalesTrend(transformed);
-        } else {
-          setSalesTrend([]);
         }
       }
 
-      // Handle Top Products
+      let newTopProducts = [];
       if (topProductsRes && topProductsRes.success) {
         const rawData = topProductsRes.data || {};
         if (Array.isArray(rawData)) {
-          setTopProducts(rawData);
+          newTopProducts = rawData;
         } else if (typeof rawData === 'object' && rawData !== null) {
-          // Transform { "Product A": 10 } to [{ name: "Product A", sales: 10 }]
-          const transformed = Object.entries(rawData).map(([name, count]) => ({
+          newTopProducts = Object.entries(rawData).map(([name, count]) => ({
             name,
             sales: count
           }));
-          setTopProducts(transformed);
-        } else {
-          setTopProducts([]);
         }
       }
 
-      // Handle Admin Data
+      let newRevenueByCategory = [];
+      let newInventoryOverview = null;
+
       if (isAdminOrSuper) {
         if (revenueRes && revenueRes.success) {
           const rawData = revenueRes.data || {};
-          let transformedData = [];
-
           if (Array.isArray(rawData)) {
-            // Map potential API keys to component expected keys { name, value }
-            transformedData = rawData.map(item => ({
+            newRevenueByCategory = rawData.map(item => ({
               name: item.name || item.category || item.category_name || 'Unknown Category',
               value: Number(item.value || item.revenue || item.total_revenue || item.total || 0)
             }));
           } else if (typeof rawData === 'object' && rawData !== null) {
-            // Transform { "Category A": 100 } to [{ name: "Category A", value: 100 }]
-            transformedData = Object.entries(rawData).map(([name, value]) => ({
+            newRevenueByCategory = Object.entries(rawData).map(([name, value]) => ({
               name,
               value: Number(value)
             }));
           }
-
-          setRevenueByCategory(transformedData);
         }
         if (inventoryRes && inventoryRes.success) {
-          setInventoryOverview(inventoryRes.data);
+          newInventoryOverview = inventoryRes.data;
         }
       }
 
+      dispatch(fetchDashboardSuccess({
+        stats: newStats,
+        topProducts: newTopProducts,
+        revenueByCategory: newRevenueByCategory,
+        salesTrend: newSalesTrend,
+        inventoryOverview: newInventoryOverview,
+        recentActivities: newRecentActivities
+      }));
+
     } catch (err) {
       console.error('Error loading dashboard data:', err);
-      setError('Failed to load dashboard data');
-    } finally {
-      setIsLoading(false);
+      dispatch(fetchDashboardFailure('Failed to load dashboard data'));
     }
-  }, [user, isAdminOrSuper]);
+  }, [user, isAdminOrSuper, dispatch, lastFetched]);
 
   useEffect(() => {
     loadDashboardData();
@@ -189,7 +184,7 @@ export const useDashboard = (user, userRole) => {
     isAdminOrSuper,
 
     // Actions
-    refreshData: loadDashboardData,
+    refreshData: () => loadDashboardData(true),
   };
 };
 
