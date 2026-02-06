@@ -66,7 +66,7 @@ const Sidebar = ({
         id="mobile-sidebar"
         className={getSidebarClasses()}
         aria-label="Main navigation"
-        inert={isMobile && !isMenuOpen ? '' : undefined}
+        inert={isMobile && !isMenuOpen ? true : undefined}
       >
         <nav className="h-full flex flex-col bg-white border-r shadow-sm text-gray-900 dark:bg-gray-950 dark:text-gray-100 dark:border-gray-800">
           <SidebarHeader 
