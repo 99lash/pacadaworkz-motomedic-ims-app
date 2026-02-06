@@ -7,4 +7,5 @@
  */
 
 export { default as AttributesPage } from './AttributesPage';
+export { default as attributesReducer } from './attributesSlice';
 

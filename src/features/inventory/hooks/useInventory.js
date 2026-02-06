@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useState, useEffect } from 'react';
+import { useCallback, useMemo, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { fetchInventory, updateInventoryStock } from '../services';
 import {
   STATUS_FILTERS,
@@ -9,25 +10,45 @@ import {
   filterInventory,
 } from '../utils';
 import { AlertTriangle, CheckCircle, Package } from 'lucide-react';
+import {
+  fetchInventoryStart,
+  fetchInventorySuccess,
+  fetchInventoryFailure,
+  setSearchTerm,
+  setStatusFilter,
+  updateInventoryItem,
+} from '../inventorySlice';
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export const useInventory = () => {
-  const [inventory, setInventory] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState(UI_TEXT.STATUS_ALL);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const dispatch = useDispatch();
+  
+  // Redux State
+  const {
+    inventory,
+    searchTerm,
+    statusFilter,
+    statusFilters,
+    isLoading,
+    error,
+    lastFetched
+  } = useSelector((state) => state.inventory);
 
-  const refreshInventory = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const data = await fetchInventory();
-      setInventory(data);
-    } catch (err) {
-      setError(err);
-    } finally {
-      setIsLoading(false);
+  const refreshInventory = useCallback(async (forceRefresh = false) => {
+    const now = Date.now();
+    if (!forceRefresh && lastFetched && (now - lastFetched < CACHE_DURATION)) {
+      return;
     }
-  }, []);
+
+    dispatch(fetchInventoryStart());
+    try {
+      const data = await fetchInventory();
+      dispatch(fetchInventorySuccess(data));
+    } catch (err) {
+      dispatch(fetchInventoryFailure(err.message || 'Failed to fetch inventory'));
+    }
+  }, [dispatch, lastFetched]);
 
   useEffect(() => {
     refreshInventory();
@@ -39,6 +60,8 @@ export const useInventory = () => {
   }, []);
 
   // Filter inventory
+  // Note: We compute this here instead of storing in Redux to keep state minimal, 
+  // but since we persist filters in Redux, this calculation is consistent.
   const filteredInventory = useMemo(() => {
     return filterInventory(inventory, searchTerm, statusFilter, getStockStatus);
   }, [inventory, searchTerm, statusFilter]);
@@ -79,27 +102,23 @@ export const useInventory = () => {
 
   // Handle search change
   const handleSearchChange = useCallback((value) => {
-    setSearchTerm(value);
-  }, []);
+    dispatch(setSearchTerm(value));
+  }, [dispatch]);
 
   // Handle status filter change
   const handleStatusFilterChange = useCallback((value) => {
-    setStatusFilter(value);
-  }, []);
+    dispatch(setStatusFilter(value));
+  }, [dispatch]);
 
   const handleAdjustStock = useCallback(async (itemId, newStock) => {
     try {
       const updatedItem = await updateInventoryStock(itemId, newStock);
-      setInventory(prevInventory => 
-        prevInventory.map(item => 
-          item.id === itemId ? { ...item, ...updatedItem } : item
-        )
-      );
+      dispatch(updateInventoryItem(updatedItem));
     } catch (err) {
       console.error('Failed to update stock:', err);
-      // Here you could set an error state to show in the UI
+      // Ideally dispatch an error action or show toast
     }
-  }, []);
+  }, [dispatch]);
 
   return {
     // Data
@@ -111,7 +130,7 @@ export const useInventory = () => {
     // Filters
     searchTerm,
     statusFilter,
-    statusFilters: STATUS_FILTERS,
+    statusFilters,
 
     // Statistics
     stats,
@@ -124,7 +143,7 @@ export const useInventory = () => {
     // Actions
     handleSearchChange,
     handleStatusFilterChange,
-    refreshInventory,
+    refreshInventory: () => refreshInventory(true),
     handleAdjustStock,
   };
 };

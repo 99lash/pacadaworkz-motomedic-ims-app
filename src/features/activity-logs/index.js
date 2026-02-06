@@ -7,4 +7,5 @@
  */
 
 export { default as ActivityLogsPage } from './ActivityLogsPage';
+export { default as activityLogsReducer } from './activityLogsSlice';
 
