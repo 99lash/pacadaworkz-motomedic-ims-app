@@ -56,7 +56,7 @@ const ActivityLogsTable = ({ logs }) => {
                 {formatTimestamp(log.timestamp)}
               </TableCell>
               <TableCell className="text-gray-900 dark:text-gray-100 font-medium">
-                {log.userName || 'Unknown'}
+                {log.user || 'Unknown'}
               </TableCell>
               <TableCell>
                 <Badge 
@@ -90,7 +90,7 @@ ActivityLogsTable.propTypes = {
     PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
       timestamp: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-      userName: PropTypes.string,
+      user: PropTypes.string,
       module: PropTypes.string,
       action: PropTypes.string,
       details: PropTypes.string,
