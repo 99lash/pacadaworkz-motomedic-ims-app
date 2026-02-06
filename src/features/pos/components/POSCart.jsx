@@ -1,7 +1,96 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { ShoppingCart, Plus, Minus, Trash2 } from "lucide-react";
 import { UI_TEXT, formatCurrency } from "../utils";
+
+const CartItem = ({ item, onUpdateQuantity, onRemoveFromCart }) => {
+  const [localQuantity, setLocalQuantity] = useState(item.quantity);
+
+  // Sync local state with prop if it changes from outside
+  useEffect(() => {
+    setLocalQuantity(item.quantity);
+  }, [item.quantity]);
+
+  const handleBlur = () => {
+    const val = parseInt(localQuantity);
+    if (!isNaN(val) && val !== item.quantity) {
+      if (val <= 0) {
+        onRemoveFromCart(item.id);
+      } else {
+        onUpdateQuantity(item.product.id, val);
+      }
+    } else if (isNaN(val)) {
+      setLocalQuantity(item.quantity);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.target.blur();
+    }
+  };
+
+  return (
+    <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex-1">
+          <div className="text-gray-900 dark:text-gray-100 text-sm mb-1 font-medium">
+            {item.product.name}
+          </div>
+          <div className="text-gray-600 dark:text-gray-400 text-xs">
+            {formatCurrency(item.unit_price)}
+          </div>
+        </div>
+        <button
+          onClick={() => onRemoveFromCart(item.id)}
+          className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
+          aria-label="Remove item"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1 bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded-md p-0.5">
+          <button
+            onClick={() => onUpdateQuantity(item.product.id, item.quantity - 1)}
+            className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 transition-colors"
+            aria-label="Decrease quantity"
+          >
+            <Minus className="w-3 h-3" />
+          </button>
+          
+          <input
+            type="number"
+            min="1"
+            value={localQuantity}
+            onChange={(e) => setLocalQuantity(e.target.value)}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            className="w-10 text-center text-gray-900 dark:text-gray-100 font-medium bg-gray-50 dark:bg-gray-700/50 border-x border-gray-100 dark:border-gray-500 focus:ring-1 focus:ring-blue-500 outline-none p-0 text-sm h-7 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            title="Click to edit quantity"
+          />
+
+          <button
+            onClick={() => onUpdateQuantity(item.product.id, item.quantity + 1)}
+            className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 transition-colors"
+            aria-label="Increase quantity"
+          >
+            <Plus className="w-3 h-3" />
+          </button>
+        </div>
+        <div className="text-gray-900 dark:text-gray-100 font-semibold">
+          {formatCurrency(item.unit_price * item.quantity)}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+CartItem.propTypes = {
+  item: PropTypes.object.isRequired,
+  onUpdateQuantity: PropTypes.func.isRequired,
+  onRemoveFromCart: PropTypes.func.isRequired,
+};
 
 const POSCart = ({
   cart,
@@ -41,59 +130,12 @@ const POSCart = ({
         </div>
       ) : (
         cart.map((item) => (
-          <div
-            key={item.id}
-            className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
-          >
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex-1">
-                <div className="text-gray-900 dark:text-gray-100 text-sm mb-1 font-medium">
-                  {item.product.name}
-                </div>
-                <div className="text-gray-600 dark:text-gray-400 text-xs">
-                  {formatCurrency(item.unit_price)}
-                </div>
-              </div>
-              {/* Pass cart item ID */}
-              <button
-                onClick={() => onRemoveFromCart(item.id)}
-                className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
-                aria-label="Remove item"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {/* Pass product ID for update */}
-                <button
-                  onClick={() =>
-                    onUpdateQuantity(item.product.id, item.quantity - 1)
-                  }
-                  className="w-7 h-7 flex items-center justify-center bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-100 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300"
-                  aria-label="Decrease quantity"
-                >
-                  <Minus className="w-3 h-3" />
-                </button>
-                <span className="w-8 text-center text-gray-900 dark:text-gray-100 font-medium">
-                  {item.quantity}
-                </span>
-                {/* Pass product ID for update */}
-                <button
-                  onClick={() =>
-                    onUpdateQuantity(item.product.id, item.quantity + 1)
-                  }
-                  className="w-7 h-7 flex items-center justify-center bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded hover:bg-gray-100 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300"
-                  aria-label="Increase quantity"
-                >
-                  <Plus className="w-3 h-3" />
-                </button>
-              </div>
-              <div className="text-gray-900 dark:text-gray-100 font-semibold">
-                {formatCurrency(item.unit_price * item.quantity)}
-              </div>
-            </div>
-          </div>
+          <CartItem 
+            key={item.id} 
+            item={item} 
+            onUpdateQuantity={onUpdateQuantity} 
+            onRemoveFromCart={onRemoveFromCart} 
+          />
         ))
       )}
     </div>
