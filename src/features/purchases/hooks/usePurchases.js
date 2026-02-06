@@ -1,6 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { purchaseService } from '../services';
+import supplierService from '../../suppliers/services/supplierService';
+import productService from '../../products/services/productService';
 import {
   INITIAL_FORM_STATE,
   INITIAL_FORM_ERRORS,
@@ -9,10 +11,10 @@ import {
 } from '../utils';
 
 export const usePurchases = () => {
-  const [purchaseOrders, setPurchaseOrders] = useState(() => purchaseService.fetchPurchaseOrders());
-  const [suppliers] = useState(() => purchaseService.fetchSuppliers());
-  const [products] = useState(() => purchaseService.fetchProducts());
-  const isLoading = false;
+  const [purchaseOrders, setPurchaseOrders] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Dialog states
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -24,6 +26,36 @@ export const usePurchases = () => {
   // Form state
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [formErrors, setFormErrors] = useState(INITIAL_FORM_ERRORS);
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [purchasesData, suppliersResponse, productsResponse] = await Promise.all([
+        purchaseService.fetchPurchaseOrders(),
+        supplierService.fetchSuppliers(),
+        productService.fetchProducts(),
+      ]);
+
+      setPurchaseOrders(purchasesData);
+      
+      if (suppliersResponse.success) {
+        setSuppliers(suppliersResponse.data);
+      }
+      
+      if (productsResponse.success) {
+        setProducts(productsResponse.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+      toast.error('Failed to load data. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const resetForm = useCallback(() => {
     setFormData(INITIAL_FORM_STATE);
@@ -71,7 +103,7 @@ export const usePurchases = () => {
     });
   }, []);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     const { isValid, errors } = validatePurchaseOrderForm(formData);
     if (!isValid) {
       setFormErrors(errors);
@@ -79,26 +111,37 @@ export const usePurchases = () => {
       return false;
     }
 
-    purchaseService.createPurchaseOrder(formData);
-    setPurchaseOrders(purchaseService.fetchPurchaseOrders());
-    closeFormDialog();
-    toast.success(UI_TEXT.TOAST_CREATE);
-    return true;
-  }, [formData, closeFormDialog]);
+    try {
+      await purchaseService.createPurchaseOrder(formData);
+      await fetchData(); // Refresh data
+      closeFormDialog();
+      toast.success(UI_TEXT.TOAST_CREATE);
+      return true;
+    } catch (error) {
+      toast.error(error.message || 'Failed to create purchase order');
+      return false;
+    }
+  }, [formData, closeFormDialog, fetchData]);
 
-  const handleMarkAsReceived = useCallback((purchaseOrder) => {
+  const handleMarkAsReceived = useCallback(async (purchaseOrder) => {
     if (!window.confirm('Mark this purchase order as received?')) {
       return false;
     }
 
-    const updated = purchaseService.markPurchaseOrderAsReceived(purchaseOrder.id);
-    if (updated) {
-      setPurchaseOrders(purchaseService.fetchPurchaseOrders());
-      toast.success(UI_TEXT.TOAST_RECEIVED);
-      return true;
+    try {
+      const updated = await purchaseService.markPurchaseOrderAsReceived(purchaseOrder.id);
+      if (updated) {
+        await fetchData(); // Refresh data
+        toast.success(UI_TEXT.TOAST_RECEIVED);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error marking purchase order as received:', error);
+      toast.error('Failed to update purchase order');
+      return false;
     }
-    return false;
-  }, []);
+  }, [fetchData]);
 
   const openDeleteDialog = useCallback((purchaseOrder) => {
     setPurchaseOrderToDelete(purchaseOrder);
@@ -110,17 +153,24 @@ export const usePurchases = () => {
     setIsDeleteOpen(false);
   }, []);
 
-  const handleDelete = useCallback(() => {
+  const handleDelete = useCallback(async () => {
     if (!purchaseOrderToDelete) return false;
-    const success = purchaseService.deletePurchaseOrder(purchaseOrderToDelete.id);
-    if (success) {
-      setPurchaseOrders(purchaseService.fetchPurchaseOrders());
-      closeDeleteDialog();
-      toast.success(UI_TEXT.TOAST_DELETE);
-      return true;
+    
+    try {
+      const success = await purchaseService.deletePurchaseOrder(purchaseOrderToDelete.id);
+      if (success) {
+        await fetchData(); // Refresh data
+        closeDeleteDialog();
+        toast.success(UI_TEXT.TOAST_DELETE);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error deleting purchase order:', error);
+      toast.error('Failed to delete purchase order');
+      return false;
     }
-    return false;
-  }, [purchaseOrderToDelete, closeDeleteDialog]);
+  }, [purchaseOrderToDelete, closeDeleteDialog, fetchData]);
 
   const getStatusBadge = useCallback((status) => {
     switch (status) {
