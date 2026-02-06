@@ -1,40 +1,65 @@
 /**
  * Purchase Service
  * Handles all data operations for the purchases feature
- * 
- * This service uses localStorage for persistence.
- * Replace with actual API calls when backend is ready.
+ *
+ * This service uses the centralized API client for HTTP requests.
  */
 
-const PURCHASE_STORAGE_KEY = 'motomedic_purchase_orders';
-const SUPPLIER_STORAGE_KEY = 'motomedic_suppliers';
-const PRODUCT_STORAGE_KEY = 'motomedic_products';
+import { apiClient } from '../../../shared/services';
+import { extractErrorMessage } from '../../../shared/utils/errorHandler';
+
+const API_ENDPOINT = '/v1/purchases';
 
 // =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
 
-const readFromStorage = (key, fallback = []) => {
-  if (typeof window === 'undefined') return fallback;
-  try {
-    const stored = window.localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : fallback;
-  } catch {
-    return fallback;
-  }
-};
+const transformPurchaseOrderFromBackend = (po) => ({
+  id: po.id,
+  supplierId: po.supplier_id, // Might be undefined in list view if only 'supplier' string is returned
+  supplierName: po.supplier || po.supplier_name || 'Unknown Supplier',
+  expectedDeliveryDate: po.expected_delivery || po.expected_delivery_date,
+  notes: po.notes || '',
+  items: (po.items || []).map((item) => ({
+    productId: item.product_id,
+    productName: item.product_name,
+    quantityOrdered: parseFloat(item.quantity_ordered),
+    quantityReceived: parseFloat(item.quantity_received) || 0,
+    costPrice: parseFloat(item.cost_price),
+  })),
+  total: parseFloat(po.total_amount),
+  status: po.status,
+  createdAt: po.order_date || po.created_at, // Use order_date if available
+  updatedAt: po.updated_at,
+});
 
-const saveToStorage = (key, data) => {
-  if (typeof window === 'undefined') return;
+const transformPurchaseOrderToBackend = (po) => {
+  // Try to get user ID from stored auth data
+  let userId = 1; // Default fallback
   try {
-    window.localStorage.setItem(key, JSON.stringify(data));
-  } catch (error) {
-    console.error('Error saving to storage:', error);
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      userId = user.id || 1;
+    }
+  } catch (e) {
+    console.warn('Could not retrieve user ID for purchase order', e);
   }
-};
 
-const generatePurchaseOrderId = () => {
-  return crypto.randomUUID ? crypto.randomUUID() : `po_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+  return {
+    supplier_id: po.supplierId,
+    user_id: userId,
+    order_date: new Date().toISOString().split('T')[0], // Today's date YYYY-MM-DD
+    expected_delivery: po.expectedDeliveryDate,
+    notes: po.notes,
+    items: po.items.map((item) => ({
+      product_id: item.productId,
+      quantity_ordered: item.quantityOrdered,
+      cost_price: item.costPrice,
+    })),
+    total_amount: po.total,
+    status: po.status || 'pending',
+  };
 };
 
 // =============================================================================
@@ -43,146 +68,102 @@ const generatePurchaseOrderId = () => {
 
 /**
  * Fetches all purchase orders
- * @returns {Array} Purchase orders array
+ * @returns {Promise<Array>} Purchase orders array
  */
-export const fetchPurchaseOrders = () => {
-  return readFromStorage(PURCHASE_STORAGE_KEY, []);
+export const fetchPurchaseOrders = async () => {
+  try {
+    const response = await apiClient.get(API_ENDPOINT);
+    if (response.data.success) {
+      return response.data.data.map(transformPurchaseOrderFromBackend);
+    }
+    return [];
+  } catch (error) {
+    console.error('Failed to fetch purchase orders:', extractErrorMessage(error));
+    return [];
+  }
 };
 
 /**
  * Fetches a single purchase order by ID
  * @param {string} id - Purchase order ID
- * @returns {Object|null} Purchase order object or null
+ * @returns {Promise<Object|null>} Purchase order object or null
  */
-export const fetchPurchaseOrderById = (id) => {
-  const purchaseOrders = fetchPurchaseOrders();
-  return purchaseOrders.find(po => po.id === id) || null;
-};
-
-/**
- * Fetches suppliers (for purchase order creation)
- * @returns {Array} Suppliers array
- */
-export const fetchSuppliers = () => {
-  return readFromStorage(SUPPLIER_STORAGE_KEY, []);
-};
-
-/**
- * Fetches products (for purchase order creation)
- * @returns {Array} Products array
- */
-export const fetchProducts = () => {
-  // Get products from localStorage
-  // Note: Products should be created through the Products page first
-  // The productService uses in-memory mockProducts, so we rely on localStorage
-  // which gets populated when products are created/updated through the Products page
-  return readFromStorage(PRODUCT_STORAGE_KEY, []);
+export const fetchPurchaseOrderById = async (id) => {
+  try {
+    const response = await apiClient.get(`${API_ENDPOINT}/${id}`);
+    if (response.data.success) {
+      return transformPurchaseOrderFromBackend(response.data.data);
+    }
+    return null;
+  } catch (error) {
+    console.error('Failed to fetch purchase order:', extractErrorMessage(error));
+    return null;
+  }
 };
 
 /**
  * Creates a new purchase order
  * @param {Object} purchaseOrderData - Purchase order data
- * @returns {Object} Created purchase order
+ * @returns {Promise<Object>} Created purchase order
  */
-export const createPurchaseOrder = (purchaseOrderData) => {
-  const purchaseOrders = fetchPurchaseOrders();
-  const suppliers = fetchSuppliers();
-  const supplier = suppliers.find(s => s.id === purchaseOrderData.supplierId);
-  
-  // Calculate total
-  const total = purchaseOrderData.items.reduce((sum, item) => {
-    return sum + (item.quantityOrdered * item.costPrice);
-  }, 0);
+export const createPurchaseOrder = async (purchaseOrderData) => {
+  try {
+    // Calculate total if not provided (though backend likely recalculates)
+    const total = purchaseOrderData.items.reduce((sum, item) => {
+      return sum + (item.quantityOrdered * item.costPrice);
+    }, 0);
 
-  const newPurchaseOrder = {
-    id: generatePurchaseOrderId(),
-    supplierId: purchaseOrderData.supplierId,
-    supplierName: supplier?.companyName || 'Unknown Supplier',
-    expectedDeliveryDate: purchaseOrderData.expectedDeliveryDate,
-    notes: purchaseOrderData.notes || '',
-    items: purchaseOrderData.items.map(item => ({
-      productId: item.productId,
-      quantityOrdered: item.quantityOrdered,
-      quantityReceived: 0,
-      costPrice: item.costPrice,
-    })),
-    total,
-    status: 'pending',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-  
-  const updatedPurchaseOrders = [...purchaseOrders, newPurchaseOrder];
-  saveToStorage(PURCHASE_STORAGE_KEY, updatedPurchaseOrders);
-  return newPurchaseOrder;
+    const payload = transformPurchaseOrderToBackend({
+      ...purchaseOrderData,
+      total,
+    });
+
+    const response = await apiClient.post(API_ENDPOINT, payload);
+    if (response.data.success) {
+      return transformPurchaseOrderFromBackend(response.data.data);
+    }
+    throw new Error(response.data.message || 'Failed to create purchase order');
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Failed to create purchase order'));
+  }
 };
 
 /**
  * Updates a purchase order status to received
  * @param {string} id - Purchase order ID
- * @returns {Object|null} Updated purchase order or null
+ * @returns {Promise<Object|null>} Updated purchase order or null
  */
-export const markPurchaseOrderAsReceived = (id) => {
-  const purchaseOrders = fetchPurchaseOrders();
-  const products = fetchProducts();
-  const index = purchaseOrders.findIndex(po => po.id === id);
-  
-  if (index === -1) return null;
-  
-  const purchaseOrder = purchaseOrders[index];
-  
-  // Update product stock and cost prices
-  const updatedProducts = products.map((product) => {
-    const poItem = purchaseOrder.items.find((item) => item.productId === product.id);
-    if (poItem) {
-      return {
-        ...product,
-        currentStock: (product.currentStock || 0) + poItem.quantityOrdered,
-        costPrice: poItem.costPrice, // Update cost price
-      };
+export const markPurchaseOrderAsReceived = async (id) => {
+  try {
+    // Assuming backend handles status update via PATCH
+    // If specific endpoint exists for receiving, change this path
+    const response = await apiClient.patch(`${API_ENDPOINT}/${id}`, {
+      status: 'received',
+    });
+
+    if (response.data.success) {
+      return transformPurchaseOrderFromBackend(response.data.data);
     }
-    return product;
-  });
-  
-  saveToStorage(PRODUCT_STORAGE_KEY, updatedProducts);
-  
-  // Update purchase order status
-  const updatedPurchaseOrder = {
-    ...purchaseOrder,
-    status: 'received',
-    receivedAt: new Date().toISOString(),
-    items: purchaseOrder.items.map((item) => ({
-      ...item,
-      quantityReceived: item.quantityOrdered,
-    })),
-    updatedAt: new Date().toISOString(),
-  };
-  
-  const updatedPurchaseOrders = [
-    ...purchaseOrders.slice(0, index),
-    updatedPurchaseOrder,
-    ...purchaseOrders.slice(index + 1),
-  ];
-  
-  saveToStorage(PURCHASE_STORAGE_KEY, updatedPurchaseOrders);
-  return updatedPurchaseOrder;
+    return null;
+  } catch (error) {
+    console.error('Failed to mark purchase order as received:', extractErrorMessage(error));
+    return null;
+  }
 };
 
 /**
  * Deletes a purchase order
  * @param {string} id - Purchase order ID
- * @returns {boolean} Success status
+ * @returns {Promise<boolean>} Success status
  */
-export const deletePurchaseOrder = (id) => {
-  const purchaseOrders = fetchPurchaseOrders();
-  const filteredPurchaseOrders = purchaseOrders.filter(po => po.id !== id);
-  
-  if (filteredPurchaseOrders.length === purchaseOrders.length) {
-    return false; // Purchase order not found
+export const deletePurchaseOrder = async (id) => {
+  try {
+    const response = await apiClient.delete(`${API_ENDPOINT}/${id}`);
+    return response.data.success;
+  } catch (error) {
+    console.error('Failed to delete purchase order:', extractErrorMessage(error));
+    return false;
   }
-  
-  saveToStorage(PURCHASE_STORAGE_KEY, filteredPurchaseOrders);
-  return true;
 };
 
 // =============================================================================
@@ -192,8 +173,6 @@ export const deletePurchaseOrder = (id) => {
 const purchaseService = {
   fetchPurchaseOrders,
   fetchPurchaseOrderById,
-  fetchSuppliers,
-  fetchProducts,
   createPurchaseOrder,
   markPurchaseOrderAsReceived,
   deletePurchaseOrder,
