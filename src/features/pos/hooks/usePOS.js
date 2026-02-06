@@ -73,8 +73,8 @@ export const usePOS = (user) => {
     }
   }, []);
 
-  const loadInitialData = useCallback(async () => {
-    setIsLoading(true);
+  const loadInitialData = useCallback(async (isSilent = false) => {
+    if (!isSilent) setIsLoading(true);
     try {
       const [productsData, categoriesData, brandsData] = await Promise.all([
         posService.fetchProducts(),
@@ -88,7 +88,7 @@ export const usePOS = (user) => {
       console.error('Error loading initial POS data:', error);
       toast.error('Failed to load products');
     } finally {
-      setIsLoading(false);
+      if (!isSilent) setIsLoading(false);
     }
   }, []);
 
@@ -328,9 +328,11 @@ export const usePOS = (user) => {
         setDiscountType('fixed');
         setAmountPaid(0);
         setShowCheckout(false);
+        
+        // Silent refresh to update stock and data without full page reload
         await loadCart();
         posService.invalidateCache();
-        await loadInitialData();
+        await loadInitialData(true);
     } catch (error) {
         console.error('Error processing sale:', error);
         toast.error(error.response?.data?.message || 'Failed to process sale');
