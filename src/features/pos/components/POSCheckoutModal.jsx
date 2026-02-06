@@ -1,6 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { CreditCard, Wallet, Smartphone, X } from "lucide-react";
+import { CreditCard, Wallet, Smartphone, X, Check } from "lucide-react";
 import { UI_TEXT, PAYMENT_METHODS, formatCurrency } from "../utils";
 
 const POSCheckoutModal = ({
@@ -90,9 +90,19 @@ const POSCheckoutModal = ({
           </div>
 
           <div>
-            <label className="block text-gray-700 dark:text-gray-300 mb-2 font-medium">
-              {UI_TEXT.AMOUNT_PAID}
-            </label>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-gray-700 dark:text-gray-300 font-medium">
+                {UI_TEXT.AMOUNT_PAID}
+              </label>
+              <button 
+                type="button"
+                onClick={() => onAmountPaidChange(total)}
+                className="flex items-center gap-1 px-2 py-1 text-xs font-semibold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-colors shadow-sm"
+              >
+                <Check className="w-3 h-3" />
+                {UI_TEXT.EXACT_AMOUNT}
+              </button>
+            </div>
             <input
               type="number"
               min={total}

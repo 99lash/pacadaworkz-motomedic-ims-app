@@ -14,6 +14,7 @@ export const UI_TEXT = {
   PAYMENT_METHOD: 'Payment Method',
   TOTAL_AMOUNT: 'Total Amount:',
   AMOUNT_PAID: 'Amount Paid',
+  EXACT_AMOUNT: 'Exact Amount',
   CHANGE: 'Change:',
   CANCEL: 'Cancel',
   COMPLETE_SALE: 'Complete Sale',
