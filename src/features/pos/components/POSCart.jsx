@@ -6,12 +6,15 @@ import { UI_TEXT, formatCurrency } from '../utils';
 const POSCart = ({
   cart,
   discount,
+  discountType,
   subtotal,
   total,
   onUpdateQuantity,
   onRemoveFromCart,
   onClearCart,
   onDiscountChange,
+  onDiscountTypeChange,
+  onApplyDiscount,
   onProceedToPayment,
 }) => (
   <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
@@ -93,22 +96,42 @@ const POSCart = ({
     {/* Totals */}
     {cart.length > 0 && (
       <>
-        <div className="space-y-2 py-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="space-y-3 py-4 border-t border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
             <span>{UI_TEXT.SUBTOTAL}</span>
             <span>{formatCurrency(subtotal)}</span>
           </div>
-          <div className="flex items-center justify-between">
-            <label className="text-gray-600 dark:text-gray-400">{UI_TEXT.DISCOUNT}</label>
-            <input
-              type="number"
-              min="0"
-              max={subtotal}
-              value={discount}
-              onChange={(e) => onDiscountChange(e.target.value)}
-              className="w-24 px-2 py-1 text-right border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            />
+          
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-gray-600 dark:text-gray-400 text-sm">{UI_TEXT.DISCOUNT}</label>
+              <div className="flex items-center gap-1">
+                <select 
+                  value={discountType}
+                  onChange={(e) => onDiscountTypeChange(e.target.value)}
+                  className="px-1 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 outline-none"
+                >
+                  <option value="fixed">₱</option>
+                  <option value="percentage">%</option>
+                </select>
+                <input
+                  type="number"
+                  min="0"
+                  value={discount === 0 ? '' : discount}
+                  onChange={(e) => onDiscountChange(e.target.value)}
+                  placeholder="0"
+                  className="w-20 px-2 py-1 text-right border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+            </div>
+            <button
+              onClick={onApplyDiscount}
+              className="w-full py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors border border-gray-200 dark:border-gray-600 font-medium"
+            >
+              Apply Discount
+            </button>
           </div>
+
           <div className="flex items-center justify-between text-gray-900 dark:text-gray-100 pt-2 border-t border-gray-200 dark:border-gray-700">
             <span className="font-semibold">{UI_TEXT.TOTAL}</span>
             <span className="text-xl font-bold">{formatCurrency(total)}</span>
@@ -128,13 +151,16 @@ const POSCart = ({
 
 POSCart.propTypes = {
   cart: PropTypes.array.isRequired,
-  discount: PropTypes.number.isRequired,
+  discount: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+  discountType: PropTypes.string.isRequired,
   subtotal: PropTypes.number.isRequired,
   total: PropTypes.number.isRequired,
   onUpdateQuantity: PropTypes.func.isRequired,
   onRemoveFromCart: PropTypes.func.isRequired,
   onClearCart: PropTypes.func.isRequired,
   onDiscountChange: PropTypes.func.isRequired,
+  onDiscountTypeChange: PropTypes.func.isRequired,
+  onApplyDiscount: PropTypes.func.isRequired,
   onProceedToPayment: PropTypes.func.isRequired,
 };
 

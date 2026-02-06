@@ -1,7 +1,7 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import { CreditCard, Wallet, Smartphone, X } from 'lucide-react';
-import { UI_TEXT, PAYMENT_METHODS, formatCurrency } from '../utils';
+import React from "react";
+import PropTypes from "prop-types";
+import { CreditCard, Wallet, Smartphone, X } from "lucide-react";
+import { UI_TEXT, PAYMENT_METHODS, formatCurrency } from "../utils";
 
 const POSCheckoutModal = ({
   show,
@@ -42,34 +42,40 @@ const POSCheckoutModal = ({
               onClick={() => onPaymentMethodChange(PAYMENT_METHODS.CASH)}
               className={`p-4 border-2 rounded-lg flex flex-col items-center gap-2 transition-colors ${
                 paymentMethod === PAYMENT_METHODS.CASH
-                  ? 'border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                  ? "border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20"
+                  : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
               }`}
             >
               <Wallet className="w-6 h-6" />
-              <span className="text-sm font-medium">{UI_TEXT.PAYMENT_CASH}</span>
+              <span className="text-sm font-medium">
+                {UI_TEXT.PAYMENT_CASH}
+              </span>
             </button>
             <button
               onClick={() => onPaymentMethodChange(PAYMENT_METHODS.CARD)}
               className={`p-4 border-2 rounded-lg flex flex-col items-center gap-2 transition-colors ${
                 paymentMethod === PAYMENT_METHODS.CARD
-                  ? 'border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                  ? "border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20"
+                  : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
               }`}
             >
               <CreditCard className="w-6 h-6" />
-              <span className="text-sm font-medium">{UI_TEXT.PAYMENT_CARD}</span>
+              <span className="text-sm font-medium">
+                {UI_TEXT.PAYMENT_CARD}
+              </span>
             </button>
             <button
               onClick={() => onPaymentMethodChange(PAYMENT_METHODS.GCASH)}
               className={`p-4 border-2 rounded-lg flex flex-col items-center gap-2 transition-colors ${
                 paymentMethod === PAYMENT_METHODS.GCASH
-                  ? 'border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                  ? "border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20"
+                  : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
               }`}
             >
               <Smartphone className="w-6 h-6" />
-              <span className="text-sm font-medium">{UI_TEXT.PAYMENT_GCASH}</span>
+              <span className="text-sm font-medium">
+                {UI_TEXT.PAYMENT_GCASH}
+              </span>
             </button>
           </div>
         </div>
@@ -83,30 +89,29 @@ const POSCheckoutModal = ({
             </span>
           </div>
 
-          {paymentMethod === PAYMENT_METHODS.CASH && (
-            <>
-              <div>
-                <label className="block text-gray-700 dark:text-gray-300 mb-2 font-medium">
-                  {UI_TEXT.AMOUNT_PAID}
-                </label>
-                <input
-                  type="number"
-                  min={total}
-                  step="0.01"
-                  value={amountPaid}
-                  onChange={(e) => onAmountPaidChange(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  placeholder="0.00"
-                />
-              </div>
-              <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <span className="text-gray-700 dark:text-gray-300 font-medium">{UI_TEXT.CHANGE}</span>
-                <span className="text-xl text-green-700 dark:text-green-400 font-bold">
-                  {formatCurrency(change)}
-                </span>
-              </div>
-            </>
-          )}
+          <div>
+            <label className="block text-gray-700 dark:text-gray-300 mb-2 font-medium">
+              {UI_TEXT.AMOUNT_PAID}
+            </label>
+            <input
+              type="number"
+              min={total}
+              step="0.01"
+              value={amountPaid === 0 ? "" : amountPaid}
+              onChange={(e) => onAmountPaidChange(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              placeholder="0.00"
+            />
+          </div>
+
+          <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+            <span className="text-gray-700 dark:text-gray-300 font-medium">
+              {UI_TEXT.CHANGE}
+            </span>
+            <span className="text-xl text-green-700 dark:text-green-400 font-bold">
+              {formatCurrency(change)}
+            </span>
+          </div>
         </div>
 
         {/* Actions */}
@@ -133,7 +138,8 @@ POSCheckoutModal.propTypes = {
   show: PropTypes.bool.isRequired,
   total: PropTypes.number.isRequired,
   paymentMethod: PropTypes.string.isRequired,
-  amountPaid: PropTypes.number.isRequired,
+  amountPaid: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
+    .isRequired,
   change: PropTypes.number.isRequired,
   onClose: PropTypes.func.isRequired,
   onPaymentMethodChange: PropTypes.func.isRequired,
@@ -142,4 +148,3 @@ POSCheckoutModal.propTypes = {
 };
 
 export default POSCheckoutModal;
-
