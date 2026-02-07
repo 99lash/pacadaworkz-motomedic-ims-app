@@ -10,7 +10,7 @@ const MainLayout = () => {
   const location = useLocation();
   useAuth();
   const filteredMenu = useFilteredMenu();
-  const { isMobile, isMenuOpen, closeMenu, toggleMenu } = useMobileMenu();
+  const { isMobile, isTablet, isMenuOpen, closeMenu, toggleMenu } = useMobileMenu();
 
   const renderNavItems = (expanded) => (
     <>
@@ -42,6 +42,7 @@ const MainLayout = () => {
       {/* Sidebar for both mobile (as a drawer) and desktop */}
       <Sidebar 
         isMobile={isMobile}
+        isTablet={isTablet}
         isMenuOpen={isMenuOpen}
         onCloseMenu={closeMenu}
       >

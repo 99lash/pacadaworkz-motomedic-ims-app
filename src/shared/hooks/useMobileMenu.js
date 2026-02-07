@@ -1,17 +1,31 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const MOBILE_BREAKPOINT = 768;
+const MOBILE_BREAKPOINT = 425;
+const TABLET_BREAKPOINT = 768;
+const LAPTOP_BREAKPOINT = 1024;
 
 export const useMobileMenu = () => {
   const [isMobile, setIsMobile] = useState(
     typeof window !== 'undefined' ? window.innerWidth < MOBILE_BREAKPOINT : false
   );
+  const [isTablet, setIsTablet] = useState(
+    typeof window !== 'undefined' ? window.innerWidth <= TABLET_BREAKPOINT : false
+  );
+  const [isLaptop, setIsLaptop] = useState(
+    typeof window !== 'undefined' ? window.innerWidth <= LAPTOP_BREAKPOINT : false
+  );
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
-      const mobile = window.innerWidth < MOBILE_BREAKPOINT;
+      const width = window.innerWidth;
+      const mobile = width < MOBILE_BREAKPOINT;
+      const tablet = width <= TABLET_BREAKPOINT;
+      const laptop = width <= LAPTOP_BREAKPOINT;
+      
       setIsMobile(mobile);
+      setIsTablet(tablet);
+      setIsLaptop(laptop);
       
       if (!mobile && isMenuOpen) {
         setIsMenuOpen(false);
@@ -51,6 +65,8 @@ export const useMobileMenu = () => {
 
   return {
     isMobile,
+    isTablet,
+    isLaptop,
     isMenuOpen,
     openMenu,
     closeMenu,
