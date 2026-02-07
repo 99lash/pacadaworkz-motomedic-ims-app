@@ -20,3 +20,5 @@ export * from './components';
 // Utilities
 export * from './utils';
 
+export { default as productsReducer } from './productsSlice';
+

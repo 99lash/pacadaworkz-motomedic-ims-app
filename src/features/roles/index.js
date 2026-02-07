@@ -14,3 +14,5 @@ export * from './components';
 // Utils
 export * from './utils';
 
+export { default as rolesReducer } from './rolesSlice';
+

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import { usePagination, DEFAULT_PAGE_SIZE } from '../../../shared/hooks';
 import { productService } from '../services';
@@ -8,13 +9,32 @@ import brandService from '../../brands/services/brandService';
 import {
   UI_TEXT,
   DEBOUNCE,
-  PRODUCT_STATUSES,
   INITIAL_PRODUCT_FORM,
   INITIAL_PRODUCT_ERRORS,
   validateProductForm,
   sanitizeProductData,
   mapProductToFormState,
 } from '../utils';
+
+import {
+  fetchProductsStart,
+  fetchProductsSuccess,
+  fetchProductsFailure,
+  setFilterOptions,
+  setSearchTerm,
+  setSelectedCategory,
+  setSelectedBrand,
+  setSelectedStatus,
+  setCurrentPage,
+  setPageSize,
+  setSaving,
+  setDeleting,
+  setExporting,
+  setFormDialogOpen,
+  setEditingProduct,
+} from '../productsSlice';
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // helpers
 const createInitialFormState = () => ({ ...INITIAL_PRODUCT_FORM });
@@ -45,25 +65,44 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const dispatch = useDispatch();
+  
+  // Redux State
+  const {
+    products,
+    totalItems,
+    isLoading,
+    error,
+    lastFetched,
+    searchTerm,
+    selectedCategory,
+    selectedBrand,
+    selectedStatus,
+    filterOptions,
+    isSaving,
+    isDeleting,
+    isExporting,
+    isFormDialogOpen,
+    editingProduct,
+    currentPage,
+    pageSize,
+  } = useSelector((state) => state.products);
 
-  // dialog + form
-  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
+  // Local Form State (Transient)
   const [formData, setFormData] = useState(createInitialFormState);
   const [formErrors, setFormErrors] = useState(createInitialFormErrors);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
 
   const isInitialLoad = useRef(true);
 
-  // pagination
+  // pagination hook sync
   const pagination = usePagination({
-    initialPage: 1,
-    initialPageSize,
+    initialPage: currentPage,
+    initialPageSize: pageSize,
     totalItems,
   });
 
   const {
-    currentPage,
-    pageSize,
     totalPages,
     hasPrevPage,
     hasNextPage,
@@ -72,15 +111,30 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     changePageSize,
   } = pagination;
 
+  // Sync Redux pagination with local hook (if needed, or just use Redux directly)
+  // We'll update Redux when these change
+  const handlePageChange = useCallback((page) => {
+    dispatch(setCurrentPage(page));
+    goToPage(page);
+  }, [dispatch, goToPage]);
+
+  const handlePageSizeChange = useCallback((size) => {
+    dispatch(setPageSize(size));
+    changePageSize(size);
+  }, [dispatch, changePageSize]);
+
   // debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-      if (!isInitialLoad.current) goToPage(1);
+      if (!isInitialLoad.current && searchTerm !== debouncedSearchTerm) {
+        dispatch(setCurrentPage(1));
+        goToPage(1);
+      }
     }, DEBOUNCE.SEARCH);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, goToPage]);
+  }, [searchTerm, dispatch, goToPage, debouncedSearchTerm]);
 
   // normalized filters
   const normalizedFilters = useMemo(
@@ -93,9 +147,14 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   );
 
   // load products
-  const loadProducts = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  const loadProducts = useCallback(async (forceRefresh = false) => {
+    const now = Date.now();
+    // Simple cache check: if not forcing refresh, and data exists and is fresh
+    // Note: We might want to re-fetch if filters changed. 
+    // Ideally, we should track 'lastFetchedParams' to strictly cache.
+    // For now, we'll fetch if any filter/page changes or if forced.
+    
+    dispatch(fetchProductsStart());
 
     try {
       const result = await productService.fetchProductsPaginated({
@@ -106,42 +165,44 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
       });
 
       if (result.success) {
-        setProducts(result.data);
-        setTotalItems(result.pagination.totalItems);
+        dispatch(fetchProductsSuccess({
+          products: result.data,
+          totalItems: result.pagination.totalItems
+        }));
       } else {
-        setError(result.error);
+        dispatch(fetchProductsFailure(result.error));
         toast.error(UI_TEXT.TOAST_LOAD_ERROR);
       }
     } catch (err) {
-      setError(err.message);
+      dispatch(fetchProductsFailure(err.message));
       toast.error(UI_TEXT.TOAST_LOAD_ERROR);
     } finally {
-      setIsLoading(false);
       isInitialLoad.current = false;
     }
-  }, [currentPage, pageSize, debouncedSearchTerm, normalizedFilters]);
+  }, [dispatch, currentPage, pageSize, debouncedSearchTerm, normalizedFilters]);
 
   // load filter options
   const loadFilterOptions = useCallback(async () => {
+    if (filterOptions.categories.length > 0 && filterOptions.brands.length > 0) return;
+
     try {
       const [categoriesResult, brandsResult] = await Promise.all([
         categoryService.fetchCategories(),
         brandService.fetchBrands(),
       ]);
 
-      setFilterOptions({
+      dispatch(setFilterOptions({
         categories: categoriesResult.success
           ? categoriesResult.data.map(cat => ({ value: cat.id, label: cat.name }))
           : [],
         brands: brandsResult.success
           ? brandsResult.data.map(brand => ({ value: brand.id, label: brand.name }))
           : [],
-        statuses: PRODUCT_STATUSES,
-      });
+      }));
     } catch (err) {
       console.error('Failed to load product filter options', err);
     }
-  }, []);
+  }, [dispatch, filterOptions.categories.length, filterOptions.brands.length]);
 
   useEffect(() => {
     loadProducts();
@@ -155,14 +216,14 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   const resetForm = useCallback(() => {
     setFormData(createInitialFormState());
     setFormErrors(createInitialFormErrors());
-    setEditingProduct(null);
-  }, []);
+    dispatch(setEditingProduct(null));
+  }, [dispatch]);
 
   // dialog control
   const openCreateDialog = useCallback(() => {
     resetForm();
-    setIsFormDialogOpen(true);
-  }, [resetForm]);
+    dispatch(setFormDialogOpen(true));
+  }, [resetForm, dispatch]);
 
   const openEditDialog = useCallback((product) => {
     console.log('openEditDialog: Product to Edit', product);
@@ -184,14 +245,18 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
       categoryId,
       brandId,
     });
+    dispatch(setEditingProduct(product));
+    setFormData(mapProductToFormState(product));
     setFormErrors(createInitialFormErrors());
     setIsFormDialogOpen(true);
   }, [filterOptions]);
+    dispatch(setFormDialogOpen(true));
+  }, [dispatch]);
 
   const closeFormDialog = useCallback(() => {
-    setIsFormDialogOpen(false);
+    dispatch(setFormDialogOpen(false));
     resetForm();
-  }, [resetForm]);
+  }, [resetForm, dispatch]);
 
   // form change
   const handleFormFieldChange = useCallback(
@@ -219,7 +284,7 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   const handleSubmitProduct = useCallback(async () => {
     if (!validateForm()) return false;
 
-    setIsSaving(true);
+    dispatch(setSaving(true));
     try {
       const payload = sanitizeProductData(formData);
       const result = editingProduct
@@ -228,7 +293,7 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
 
       if (result.success) {
         toast.success(editingProduct ? UI_TEXT.TOAST_UPDATE_SUCCESS : UI_TEXT.TOAST_CREATE_SUCCESS);
-        await loadProducts();
+        await loadProducts(true);
         closeFormDialog();
         return true;
       }
@@ -240,19 +305,19 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
       toast.error(UI_TEXT.TOAST_SAVE_ERROR);
       return false;
     } finally {
-      setIsSaving(false);
+      dispatch(setSaving(false));
     }
-  }, [editingProduct, formData, validateForm, loadProducts, closeFormDialog]);
+  }, [editingProduct, formData, validateForm, loadProducts, closeFormDialog, dispatch]);
 
   // delete product
   const handleDeleteProduct = useCallback(
     async (productId) => {
-      setIsDeleting(true);
+      dispatch(setDeleting(true));
       try {
         const result = await productService.deleteProduct(productId);
         if (result.success) {
           toast.success(UI_TEXT.TOAST_DELETE_SUCCESS);
-          await loadProducts();
+          await loadProducts(true);
           return true;
         }
 
@@ -263,15 +328,15 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
         toast.error(UI_TEXT.TOAST_DELETE_ERROR);
         return false;
       } finally {
-        setIsDeleting(false);
+        dispatch(setDeleting(false));
       }
     },
-    [loadProducts]
+    [loadProducts, dispatch]
   );
 
   // export CSV
   const handleExportProducts = useCallback(async () => {
-    setIsExporting(true);
+    dispatch(setExporting(true));
     try {
       const result = await productService.exportProductsAsCsv({
         search: debouncedSearchTerm,
@@ -299,7 +364,7 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
       toast.error(UI_TEXT.TOAST_EXPORT_ERROR);
       return false;
     } finally {
-      setIsExporting(false);
+      dispatch(setExporting(false));
     }
   }, [debouncedSearchTerm, normalizedFilters]);
 
@@ -391,37 +456,45 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
 
     reader.readAsText(file);
   }, [filterOptions, loadProducts]);
+  }, [debouncedSearchTerm, normalizedFilters, dispatch]);
 
   // filter handlers
   const handleCategoryFilterChange = useCallback(
     (value) => {
-      setSelectedCategory(value);
+      dispatch(setSelectedCategory(value));
+      dispatch(setCurrentPage(1));
       goToPage(1);
     },
-    [goToPage]
+    [dispatch, goToPage]
   );
 
   const handleBrandFilterChange = useCallback(
     (value) => {
-      setSelectedBrand(value);
+      dispatch(setSelectedBrand(value));
+      dispatch(setCurrentPage(1));
       goToPage(1);
     },
-    [goToPage]
+    [dispatch, goToPage]
   );
 
   const handleStatusFilterChange = useCallback(
     (value) => {
-      setSelectedStatus(value);
+      dispatch(setSelectedStatus(value));
+      dispatch(setCurrentPage(1));
       goToPage(1);
     },
-    [goToPage]
+    [dispatch, goToPage]
   );
+
+  const handleSearchChange = useCallback((value) => {
+    dispatch(setSearchTerm(value));
+  }, [dispatch]);
 
   return {
     products,
     totalItems,
     searchTerm,
-    setSearchTerm,
+    setSearchTerm: handleSearchChange,
     selectedCategory,
     selectedBrand,
     selectedStatus,
@@ -454,8 +527,8 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     handleCategoryFilterChange,
     handleBrandFilterChange,
     handleStatusFilterChange,
-    handlePageSizeChange: changePageSize,
-    handlePageChange: goToPage,
+    handlePageSizeChange,
+    handlePageChange,
   };
 };
 

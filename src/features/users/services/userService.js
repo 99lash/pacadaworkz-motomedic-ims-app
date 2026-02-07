@@ -10,6 +10,40 @@ const API_ENDPOINTS = {
   USER_BY_ID: (id) => `/v1/users/${id}`,
 };
 
+const ROLE_NAME_MAP = {
+  1: 'Super Admin',
+  2: 'Admin',
+  3: 'Staff',
+};
+
+const ROLE_ID_MAP = {
+  'Super Admin': 1,
+  'Admin': 2,
+  'Staff': 3,
+  'User': 3, // Default to Staff if 'User' is selected
+  'Manager': 2, // Map Manager to Admin for now, or could be another role
+};
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+const transformUser = (user) => {
+  return {
+    ...user,
+    role: ROLE_NAME_MAP[user.role_id] || 'User',
+    status: user.is_active ? 'Active' : 'Inactive',
+    lastLogin: user.last_login ? new Date(user.last_login).toLocaleString() : 'Never',
+  };
+};
+
+const splitName = (fullName) => {
+  const parts = fullName.trim().split(' ');
+  const firstName = parts[0];
+  const lastName = parts.slice(1).join(' ') || firstName; // Fallback if no last name
+  return { first_name: firstName, last_name: lastName };
+};
+
 // =============================================================================
 // API SERVICE METHODS
 // =============================================================================
@@ -24,8 +58,9 @@ export const fetchUsers = async () => {
     const response = await apiClient.get(`${API_ENDPOINTS.USERS}?per_page=1000`);
 
     if (response.data.success) {
+      const users = (response.data.data || []).map(transformUser);
       return {
-        data: response.data.data || [],
+        data: users,
         success: true,
       };
     }
@@ -55,7 +90,7 @@ export const fetchUserById = async (id) => {
 
     if (response.data.success) {
       return {
-        data: response.data.data,
+        data: transformUser(response.data.data),
         success: true,
       };
     }
@@ -85,16 +120,23 @@ export const fetchUserById = async (id) => {
  */
 export const createUser = async (userData) => {
   try {
-    const response = await apiClient.post(API_ENDPOINTS.USERS, {
-      name: userData.name,
+    const { first_name, last_name } = splitName(userData.name);
+    
+    const payload = {
+      name: userData.name, // Keep full name if backend uses it
+      first_name,
+      last_name,
       email: userData.email,
       password: userData.password,
-      role: userData.role || 'User',
-    });
+      role_id: ROLE_ID_MAP[userData.role] || 3, // Default to Staff (3)
+      is_default_password: true, // Assuming this is required based on StoreUserRequest
+    };
+
+    const response = await apiClient.post(API_ENDPOINTS.USERS, payload);
 
     if (response.data.success) {
       return {
-        data: response.data.data,
+        data: transformUser(response.data.data),
         success: true,
       };
     }
@@ -124,15 +166,22 @@ export const createUser = async (userData) => {
  */
 export const updateUser = async (id, userData) => {
   try {
-    const response = await apiClient.patch(API_ENDPOINTS.USER_BY_ID(id), {
+    const { first_name, last_name } = splitName(userData.name);
+    
+    const payload = {
       name: userData.name,
+      first_name,
+      last_name,
       email: userData.email,
-      role: userData.role,
-    });
+      role_id: ROLE_ID_MAP[userData.role] || 3,
+      is_active: userData.status === 'Active',
+    };
+
+    const response = await apiClient.patch(API_ENDPOINTS.USER_BY_ID(id), payload);
 
     if (response.data.success) {
       return {
-        data: response.data.data,
+        data: transformUser(response.data.data),
         success: true,
       };
     }

@@ -6,6 +6,7 @@ import {
   POSProductGrid,
   POSCart,
   POSCheckoutModal,
+  POSCategoryPanel,
 } from './components';
 
 const POSPage = () => {
@@ -13,12 +14,17 @@ const POSPage = () => {
   const {
     // Data
     products,
+    categories,
+    categoryCounts,
+    totalProductsCount,
     cart,
     isLoading,
 
     // UI state
     searchTerm,
+    selectedCategoryIds,
     discount,
+    discountType,
     paymentMethod,
     amountPaid,
     showCheckout,
@@ -34,10 +40,14 @@ const POSPage = () => {
     removeFromCart,
     clearCart,
     processSale,
+    applyDiscountAction,
 
     // Handlers
     handleSearchChange,
+    toggleCategory,
+    clearCategories,
     handleDiscountChange,
+    handleDiscountTypeChange,
     handlePaymentMethodChange,
     handleAmountPaidChange,
     openCheckout,
@@ -50,10 +60,19 @@ const POSPage = () => {
     <div className="p-6 space-y-6">
       <POSHeader />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Products Section */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-3 space-y-4">
           <POSProductSearch searchTerm={searchTerm} onSearchChange={handleSearchChange} />
+
+          <POSCategoryPanel
+            categories={categories}
+            categoryCounts={categoryCounts}
+            totalProductsCount={totalProductsCount}
+            selectedCategoryIds={selectedCategoryIds}
+            onToggleCategory={toggleCategory}
+            onClearCategories={clearCategories}
+          />
 
           {isLoading ? (
             <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
@@ -67,16 +86,19 @@ const POSPage = () => {
         </div>
           
         {/* Cart Section */}
-        <div className="space-y-4">
+        <div className="lg:col-span-1 space-y-4">
           <POSCart
             cart={cart}
             discount={discount}
+            discountType={discountType}
             subtotal={subtotal}
             total={total}
             onUpdateQuantity={updateQuantity}
             onRemoveFromCart={removeFromCart}
             onClearCart={clearCart}
             onDiscountChange={handleDiscountChange}
+            onDiscountTypeChange={handleDiscountTypeChange}
+            onApplyDiscount={applyDiscountAction}
             onProceedToPayment={openCheckout}
           />
         </div>

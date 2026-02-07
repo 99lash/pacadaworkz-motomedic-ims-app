@@ -162,25 +162,6 @@ export const useCategories = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     }
   }, []);
 
-  // Initial load and reload on pagination/search changes
-  useEffect(() => {
-    loadCategories();
-  }, [currentPage, pageSize, debouncedSearchTerm, loadCategories]);
-
-  // Load all categories once for validation
-  useEffect(() => {
-    loadAllCategories();
-  }, [loadAllCategories]);
-
-  // Clean up dialog states when component unmounts
-  useEffect(() => {
-    return () => {
-      setIsAddDialogOpen(false);
-      setIsEditDialogOpen(false);
-      resetForm();
-    };
-  }, [resetForm]);
-
   // ---------------------------------------------------------------------------
   // FORM HANDLERS
   // ---------------------------------------------------------------------------
@@ -207,6 +188,25 @@ export const useCategories = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     setFormErrors(INITIAL_FORM_ERRORS);
     setEditingCategory(null);
   }, []);
+
+  // Initial load and reload on pagination/search changes
+  useEffect(() => {
+    loadCategories();
+  }, [currentPage, pageSize, debouncedSearchTerm, loadCategories]);
+
+  // Load all categories once for validation
+  useEffect(() => {
+    loadAllCategories();
+  }, [loadAllCategories]);
+
+  // Clean up dialog states when component unmounts
+  useEffect(() => {
+    return () => {
+      setIsAddDialogOpen(false);
+      setIsEditDialogOpen(false);
+      resetForm();
+    };
+  }, [resetForm]);
 
   // ---------------------------------------------------------------------------
   // DIALOG HANDLERS
