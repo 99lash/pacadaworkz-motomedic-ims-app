@@ -27,3 +27,4 @@ dist-ssr
 *.sw?
 
 package-lock.json
+pr-description.md

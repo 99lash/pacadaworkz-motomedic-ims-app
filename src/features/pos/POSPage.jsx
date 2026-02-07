@@ -1,5 +1,6 @@
 import { useAuth } from '../auth';
 import { usePOS } from './hooks';
+import { useMobileMenu } from '../../shared/hooks/useMobileMenu';
 import {
   POSHeader,
   POSProductSearch,
@@ -11,6 +12,7 @@ import {
 
 const POSPage = () => {
   const { user } = useAuth();
+  const { isLaptop, isMobile } = useMobileMenu();
   const {
     // Data
     products,
@@ -54,16 +56,26 @@ const POSPage = () => {
     closeCheckout,
   } = usePOS(user);
 
+  // Determine if we should show the compact 2-column layout
+  // Effective for laptop and tablet, but not for mobile
+  const showTwoColumn = isLaptop && !isMobile;
+  // Compact mode for all smaller screens (laptop, tablet, mobile) to ensure smaller font sizes
+  const isCompactMode = isLaptop;
+
   // console.log('products', products);
   
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <POSHeader />
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className={`grid gap-4 sm:gap-6 ${showTwoColumn ? 'grid-cols-2' : 'grid-cols-1 lg:grid-cols-4'}`}>
         {/* Products Section */}
-        <div className="lg:col-span-3 space-y-4">
-          <POSProductSearch searchTerm={searchTerm} onSearchChange={handleSearchChange} />
+        <div className={`${showTwoColumn ? 'space-y-4' : 'lg:col-span-3 space-y-4'}`}>
+          <POSProductSearch 
+            searchTerm={searchTerm} 
+            onSearchChange={handleSearchChange} 
+            isCompact={isCompactMode}
+          />
 
           <POSCategoryPanel
             categories={categories}
@@ -72,6 +84,7 @@ const POSPage = () => {
             selectedCategoryIds={selectedCategoryIds}
             onToggleCategory={toggleCategory}
             onClearCategories={clearCategories}
+            isCompact={isCompactMode}
           />
 
           {isLoading ? (
@@ -81,12 +94,16 @@ const POSPage = () => {
               </div>
             </div>
           ) : (
-            <POSProductGrid products={products} onAddToCart={addToCart} />
+            <POSProductGrid 
+              products={products} 
+              onAddToCart={addToCart} 
+              isCompact={isCompactMode}
+            />
           )}
         </div>
           
         {/* Cart Section */}
-        <div className="lg:col-span-1 space-y-4">
+        <div className={`${showTwoColumn ? '' : 'lg:col-span-1'} space-y-4`}>
           <POSCart
             cart={cart}
             discount={discount}
@@ -100,6 +117,7 @@ const POSPage = () => {
             onDiscountTypeChange={handleDiscountTypeChange}
             onApplyDiscount={applyDiscountAction}
             onProceedToPayment={openCheckout}
+            isCompact={isCompactMode}
           />
         </div>
       </div>

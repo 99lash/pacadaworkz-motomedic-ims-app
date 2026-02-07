@@ -8,12 +8,24 @@ import SidebarOverlay from './SidebarOverlay';
 const Sidebar = ({ 
   children, 
   isMobile = false, 
+  isTablet = false,
   isMenuOpen = false, 
   onCloseMenu 
 }) => {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(!isTablet);
+  const [prevIsTablet, setPrevIsTablet] = useState(isTablet);
+  const [prevIsMobile, setPrevIsMobile] = useState(isMobile);
   const { user } = useAuth();
   const sidebarRef = useRef(null);
+
+  // Sync expanded state when isTablet or isMobile changes
+  if (isTablet !== prevIsTablet || isMobile !== prevIsMobile) {
+    setPrevIsTablet(isTablet);
+    setPrevIsMobile(isMobile);
+    if (!isMobile) {
+      setExpanded(!isTablet);
+    }
+  }
 
   const toggleSidebar = () => setExpanded(prev => !prev);
 
@@ -53,7 +65,7 @@ const Sidebar = ({
     return `
       ${baseClasses}
       ${expanded ? 'w-64' : 'w-16'}
-      hidden md:block
+      block
     `;
   };
 
