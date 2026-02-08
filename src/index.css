@@ -73,3 +73,12 @@
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
+/* Fix for date input icons in dark mode */
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+.dark input[type="month"]::-webkit-calendar-picker-indicator,
+.dark input[type="time"]::-webkit-calendar-picker-indicator,
+.dark input[type="week"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
