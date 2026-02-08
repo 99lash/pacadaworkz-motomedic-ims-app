@@ -4,6 +4,9 @@ import {
   PurchaseHeader,
   PurchaseTable,
   PurchaseFormDialog,
+  PurchaseReceiveDialog,
+  PurchaseDeleteDialog,
+  PurchaseDetailsDialog,
   PurchaseEmptyState,
 } from './components';
 
@@ -18,17 +21,38 @@ const PurchasesPage = () => {
     // Form state
     formData,
     formErrors,
+    formMode,
     isFormOpen,
+
+    // Delete state
+    isDeleteOpen,
+    purchaseOrderToDelete,
+
+    // Receive state
+    isReceiveOpen,
+    purchaseOrderToReceive,
+
+    // Details state
+    isDetailsOpen,
+    selectedPurchaseOrder,
 
     // Actions
     openCreateDialog,
+    openEditDialog,
     closeFormDialog,
     handleFormFieldChange,
     handleAddItem,
     handleRemoveItem,
     handleItemChange,
     handleSubmit,
+    openReceiveDialog,
+    closeReceiveDialog,
+    openDetailsDialog,
+    closeDetailsDialog,
     handleMarkAsReceived,
+    openDeleteDialog,
+    closeDeleteDialog,
+    handleDelete,
     getStatusBadge,
   } = usePurchases();
 
@@ -45,7 +69,10 @@ const PurchasesPage = () => {
       ) : (
         <PurchaseTable
           purchaseOrders={purchaseOrders}
-          onMarkAsReceived={handleMarkAsReceived}
+          onMarkAsReceived={openReceiveDialog}
+          onViewDetails={openDetailsDialog}
+          onEdit={openEditDialog}
+          onDelete={openDeleteDialog}
           getStatusBadge={getStatusBadge}
         />
       )}
@@ -54,6 +81,7 @@ const PurchasesPage = () => {
         isOpen={isFormOpen}
         formData={formData}
         formErrors={formErrors}
+        formMode={formMode}
         suppliers={suppliers}
         products={products}
         onClose={closeFormDialog}
@@ -62,6 +90,27 @@ const PurchasesPage = () => {
         onAddItem={handleAddItem}
         onRemoveItem={handleRemoveItem}
         onItemChange={handleItemChange}
+      />
+
+      <PurchaseReceiveDialog
+        isOpen={isReceiveOpen}
+        purchaseOrder={purchaseOrderToReceive}
+        onClose={closeReceiveDialog}
+        onConfirm={handleMarkAsReceived}
+      />
+
+      <PurchaseDetailsDialog
+        isOpen={isDetailsOpen}
+        purchaseOrder={selectedPurchaseOrder}
+        onClose={closeDetailsDialog}
+        getStatusBadge={getStatusBadge}
+      />
+
+      <PurchaseDeleteDialog
+        isOpen={isDeleteOpen}
+        purchaseOrder={purchaseOrderToDelete}
+        onClose={closeDeleteDialog}
+        onConfirm={handleDelete}
       />
     </div>
   );

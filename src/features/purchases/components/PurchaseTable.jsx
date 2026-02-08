@@ -1,12 +1,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Check } from 'lucide-react';
+import { Check, Edit, Trash2 } from 'lucide-react';
 import { Button } from '../../../shared/components/ui/button';
 import { Badge } from '../../../shared/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../shared/components/ui/table';
 import { UI_TEXT } from '../utils';
 
-const PurchaseTable = ({ purchaseOrders, onMarkAsReceived, getStatusBadge }) => {
+const PurchaseTable = ({ purchaseOrders, onMarkAsReceived, onViewDetails, onEdit, onDelete, getStatusBadge }) => {
   if (purchaseOrders.length === 0) {
     return null; // Empty state handled by parent
   }
@@ -39,7 +39,8 @@ const PurchaseTable = ({ purchaseOrders, onMarkAsReceived, getStatusBadge }) => 
             return (
               <TableRow
                 key={po.id}
-                className="hover:bg-gray-50 dark:hover:bg-gray-900/50"
+                className="hover:bg-gray-100 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
+                onClick={() => onViewDetails(po)}
               >
                 <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                   #{String(po.id).slice(0, 8)}
@@ -64,17 +65,46 @@ const PurchaseTable = ({ purchaseOrders, onMarkAsReceived, getStatusBadge }) => 
                 <TableCell>
                   <div className="flex items-center justify-end gap-2">
                     {po.status === 'pending' && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onMarkAsReceived(po)}
-                        className="flex items-center gap-1 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
-                        aria-label="Mark as received"
-                      >
-                        <Check className="h-4 w-4" />
-                        <span>{UI_TEXT.BTN_RECEIVE}</span>
-                      </Button>
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onMarkAsReceived(po);
+                          }}
+                          className="flex items-center gap-1 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
+                          aria-label="Mark as received"
+                        >
+                          <Check className="h-4 w-4" />
+                          <span>{UI_TEXT.BTN_RECEIVE}</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit(po);
+                          }}
+                          className="h-9 w-9 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                          aria-label="Edit purchase order"
+                        >
+                          <Edit className="h-5 w-5" />
+                        </Button>
+                      </>
                     )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(po);
+                      }}
+                      className="h-9 w-9 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      aria-label="Delete purchase order"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -89,6 +119,9 @@ const PurchaseTable = ({ purchaseOrders, onMarkAsReceived, getStatusBadge }) => 
 PurchaseTable.propTypes = {
   purchaseOrders: PropTypes.array.isRequired,
   onMarkAsReceived: PropTypes.func.isRequired,
+  onViewDetails: PropTypes.func.isRequired,
+  onEdit: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired,
   getStatusBadge: PropTypes.func.isRequired,
 };
 

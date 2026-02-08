@@ -14,8 +14,11 @@ import PropTypes from 'prop-types';
 // Context for dialog state
 const AlertDialogContext = createContext({});
 
-export const AlertDialog = ({ children }) => {
-  const [open, setOpen] = useState(false);
+export const AlertDialog = ({ children, open: controlledOpen, onOpenChange }) => {
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = onOpenChange !== undefined ? onOpenChange : setInternalOpen;
   
   return (
     <AlertDialogContext.Provider value={{ open, setOpen }}>
@@ -23,7 +26,11 @@ export const AlertDialog = ({ children }) => {
     </AlertDialogContext.Provider>
   );
 };
-AlertDialog.propTypes = { children: PropTypes.node };
+AlertDialog.propTypes = { 
+  children: PropTypes.node,
+  open: PropTypes.bool,
+  onOpenChange: PropTypes.func
+};
 
 export const AlertDialogTrigger = ({ children, asChild }) => {
   const { setOpen } = useContext(AlertDialogContext);
@@ -56,7 +63,9 @@ export const AlertDialogContent = ({ children, className = '', role = 'alertdial
     if (open) {
       dialog.showModal();
     } else {
-      dialog.close();
+      if (dialog.open) {
+        dialog.close();
+      }
     }
   }, [open]);
   
@@ -65,16 +74,30 @@ export const AlertDialogContent = ({ children, className = '', role = 'alertdial
       ref={dialogRef}
       role={role}
       className={`
-        fixed left-[50%] top-[50%] z-50
-        w-full max-w-lg translate-x-[-50%] translate-y-[-50%]
-        gap-4 border-2 bg-background text-foreground p-6 shadow-xl
-        rounded-lg border-border
-        backdrop:bg-black/90
-        ${className}
+        fixed inset-0 z-50 p-0 m-auto
+        w-full h-full border-0 bg-transparent
+        backdrop:bg-black/50
+        flex items-center justify-center
+        ${open ? '' : 'hidden'}
       `}
       onClose={() => setOpen(false)}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          setOpen(false);
+        }
+      }}
     >
-      {children}
+      <div 
+        className={`
+          w-full max-w-lg scale-in-center
+          gap-4 border bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-6 shadow-xl
+          rounded-lg border-gray-200 dark:border-gray-800
+          ${className}
+        `}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
+      </div>
     </dialog>
   );
 };
@@ -116,10 +139,12 @@ export const AlertDialogAction = ({ children, onClick, disabled, className = '' 
       type="button"
       disabled={disabled}
       onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
         onClick?.(e);
         setOpen(false);
       }}
-      className={`inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50 ${className}`}
+      className={`inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 disabled:pointer-events-none disabled:opacity-50 ${className}`}
     >
       {children}
     </button>
@@ -139,8 +164,12 @@ export const AlertDialogCancel = ({ children, disabled, className = '' }) => {
     <button
       type="button"
       disabled={disabled}
-      onClick={() => setOpen(false)}
-      className={`inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 mt-2 sm:mt-0 ${className}`}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen(false);
+      }}
+      className={`inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:pointer-events-none disabled:opacity-50 mt-2 sm:mt-0 ${className}`}
     >
       {children || 'Cancel'}
     </button>
