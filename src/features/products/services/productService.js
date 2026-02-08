@@ -295,14 +295,14 @@ const transformProductFromBackend = (backendProduct, stockMap) => ({
   id: backendProduct.id,
   sku: backendProduct.sku,
   name: backendProduct.name,
-  categoryId: backendProduct.category?.id || backendProduct.category_id,
-  brandId: backendProduct.brand_id,
-  categoryName: backendProduct.category?.name || backendProduct.category,
+  categoryId: (backendProduct.category?.id || backendProduct.category_id)?.toString() || '',
+  brandId: backendProduct.brand_id?.toString() || '',
+  categoryName: backendProduct.category?.name || (typeof backendProduct.category === 'string' ? backendProduct.category : ''),
   brandName: backendProduct.brand,
   costPrice: parseFloat(backendProduct.cost_price) || 0,
   sellingPrice: parseFloat(backendProduct.unit_price) || 0,
   reorderPoint: parseInt(backendProduct.reorder_level) || 0,
-  currentStock: stockMap[backendProduct.sku] || 0, // Use stock from inventory map
+  currentStock: stockMap ? (stockMap[backendProduct.sku] || 0) : 0, // Use stock from inventory map
   description: backendProduct.description || '',
   isActive: backendProduct.is_active || true,
   stockStatus: 'in_stock', // TODO: Calculate based on inventory

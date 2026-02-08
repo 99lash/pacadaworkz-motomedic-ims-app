@@ -169,10 +169,10 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
 
       dispatch(setFilterOptions({
         categories: categoriesResult.success
-          ? categoriesResult.data.map(cat => ({ value: cat.id, label: cat.name }))
+          ? categoriesResult.data.map(cat => ({ value: cat.id.toString(), label: cat.name }))
           : [],
         brands: brandsResult.success
-          ? brandsResult.data.map(brand => ({ value: brand.id, label: brand.name }))
+          ? brandsResult.data.map(brand => ({ value: brand.id.toString(), label: brand.name }))
           : [],
       }));
     } catch (err) {
@@ -202,11 +202,22 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   }, [resetForm, dispatch]);
 
   const openEditDialog = useCallback((product) => {
-    dispatch(setEditingProduct(product));
-    setFormData(mapProductToFormState(product));
+    // Attempt to recover brandId if missing (backend API omits it)
+    let finalProduct = { ...product };
+    if (!finalProduct.brandId && finalProduct.brandName && filterOptions.brands.length > 0) {
+      const foundBrand = filterOptions.brands.find(
+        (b) => b.label.toLowerCase() === finalProduct.brandName.toLowerCase()
+      );
+      if (foundBrand) {
+        finalProduct.brandId = foundBrand.value;
+      }
+    }
+
+    dispatch(setEditingProduct(finalProduct));
+    setFormData(mapProductToFormState(finalProduct));
     setFormErrors(createInitialFormErrors());
     dispatch(setFormDialogOpen(true));
-  }, [dispatch]);
+  }, [dispatch, filterOptions.brands]);
 
   const closeFormDialog = useCallback(() => {
     dispatch(setFormDialogOpen(false));
