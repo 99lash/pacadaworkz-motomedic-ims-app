@@ -92,10 +92,6 @@ export const validateProfileForm = (profileData) => {
     errors.lastName = 'Last name is required';
   }
   
-  if (!profileData.username?.trim()) {
-    errors.username = 'Username is required';
-  }
-  
   if (!profileData.email?.trim()) {
     errors.email = 'Email is required';
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileData.email)) {

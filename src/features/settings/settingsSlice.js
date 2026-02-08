@@ -7,7 +7,6 @@ const initialState = {
     firstName: '',
     lastName: '',
     email: '',
-    username: '',
   },
   isLoading: false,
   isSaving: false,
@@ -51,7 +50,7 @@ const settingsSlice = createSlice({
       state.selectedBackupFile = action.payload;
     },
     
-    resetSettingsState: (state) => initialState
+    resetSettingsState: () => initialState
   },
 });
 

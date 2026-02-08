@@ -11,10 +11,10 @@
  * - Preferences management
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { settingsService } from '../services';
-import { validateProfileForm, calculateTotalRecords, calculateStorageUsed, getLastBackup } from '../utils';
+import { validateProfileForm } from '../utils';
 import { TAB_TYPES, UI_TEXT } from '../utils';
 
 // =============================================================================
@@ -23,7 +23,7 @@ import { TAB_TYPES, UI_TEXT } from '../utils';
 
 /**
  * Settings management hook
- * @param {Object} user - Current user object
+ * @param {Object} user - Current user object (initial)
  * @returns {Object} Settings state and handlers
  */
 export const useSettings = (user) => {
@@ -36,19 +36,46 @@ export const useSettings = (user) => {
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
     email: user?.email || '',
-    username: user?.username || '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [selectedBackupFile, setSelectedBackupFile] = useState(null);
+
+  // ---------------------------------------------------------------------------
+  // EFFECT - Fetch Profile
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    const loadProfile = async () => {
+      setIsLoadingProfile(true);
+      const result = await settingsService.fetchProfile();
+      if (result.success) {
+        setProfileData({
+          firstName: result.data.firstName || '',
+          lastName: result.data.lastName || '',
+          email: result.data.email || '',
+        });
+      } else {
+        // Fallback to initial user prop or show error
+        // toast.error('Failed to load profile data');
+      }
+      setIsLoadingProfile(false);
+    };
+
+    if (activeTab === TAB_TYPES.PROFILE) {
+      loadProfile();
+    }
+  }, [activeTab]);
 
   // ---------------------------------------------------------------------------
   // COMPUTED VALUES
   // ---------------------------------------------------------------------------
 
+  // Database stats are not currently provided by the API in this format.
+  // Using placeholders or static values for now.
   const databaseStats = useMemo(() => ({
-    totalRecords: calculateTotalRecords(),
-    storageUsed: calculateStorageUsed(),
-    lastBackup: getLastBackup(),
+    totalRecords: 0, // Placeholder
+    storageUsed: 'Server', // Placeholder
+    lastBackup: 'Unknown', // Placeholder
   }), []);
 
   // ---------------------------------------------------------------------------
@@ -79,12 +106,14 @@ export const useSettings = (user) => {
     
     setIsSaving(true);
     try {
-      const updatedUser = settingsService.updateUserProfile(user.id, profileData);
-      if (updatedUser) {
+      // Pass user.id if needed, though API uses Auth token
+      const result = await settingsService.updateUserProfile(user?.id, profileData);
+      
+      if (result.success) {
         toast.success(UI_TEXT.TOAST_PROFILE_UPDATED);
-        // Update user in parent component if needed
+        // Optionally update global user state here if a method was provided
       } else {
-        toast.error('Failed to update profile');
+        toast.error(result.error || 'Failed to update profile');
       }
     } catch (error) {
       console.error('Error saving profile:', error);
@@ -94,15 +123,37 @@ export const useSettings = (user) => {
     }
   }, [profileData, user]);
 
-  const handleCreateBackup = useCallback(() => {
+  const handleUpdatePassword = useCallback(async (passwordData) => {
+    setIsSaving(true);
     try {
-      const backup = settingsService.createBackup();
-      if (backup) {
-        const filename = `motomedic-backup-${new Date().toISOString().split('T')[0]}.json`;
-        settingsService.downloadBackup(backup, filename);
+       const result = await settingsService.updatePassword(passwordData);
+       if (result.success) {
+         toast.success(result.message || 'Password updated successfully');
+         return true;
+       } else {
+         toast.error(result.error || 'Failed to update password');
+         return false;
+       }
+    } catch (error) {
+       console.error('Update password error:', error);
+       toast.error('Failed to update password');
+       return false;
+    } finally {
+      setIsSaving(false);
+    }
+  }, []);
+
+  const handleCreateBackup = useCallback(async () => {
+    try {
+      const result = await settingsService.createBackup();
+      if (result.success) {
+        const filename = `motomedic-backup-${new Date().toISOString().split('T')[0]}.sql`; // API returns SQL/file stream usually, assumed .sql or .zip based on typical Laravel backups
+        // Note: Controller uses Storage::download($path). Browser will handle filename from Content-Disposition if not overridden.
+        // But downloadBackup helper forces a filename.
+        settingsService.downloadBackup(result.data, filename);
         toast.success(UI_TEXT.TOAST_BACKUP_CREATED);
       } else {
-        toast.error('Failed to create backup');
+        toast.error(result.error || 'Failed to create backup');
       }
     } catch (error) {
       console.error('Error creating backup:', error);
@@ -124,27 +175,15 @@ export const useSettings = (user) => {
     }
 
     try {
-      const fileContent = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(JSON.parse(e.target.result));
-        reader.onerror = reject;
-        reader.readAsText(selectedBackupFile);
-      });
-
-      const validation = settingsService.validateBackup(fileContent);
-      if (!validation.isValid) {
-        toast.error(validation.error);
-        return;
-      }
-
-      const success = settingsService.restoreBackup(fileContent);
-      if (success) {
-        toast.success('Database restored successfully');
+      const result = await settingsService.restoreBackup(selectedBackupFile);
+      
+      if (result.success) {
+        toast.success(result.message || 'Database restored successfully');
         setSelectedBackupFile(null);
-        // Reload page to reflect changes
-        window.location.reload();
+        // Reload page to reflect changes might be needed
+        setTimeout(() => window.location.reload(), 1500);
       } else {
-        toast.error('Failed to restore backup');
+        toast.error(result.error || 'Failed to restore backup');
       }
     } catch (error) {
       console.error('Error restoring backup:', error);
@@ -157,24 +196,11 @@ export const useSettings = (user) => {
       toast.warning(UI_TEXT.DATABASE_RESTORE_SELECT_FIRST);
       return;
     }
-
-    try {
-      const fileContent = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(JSON.parse(e.target.result));
-        reader.onerror = reject;
-        reader.readAsText(selectedBackupFile);
-      });
-
-      const validation = settingsService.validateBackup(fileContent);
-      if (validation.isValid) {
-        toast.success('Backup file is valid');
-      } else {
-        toast.error(validation.error);
-      }
-    } catch (error) {
-      console.error('Error validating backup:', error);
-      toast.error('Failed to validate backup file');
+    // Basic client-side check
+    if (selectedBackupFile.name.endsWith('.sql') || selectedBackupFile.name.endsWith('.zip') || selectedBackupFile.name.endsWith('.json')) {
+        toast.success('File extension looks valid. Click Restore to proceed.');
+    } else {
+        toast.warning('File extension might not be supported.');
     }
   }, [selectedBackupFile]);
 
@@ -190,8 +216,10 @@ export const useSettings = (user) => {
     // Profile state
     profileData,
     isSaving,
+    isLoadingProfile,
     handleProfileFieldChange,
     handleSaveProfile,
+    handleUpdatePassword,
 
     // Database state
     databaseStats,
