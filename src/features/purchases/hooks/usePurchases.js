@@ -19,16 +19,19 @@ export const usePurchases = () => {
   // Dialog states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isReceiveOpen, setIsReceiveOpen] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [formMode, setFormMode] = useState('create');
   const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState(null);
   const [purchaseOrderToDelete, setPurchaseOrderToDelete] = useState(null);
+  const [purchaseOrderToReceive, setPurchaseOrderToReceive] = useState(null);
 
   // Form state
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [formErrors, setFormErrors] = useState(INITIAL_FORM_ERRORS);
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
+  const fetchData = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const [purchasesData, suppliersResponse, productsResponse] = await Promise.all([
         purchaseService.fetchPurchaseOrders(),
@@ -49,7 +52,7 @@ export const usePurchases = () => {
       console.error('Failed to fetch data:', error);
       toast.error('Failed to load data. Please try again.');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, []);
 
@@ -68,6 +71,22 @@ export const usePurchases = () => {
     resetForm();
     setIsFormOpen(true);
   }, [resetForm]);
+
+  const openEditDialog = useCallback((purchaseOrder) => {
+    setFormMode('edit');
+    setSelectedPurchaseOrder(purchaseOrder);
+    setFormData({
+      supplierId: String(purchaseOrder.supplierId || ''),
+      expectedDeliveryDate: purchaseOrder.expectedDeliveryDate || '',
+      notes: purchaseOrder.notes || '',
+      items: (purchaseOrder.items || []).map(item => ({
+        productId: String(item.productId),
+        quantityOrdered: item.quantityOrdered,
+        costPrice: item.costPrice,
+      })),
+    });
+    setIsFormOpen(true);
+  }, []);
 
   const closeFormDialog = useCallback(() => {
     setIsFormOpen(false);
@@ -112,26 +131,51 @@ export const usePurchases = () => {
     }
 
     try {
-      await purchaseService.createPurchaseOrder(formData);
-      await fetchData(); // Refresh data
+      if (formMode === 'edit' && selectedPurchaseOrder) {
+        await purchaseService.updatePurchaseOrder(selectedPurchaseOrder.id, formData);
+        toast.success(UI_TEXT.TOAST_UPDATE || 'Purchase order updated successfully');
+      } else {
+        await purchaseService.createPurchaseOrder(formData);
+        toast.success(UI_TEXT.TOAST_CREATE);
+      }
+      
+      await fetchData(true); // Silent refresh
       closeFormDialog();
-      toast.success(UI_TEXT.TOAST_CREATE);
       return true;
     } catch (error) {
-      toast.error(error.message || 'Failed to create purchase order');
+      toast.error(error.message || `Failed to ${formMode} purchase order`);
       return false;
     }
-  }, [formData, closeFormDialog, fetchData]);
+  }, [formData, formMode, selectedPurchaseOrder, closeFormDialog, fetchData]);
 
-  const handleMarkAsReceived = useCallback(async (purchaseOrder) => {
-    if (!window.confirm('Mark this purchase order as received?')) {
-      return false;
-    }
+  const openReceiveDialog = useCallback((purchaseOrder) => {
+    setPurchaseOrderToReceive(purchaseOrder);
+    setIsReceiveOpen(true);
+  }, []);
+
+  const closeReceiveDialog = useCallback(() => {
+    setPurchaseOrderToReceive(null);
+    setIsReceiveOpen(false);
+  }, []);
+
+  const openDetailsDialog = useCallback((purchaseOrder) => {
+    setSelectedPurchaseOrder(purchaseOrder);
+    setIsDetailsOpen(true);
+  }, []);
+
+  const closeDetailsDialog = useCallback(() => {
+    setSelectedPurchaseOrder(null);
+    setIsDetailsOpen(false);
+  }, []);
+
+  const handleMarkAsReceived = useCallback(async () => {
+    if (!purchaseOrderToReceive) return false;
 
     try {
-      const updated = await purchaseService.markPurchaseOrderAsReceived(purchaseOrder.id);
+      const updated = await purchaseService.markPurchaseOrderAsReceived(purchaseOrderToReceive.id);
       if (updated) {
-        await fetchData(); // Refresh data
+        await fetchData(true); // Silent refresh
+        closeReceiveDialog();
         toast.success(UI_TEXT.TOAST_RECEIVED);
         return true;
       }
@@ -141,7 +185,7 @@ export const usePurchases = () => {
       toast.error('Failed to update purchase order');
       return false;
     }
-  }, [fetchData]);
+  }, [purchaseOrderToReceive, closeReceiveDialog, fetchData]);
 
   const openDeleteDialog = useCallback((purchaseOrder) => {
     setPurchaseOrderToDelete(purchaseOrder);
@@ -159,7 +203,7 @@ export const usePurchases = () => {
     try {
       const success = await purchaseService.deletePurchaseOrder(purchaseOrderToDelete.id);
       if (success) {
-        await fetchData(); // Refresh data
+        await fetchData(true); // Silent refresh
         closeDeleteDialog();
         toast.success(UI_TEXT.TOAST_DELETE);
         return true;
@@ -202,14 +246,26 @@ export const usePurchases = () => {
     isDeleteOpen,
     purchaseOrderToDelete,
 
+    // Receive state
+    isReceiveOpen,
+    purchaseOrderToReceive,
+
+    // Details state
+    isDetailsOpen,
+
     // Actions
     openCreateDialog,
+    openEditDialog,
     closeFormDialog,
     handleFormFieldChange,
     handleAddItem,
     handleRemoveItem,
     handleItemChange,
     handleSubmit,
+    openReceiveDialog,
+    closeReceiveDialog,
+    openDetailsDialog,
+    closeDetailsDialog,
     handleMarkAsReceived,
     openDeleteDialog,
     closeDeleteDialog,

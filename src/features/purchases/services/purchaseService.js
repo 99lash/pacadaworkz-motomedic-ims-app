@@ -16,20 +16,23 @@ const API_ENDPOINT = '/v1/purchases';
 
 const transformPurchaseOrderFromBackend = (po) => ({
   id: po.id,
-  supplierId: po.supplier_id, // Might be undefined in list view if only 'supplier' string is returned
-  supplierName: po.supplier || po.supplier_name || 'Unknown Supplier',
+  supplierId: po.supplier_id,
+  supplierName: po.supplier_name || po.supplier || 'Unknown Supplier',
+  userName: po.user_name,
   expectedDeliveryDate: po.expected_delivery || po.expected_delivery_date,
   notes: po.notes || '',
   items: (po.items || []).map((item) => ({
+    id: item.id,
     productId: item.product_id,
     productName: item.product_name,
-    quantityOrdered: parseFloat(item.quantity_ordered),
-    quantityReceived: parseFloat(item.quantity_received) || 0,
-    costPrice: parseFloat(item.cost_price),
+    quantityOrdered: parseFloat(item.quantity || item.quantity_ordered || 0),
+    quantityReceived: parseFloat(item.quantity_received || 0),
+    costPrice: parseFloat(item.unit_cost || item.cost_price || 0),
+    totalCost: parseFloat(item.total_cost || 0),
   })),
-  total: parseFloat(po.total_amount),
+  total: parseFloat(po.total_amount || 0),
   status: po.status,
-  createdAt: po.order_date || po.created_at, // Use order_date if available
+  createdAt: po.created_at || po.order_date,
   updatedAt: po.updated_at,
 });
 
@@ -47,18 +50,17 @@ const transformPurchaseOrderToBackend = (po) => {
   }
 
   return {
-    supplier_id: po.supplierId,
+    supplier_id: parseInt(po.supplierId),
     user_id: userId,
     order_date: new Date().toISOString().split('T')[0], // Today's date YYYY-MM-DD
     expected_delivery: po.expectedDeliveryDate,
-    notes: po.notes,
-    items: po.items.map((item) => ({
-      product_id: item.productId,
-      quantity_ordered: item.quantityOrdered,
-      cost_price: item.costPrice,
-    })),
-    total_amount: po.total,
     status: po.status || 'pending',
+    notes: po.notes,
+    items: (po.items || []).map((item) => ({
+      product_id: parseInt(item.productId),
+      quantity: parseInt(item.quantityOrdered),
+      unit_cost: parseFloat(item.costPrice),
+    })),
   };
 };
 
@@ -108,15 +110,7 @@ export const fetchPurchaseOrderById = async (id) => {
  */
 export const createPurchaseOrder = async (purchaseOrderData) => {
   try {
-    // Calculate total if not provided (though backend likely recalculates)
-    const total = purchaseOrderData.items.reduce((sum, item) => {
-      return sum + (item.quantityOrdered * item.costPrice);
-    }, 0);
-
-    const payload = transformPurchaseOrderToBackend({
-      ...purchaseOrderData,
-      total,
-    });
+    const payload = transformPurchaseOrderToBackend(purchaseOrderData);
 
     const response = await apiClient.post(API_ENDPOINT, payload);
     if (response.data.success) {
@@ -135,11 +129,8 @@ export const createPurchaseOrder = async (purchaseOrderData) => {
  */
 export const markPurchaseOrderAsReceived = async (id) => {
   try {
-    // Assuming backend handles status update via PATCH
-    // If specific endpoint exists for receiving, change this path
-    const response = await apiClient.patch(`${API_ENDPOINT}/${id}`, {
-      status: 'received',
-    });
+    // According to documentation, use POST /api/v1/purchases/:id/receive
+    const response = await apiClient.post(`${API_ENDPOINT}/${id}/receive`);
 
     if (response.data.success) {
       return transformPurchaseOrderFromBackend(response.data.data);
@@ -148,6 +139,25 @@ export const markPurchaseOrderAsReceived = async (id) => {
   } catch (error) {
     console.error('Failed to mark purchase order as received:', extractErrorMessage(error));
     return null;
+  }
+};
+
+/**
+ * Updates an existing purchase order
+ * @param {string} id - Purchase order ID
+ * @param {Object} purchaseOrderData - Updated purchase order data
+ * @returns {Promise<Object>} Updated purchase order
+ */
+export const updatePurchaseOrder = async (id, purchaseOrderData) => {
+  try {
+    const payload = transformPurchaseOrderToBackend(purchaseOrderData);
+    const response = await apiClient.patch(`${API_ENDPOINT}/${id}`, payload);
+    if (response.data.success) {
+      return transformPurchaseOrderFromBackend(response.data.data);
+    }
+    throw new Error(response.data.message || 'Failed to update purchase order');
+  } catch (error) {
+    throw new Error(extractErrorMessage(error, 'Failed to update purchase order'));
   }
 };
 
@@ -174,6 +184,7 @@ const purchaseService = {
   fetchPurchaseOrders,
   fetchPurchaseOrderById,
   createPurchaseOrder,
+  updatePurchaseOrder,
   markPurchaseOrderAsReceived,
   deletePurchaseOrder,
 };

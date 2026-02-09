@@ -15,10 +15,11 @@
     --input: rgb(0 0 0 / 0.1);
     --primary: #1e88e5;
     --primary-foreground: #ffffff;
-    --destructive: #dc2626;
-    --destructive-foreground: #ffffff;
     --accent: #ff6b6b;
     --accent-foreground: #ffffff;
+    --toast-bg: rgb(255 255 255 / 0.95);
+    --toast-border: rgba(0, 0, 0, 0.35);
+    --toast-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   }
 
   .dark {
@@ -33,6 +34,9 @@
     --destructive-foreground: #ffffff;
     --accent: #ff6b6b;
     --accent-foreground: #ffffff;
+    --toast-bg: rgb(30 32 30 / 0.95);
+    --toast-border: rgba(5, 5, 5, 0.163);
+    --toast-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -71,5 +75,14 @@
 
 .dark .scrollbar-thin {
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* Fix for date input icons in dark mode */
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+.dark input[type="month"]::-webkit-calendar-picker-indicator,
+.dark input[type="time"]::-webkit-calendar-picker-indicator,
+.dark input[type="week"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
 }
 

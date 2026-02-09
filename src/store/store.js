@@ -1,4 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
+import uiReducer from './uiSlice';
 import { authReducer } from '../features/auth';
 import { activityLogsReducer } from '../features/activity-logs';
 import { attributesReducer } from '../features/attributes';
@@ -17,6 +18,7 @@ import { usersReducer } from '../features/users';
 
 export const store = configureStore({
   reducer: {
+    ui: uiReducer,
     auth: authReducer,
     activityLogs: activityLogsReducer,
     attributes: attributesReducer,

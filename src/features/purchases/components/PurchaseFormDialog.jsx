@@ -1,8 +1,8 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import { Plus, X } from 'lucide-react';
-import { Button } from '../../../shared/components/ui/button';
-import { Input } from '../../../shared/components/ui/input';
+import React from "react";
+import PropTypes from "prop-types";
+import { Plus, X, Info } from "lucide-react";
+import { Button } from "../../../shared/components/ui/button";
+import { Input } from "../../../shared/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -10,14 +10,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '../../../shared/components/ui/dialog';
-import { Label } from '../../../shared/components/ui/label';
-import { UI_TEXT } from '../utils';
+} from "../../../shared/components/ui/dialog";
+import { Label } from "../../../shared/components/ui/label";
+import { UI_TEXT } from "../utils";
 
 const PurchaseFormDialog = ({
   isOpen,
   formData,
   formErrors,
+  formMode,
   suppliers,
   products,
   onClose,
@@ -38,11 +39,16 @@ const PurchaseFormDialog = ({
   }
 
   const calculateItemTotal = (item) => {
-    return (item.quantityOrdered || 0) * (item.costPrice || 0);
+    const quantity = parseFloat(item.quantityOrdered) || 0;
+    const cost = parseFloat(item.costPrice) || 0;
+    return quantity * cost;
   };
 
   const calculateTotal = () => {
-    return formData.items.reduce((sum, item) => sum + calculateItemTotal(item), 0);
+    return formData.items.reduce(
+      (sum, item) => sum + calculateItemTotal(item),
+      0,
+    );
   };
 
   return (
@@ -50,10 +56,14 @@ const PurchaseFormDialog = ({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader className="pb-4 border-b border-gray-200 dark:border-gray-800">
           <DialogTitle className="text-xl text-gray-900 dark:text-gray-100">
-            {UI_TEXT.FORM_TITLE_CREATE}
+            {formMode === "edit"
+              ? UI_TEXT.FORM_TITLE_EDIT
+              : UI_TEXT.FORM_TITLE_CREATE}
           </DialogTitle>
           <DialogDescription className="mt-1.5 text-gray-600 dark:text-gray-400">
-            Create a new purchase order to manage stock intake from suppliers.
+            {formMode === "edit"
+              ? "Update the purchase order details and items."
+              : "Create a new purchase order to manage stock intake from suppliers."}
           </DialogDescription>
         </DialogHeader>
 
@@ -61,19 +71,24 @@ const PurchaseFormDialog = ({
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="supplierId" className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
-                  {UI_TEXT.LABEL_SUPPLIER} <span className="text-destructive">*</span>
+                <Label
+                  htmlFor="supplierId"
+                  className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100"
+                >
+                  {UI_TEXT.LABEL_SUPPLIER}{" "}
+                  <span className="text-destructive">*</span>
                 </Label>
                 <select
                   id="supplierId"
                   value={formData.supplierId}
-                  onChange={(e) => onFieldChange('supplierId', e.target.value)}
+                  onChange={(e) => onFieldChange("supplierId", e.target.value)}
                   aria-invalid={Boolean(formErrors.supplierId)}
                   className={`
                     flex h-10 w-full rounded-md border px-3 py-2 text-sm
-                    ${formErrors.supplierId
-                      ? 'border-destructive'
-                      : 'border-gray-200 dark:border-gray-800'
+                    ${
+                      formErrors.supplierId
+                        ? "border-destructive"
+                        : "border-gray-200 dark:border-gray-800"
                     }
                     bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0
@@ -94,16 +109,24 @@ const PurchaseFormDialog = ({
               </div>
 
               <div>
-                <Label htmlFor="expectedDeliveryDate" className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
-                  {UI_TEXT.LABEL_EXPECTED_DELIVERY} <span className="text-destructive">*</span>
+                <Label
+                  htmlFor="expectedDeliveryDate"
+                  className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100"
+                >
+                  {UI_TEXT.LABEL_EXPECTED_DELIVERY}{" "}
+                  <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="expectedDeliveryDate"
                   type="date"
                   value={formData.expectedDeliveryDate}
-                  onChange={(e) => onFieldChange('expectedDeliveryDate', e.target.value)}
+                  onChange={(e) =>
+                    onFieldChange("expectedDeliveryDate", e.target.value)
+                  }
                   aria-invalid={Boolean(formErrors.expectedDeliveryDate)}
-                  className={formErrors.expectedDeliveryDate ? 'border-destructive' : ''}
+                  className={
+                    formErrors.expectedDeliveryDate ? "border-destructive" : ""
+                  }
                 />
                 {formErrors.expectedDeliveryDate && (
                   <p className="text-sm text-destructive mt-1.5" role="alert">
@@ -114,13 +137,16 @@ const PurchaseFormDialog = ({
             </div>
 
             <div>
-              <Label htmlFor="notes" className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
+              <Label
+                htmlFor="notes"
+                className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100"
+              >
                 {UI_TEXT.LABEL_NOTES}
               </Label>
               <Input
                 id="notes"
                 value={formData.notes}
-                onChange={(e) => onFieldChange('notes', e.target.value)}
+                onChange={(e) => onFieldChange("notes", e.target.value)}
                 placeholder={UI_TEXT.PLACEHOLDER_NOTES}
               />
             </div>
@@ -128,7 +154,8 @@ const PurchaseFormDialog = ({
             <div>
               <div className="flex items-center justify-between mb-4">
                 <Label className="block text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {UI_TEXT.LABEL_ITEMS} <span className="text-destructive">*</span>
+                  {UI_TEXT.LABEL_ITEMS}{" "}
+                  <span className="text-destructive">*</span>
                 </Label>
                 <Button
                   type="button"
@@ -158,8 +185,14 @@ const PurchaseFormDialog = ({
                       </Label>
                       <select
                         value={item.productId}
-                        onChange={(e) => onItemChange(index, 'productId', e.target.value)}
-                        className="flex h-9 w-full rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
+                        onChange={(e) =>
+                          onItemChange(index, "productId", e.target.value)
+                        }
+                        className={`flex h-9 w-full rounded-md border ${
+                          formErrors[`items.${index}.productId`]
+                            ? "border-destructive"
+                            : "border-gray-200 dark:border-gray-800"
+                        } bg-white dark:bg-gray-900 px-3 py-1 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0`}
                       >
                         <option value="">{UI_TEXT.PLACEHOLDER_PRODUCT}</option>
                         {products.map((product) => (
@@ -168,6 +201,11 @@ const PurchaseFormDialog = ({
                           </option>
                         ))}
                       </select>
+                      {formErrors[`items.${index}.productId`] && (
+                        <p className="text-[10px] text-destructive mt-0.5">
+                          {formErrors[`items.${index}.productId`]}
+                        </p>
+                      )}
                     </div>
                     <div className="col-span-6 md:col-span-3">
                       <Label className="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">
@@ -177,10 +215,17 @@ const PurchaseFormDialog = ({
                         type="number"
                         min="1"
                         value={item.quantityOrdered}
-                        onChange={(e) => onItemChange(index, 'quantityOrdered', parseInt(e.target.value) || 0)}
+                        onChange={(e) =>
+                          onItemChange(index, "quantityOrdered", e.target.value)
+                        }
                         placeholder={UI_TEXT.PLACEHOLDER_QUANTITY}
-                        className="h-9"
+                        className={`h-9 ${formErrors[`items.${index}.quantityOrdered`] ? "border-destructive" : ""}`}
                       />
+                      {formErrors[`items.${index}.quantityOrdered`] && (
+                        <p className="text-[10px] text-destructive mt-0.5">
+                          {formErrors[`items.${index}.quantityOrdered`]}
+                        </p>
+                      )}
                     </div>
                     <div className="col-span-6 md:col-span-3">
                       <Label className="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">
@@ -191,10 +236,17 @@ const PurchaseFormDialog = ({
                         min="0"
                         step="0.01"
                         value={item.costPrice}
-                        onChange={(e) => onItemChange(index, 'costPrice', parseFloat(e.target.value) || 0)}
+                        onChange={(e) =>
+                          onItemChange(index, "costPrice", e.target.value)
+                        }
                         placeholder={UI_TEXT.PLACEHOLDER_COST_PRICE}
-                        className="h-9"
+                        className={`h-9 ${formErrors[`items.${index}.costPrice`] ? "border-destructive" : ""}`}
                       />
+                      {formErrors[`items.${index}.costPrice`] && (
+                        <p className="text-[10px] text-destructive mt-0.5">
+                          {formErrors[`items.${index}.costPrice`]}
+                        </p>
+                      )}
                     </div>
                     <div className="col-span-12 md:col-span-1 flex items-end">
                       <Button
@@ -218,13 +270,30 @@ const PurchaseFormDialog = ({
                       {UI_TEXT.LABEL_TOTAL}:
                     </span>
                     <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                      ₱{calculateTotal().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ₱
+                      {calculateTotal().toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                     </span>
                   </div>
                 </div>
               )}
             </div>
           </div>
+        </div>
+
+        <div className="mx-6 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-md flex items-start gap-3">
+          <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
+            <span className="font-semibold">WAC Notice:</span> Product unit
+            costs and stock valuation will be automatically recalculated using
+            the{" "}
+            <span className="font-medium underline decoration-blue-300 dark:decoration-blue-700">
+              Weighted Average Cost
+            </span>{" "}
+            method upon receiving this order. This helps the record to be accurate.
+          </p>
         </div>
 
         <DialogFooter className="pt-4 border-t border-gray-200 dark:border-gray-800 gap-2 sm:gap-0">
@@ -239,12 +308,10 @@ const PurchaseFormDialog = ({
           >
             Cancel
           </Button>
-          <Button
-            type="button"
-            onClick={onSubmit}
-            className="w-full sm:w-auto"
-          >
-            Create Purchase Order
+          <Button type="button" onClick={onSubmit} className="w-full sm:w-auto">
+            {formMode === "edit"
+              ? "Update Purchase Order"
+              : "Create Purchase Order"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -254,6 +321,7 @@ const PurchaseFormDialog = ({
 
 PurchaseFormDialog.propTypes = {
   isOpen: PropTypes.bool.isRequired,
+  formMode: PropTypes.oneOf(["create", "edit"]),
   formData: PropTypes.shape({
     supplierId: PropTypes.string.isRequired,
     expectedDeliveryDate: PropTypes.string.isRequired,
@@ -261,9 +329,13 @@ PurchaseFormDialog.propTypes = {
     items: PropTypes.arrayOf(
       PropTypes.shape({
         productId: PropTypes.string.isRequired,
-        quantityOrdered: PropTypes.number.isRequired,
-        costPrice: PropTypes.number.isRequired,
-      })
+        quantityOrdered: PropTypes.oneOfType([
+          PropTypes.number,
+          PropTypes.string,
+        ]).isRequired,
+        costPrice: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
+          .isRequired,
+      }),
     ).isRequired,
   }).isRequired,
   formErrors: PropTypes.object.isRequired,
@@ -278,4 +350,3 @@ PurchaseFormDialog.propTypes = {
 };
 
 export default PurchaseFormDialog;
-

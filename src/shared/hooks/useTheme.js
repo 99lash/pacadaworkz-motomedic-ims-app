@@ -1,23 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectTheme, toggleTheme as toggleThemeAction, setTheme as setThemeAction } from '../../store/uiSlice';
 
 const STORAGE_KEY = 'motomedic-theme';
 
-const getInitialTheme = () => {
-  if (typeof window === 'undefined') {
-    return 'light';
-  }
-
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (stored === 'light' || stored === 'dark') {
-    return stored;
-  }
-
-  const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
-  return prefersDark ? 'dark' : 'light';
-};
-
 export const useTheme = () => {
-  const [theme, setTheme] = useState(getInitialTheme);
+  const theme = useSelector(selectTheme);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -34,8 +23,13 @@ export const useTheme = () => {
   }, [theme]);
 
   const toggleTheme = useCallback(
-    () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark')),
-    []
+    () => dispatch(toggleThemeAction()),
+    [dispatch]
+  );
+
+  const setTheme = useCallback(
+    (newTheme) => dispatch(setThemeAction(newTheme)),
+    [dispatch]
   );
 
   return {
@@ -47,4 +41,3 @@ export const useTheme = () => {
 };
 
 export default useTheme;
-
