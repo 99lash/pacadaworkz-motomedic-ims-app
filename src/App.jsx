@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { Toaster } from 'sonner';
 import { useAuth } from './features/auth';
+import { useTheme } from './shared/hooks';
 import { ProtectedRoute, MainLayout } from './shared/components';
 import { ROUTES, routePermissions } from './shared/utils';
 import LoginPage from './pages/LoginPage';
@@ -22,6 +23,7 @@ import Settings from './pages/Settings';
 
 function App() {
   const { isAuthenticated, initializeAuth } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
 
   // Initialize auth state from storage on app load
@@ -45,21 +47,15 @@ function App() {
     <>
       {/* Toast Notifications with Dark Mode Support */}
       <Toaster
-        theme="system"
+        theme={theme}
         position="top-right"
+        richColors
         toastOptions={{
           style: {
-            background: 'rgb(255 255 255 / 0.95)',
-            color: '#181C14',
-            border: '1px solid rgb(0 0 0 / 0.1)',
-            backdropFilter: 'blur(8px)',
-          },
-        }}
-        toastOptionsDark={{
-          style: {
-            background: 'rgb(47 51 47 / 0.95)',
-            color: '#F5F5F5',
-            border: '1px solid rgb(255 255 255 / 0.1)',
+            background: 'var(--toast-bg)',
+            color: 'var(--foreground)',
+            border: '1px solid var(--toast-border)',
+            boxShadow: 'var(--toast-shadow)',
             backdropFilter: 'blur(8px)',
           },
         }}
