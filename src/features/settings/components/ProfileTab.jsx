@@ -48,18 +48,6 @@ const ProfileTab = ({ user, profileData, isSaving, onFieldChange, onSave }) => {
           />
         </div>
         <div>
-          <label htmlFor="username" className="block text-gray-700 dark:text-gray-300 mb-2">
-            {UI_TEXT.PROFILE_USERNAME}
-          </label>
-          <Input
-            id="username"
-            type="text"
-            value={profileData.username}
-            onChange={(e) => onFieldChange('username', e.target.value)}
-            required
-          />
-        </div>
-        <div>
           <label htmlFor="email" className="block text-gray-700 dark:text-gray-300 mb-2">
             {UI_TEXT.PROFILE_EMAIL}
           </label>
@@ -106,7 +94,6 @@ ProfileTab.propTypes = {
   profileData: PropTypes.shape({
     firstName: PropTypes.string.isRequired,
     lastName: PropTypes.string.isRequired,
-    username: PropTypes.string.isRequired,
     email: PropTypes.string.isRequired,
   }).isRequired,
   /** Whether form is saving */

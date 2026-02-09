@@ -46,6 +46,7 @@ const SettingsPage = () => {
     isSaving,
     handleProfileFieldChange,
     handleSaveProfile,
+    handleUpdatePassword,
 
     // Database state
     databaseStats,
@@ -81,7 +82,10 @@ const SettingsPage = () => {
           )}
 
           {activeTab === TAB_TYPES.SECURITY && (
-            <SecurityTab />
+            <SecurityTab 
+              onUpdatePassword={handleUpdatePassword}
+              isSaving={isSaving}
+            />
           )}
 
           {activeTab === TAB_TYPES.DATABASE && (

@@ -1,102 +1,123 @@
 /**
  * Settings Service
- * Handles all data operations for the settings feature
- * 
- * This service uses localStorage for persistence.
- * Replace with actual API calls when backend is ready.
+ * Handles all data operations for the settings feature via Backend API
  */
 
-import { STORAGE_KEYS, BACKUP_DATA_KEYS } from '../utils';
-import { readFromStorage, saveToStorage } from '../utils/helpers';
+import { apiClient } from '../../../shared/services';
+import { extractErrorMessage } from '../../../shared/utils/errorHandler';
 
 // =============================================================================
 // SERVICE METHODS
 // =============================================================================
 
 /**
- * Updates user profile data
- * @param {string} userId - User ID
- * @param {Object} profileData - Profile data to update
- * @returns {Object|null} Updated user or null
+ * Fetches the current user's profile
+ * @returns {Promise<Object>} User profile data
  */
-export const updateUserProfile = (userId, profileData) => {
+export const fetchProfile = async () => {
   try {
-    const users = readFromStorage(STORAGE_KEYS.USERS, []);
-    const userIndex = users.findIndex((u) => u.id === userId);
-    
-    if (userIndex === -1) {
-      return null;
+    const response = await apiClient.get('/v1/settings/profile');
+    if (response.data.success) {
+      const { data } = response.data;
+      // Map backend snake_case to frontend camelCase
+      return {
+        success: true,
+        data: {
+          ...data,
+          firstName: data.first_name,
+          lastName: data.last_name,
+        }
+      };
     }
-    
-    const updatedUser = {
-      ...users[userIndex],
-      ...profileData,
-    };
-    
-    const updatedUsers = [
-      ...users.slice(0, userIndex),
-      updatedUser,
-      ...users.slice(userIndex + 1),
-    ];
-    
-    saveToStorage(STORAGE_KEYS.USERS, updatedUsers);
-    
-    // Update current user in session
-    const currentUser = readFromStorage(STORAGE_KEYS.CURRENT_USER);
-    if (currentUser && currentUser.id === userId) {
-      saveToStorage(STORAGE_KEYS.CURRENT_USER, updatedUser);
-    }
-    
-    return updatedUser;
+    return { success: false, error: response.data.message };
   } catch (error) {
-    console.error('Error updating user profile:', error);
-    return null;
+    return { success: false, error: extractErrorMessage(error) };
+  }
+};
+
+/**
+ * Updates user profile data
+ * @param {string} userId - User ID (unused in API route but kept for signature)
+ * @param {Object} profileData - Profile data to update
+ * @returns {Promise<Object>} Updated user or error
+ */
+export const updateUserProfile = async (userId, profileData) => {
+  try {
+    // Map frontend camelCase to backend snake_case
+    const payload = {
+      first_name: profileData.firstName,
+      last_name: profileData.lastName,
+      email: profileData.email,
+    };
+
+    const response = await apiClient.patch('/v1/settings/profile', payload);
+    
+    if (response.data.success) {
+       const { data } = response.data;
+       return {
+         success: true,
+         data: {
+           ...data,
+           firstName: data.first_name,
+           lastName: data.last_name,
+         }
+       };
+    }
+    return { success: false, error: response.data.message };
+  } catch (error) {
+    return { success: false, error: extractErrorMessage(error) };
+  }
+};
+
+/**
+ * Updates user password
+ * @param {Object} passwordData - { current_password, new_password, confirm_new_password }
+ * @returns {Promise<Object>} Success status
+ */
+export const updatePassword = async (passwordData) => {
+  try {
+    const response = await apiClient.patch('/v1/settings/password', passwordData);
+    
+    if (response.data.success) {
+      return { success: true, message: response.data.message };
+    }
+    return { success: false, error: response.data.message };
+  } catch (error) {
+    return { success: false, error: extractErrorMessage(error) };
   }
 };
 
 /**
  * Creates a full backup of all system data
- * @returns {Object} Backup data object
+ * @returns {Promise<Blob>} Backup file blob
  */
-export const createBackup = () => {
+export const createBackup = async () => {
   try {
-    const backup = {
-      version: '1.0',
-      timestamp: new Date().toISOString(),
-      data: {},
-    };
-    
-    BACKUP_DATA_KEYS.forEach((key) => {
-      backup.data[key] = readFromStorage(key, []);
+    const response = await apiClient.get('/v1/settings/system/backup', {
+      responseType: 'blob',
     });
     
-    // Save backup timestamp
-    saveToStorage(STORAGE_KEYS.LAST_BACKUP, new Date().toLocaleString());
-    
-    return backup;
+    return { success: true, data: response.data };
   } catch (error) {
-    console.error('Error creating backup:', error);
-    return null;
+    return { success: false, error: extractErrorMessage(error) };
   }
 };
 
 /**
- * Downloads backup as JSON file
- * @param {Object} backup - Backup data object
+ * Downloads backup blob as file
+ * @param {Blob} blob - Backup data blob
  * @param {string} filename - Filename for download
  */
-export const downloadBackup = (backup, filename = 'motomedic-backup.json') => {
+export const downloadBackup = (blob, filename = 'motomedic-backup.json') => {
   try {
-    const dataStr = JSON.stringify(backup, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
+    const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = filename;
+    link.setAttribute('download', filename);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    window.URL.revokeObjectURL(url);
   } catch (error) {
     console.error('Error downloading backup:', error);
     throw error;
@@ -104,44 +125,27 @@ export const downloadBackup = (backup, filename = 'motomedic-backup.json') => {
 };
 
 /**
- * Validates backup file structure
- * @param {Object} backup - Backup data to validate
- * @returns {Object} Validation result
+ * Restores data from backup file
+ * @param {File} file - Backup file
+ * @returns {Promise<Object>} Success status
  */
-export const validateBackup = (backup) => {
-  if (!backup || typeof backup !== 'object') {
-    return { isValid: false, error: 'Invalid backup file format' };
-  }
-  
-  if (!backup.data || typeof backup.data !== 'object') {
-    return { isValid: false, error: 'Backup file missing data section' };
-  }
-  
-  return { isValid: true };
-};
-
-/**
- * Restores data from backup
- * @param {Object} backup - Backup data object
- * @returns {boolean} Success status
- */
-export const restoreBackup = (backup) => {
+export const restoreBackup = async (file) => {
   try {
-    const validation = validateBackup(backup);
-    if (!validation.isValid) {
-      throw new Error(validation.error);
-    }
-    
-    Object.keys(backup.data).forEach((key) => {
-      if (key.startsWith('motomedic_')) {
-        saveToStorage(key, backup.data[key]);
-      }
+    const formData = new FormData();
+    formData.append('backup_file', file);
+
+    const response = await apiClient.post('/v1/settings/system/restore', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
     
-    return true;
+    if (response.data.success) {
+      return { success: true, message: response.data.message };
+    }
+    return { success: false, error: response.data.message };
   } catch (error) {
-    console.error('Error restoring backup:', error);
-    return false;
+    return { success: false, error: extractErrorMessage(error) };
   }
 };
 
@@ -150,10 +154,11 @@ export const restoreBackup = (backup) => {
 // =============================================================================
 
 const settingsService = {
+  fetchProfile,
   updateUserProfile,
+  updatePassword,
   createBackup,
   downloadBackup,
-  validateBackup,
   restoreBackup,
 };
 
