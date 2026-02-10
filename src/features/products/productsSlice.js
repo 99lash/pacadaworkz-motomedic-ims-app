@@ -1,5 +1,4 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { PRODUCT_STATUSES } from './utils';
 
 const initialState = {
   products: [],
@@ -12,11 +11,9 @@ const initialState = {
   searchTerm: '',
   selectedCategory: 'all',
   selectedBrand: 'all',
-  selectedStatus: PRODUCT_STATUSES[0]?.value || 'all',
   filterOptions: {
     categories: [],
     brands: [],
-    statuses: PRODUCT_STATUSES,
   },
   
   // UI State
@@ -66,9 +63,6 @@ const productsSlice = createSlice({
     setSelectedBrand: (state, action) => {
       state.selectedBrand = action.payload;
     },
-    setSelectedStatus: (state, action) => {
-      state.selectedStatus = action.payload;
-    },
     
     // Pagination
     setCurrentPage: (state, action) => {
@@ -109,7 +103,6 @@ export const {
   setSearchTerm,
   setSelectedCategory,
   setSelectedBrand,
-  setSelectedStatus,
   setCurrentPage,
   setPageSize,
   setSaving,

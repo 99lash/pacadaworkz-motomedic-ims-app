@@ -6,28 +6,6 @@ const currencyFormatter = new Intl.NumberFormat('en-PH', {
   minimumFractionDigits: 2,
 });
 
-const STOCK_STATUS_META = {
-  in_stock: {
-    label: 'In stock',
-    className: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  },
-  low_stock: {
-    label: 'Low stock',
-    className: 'bg-amber-100 text-amber-800 border-amber-200',
-  },
-  out_of_stock: {
-    label: 'Out of stock',
-    className: 'bg-rose-100 text-rose-800 border-rose-200',
-  },
-};
-
-const deriveStockStatus = (product) => {
-  if (product.stockStatus) return product.stockStatus;
-  // TODO: Implement stock status based on inventory when available
-  // For now, default to in_stock since currentStock is not in API
-  return 'in_stock';
-};
-
 export const formatCurrency = (value) => currencyFormatter.format(Number(value) || 0);
 
 export const formatDate = (value) => {
@@ -39,11 +17,6 @@ export const formatDate = (value) => {
     day: 'numeric',
     year: 'numeric',
   });
-};
-
-export const getStockStatusMeta = (product) => {
-  const key = deriveStockStatus(product);
-  return STOCK_STATUS_META[key] || STOCK_STATUS_META.in_stock;
 };
 
 export const mapProductToFormState = (product) => {

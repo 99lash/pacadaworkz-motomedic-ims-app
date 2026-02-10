@@ -21,12 +21,10 @@ const ProductsPage = () => {
     searchTerm,
     selectedCategory,
     selectedBrand,
-    selectedStatus,
     filterOptions,
     setSearchTerm,
     handleCategoryFilterChange,
     handleBrandFilterChange,
-    handleStatusFilterChange,
 
     // Pagination
     currentPage,
@@ -115,9 +113,6 @@ const ProductsPage = () => {
             brandOptions={filterOptions.brands}
             selectedBrand={selectedBrand}
             onBrandChange={handleBrandFilterChange}
-            statusOptions={filterOptions.statuses}
-            selectedStatus={selectedStatus}
-            onStatusChange={handleStatusFilterChange}
           />
 
           <Card>

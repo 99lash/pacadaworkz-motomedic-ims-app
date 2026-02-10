@@ -19,7 +19,6 @@ export const UI_TEXT = {
   LABEL_SKU: 'SKU',
   LABEL_CATEGORY: 'Category',
   LABEL_BRAND: 'Brand',
-  LABEL_STATUS: 'Stock status',
   LABEL_COST_PRICE: 'Cost price (₱)',
   LABEL_SELLING_PRICE: 'Selling price (₱)',
   LABEL_STOCK: 'Current stock',
@@ -93,13 +92,6 @@ export const VALIDATION = {
 export const DEBOUNCE = {
   SEARCH: 350,
 };
-
-export const PRODUCT_STATUSES = [
-  { value: 'all', label: 'All stock statuses' },
-  { value: 'in_stock', label: 'In stock' },
-  { value: 'low_stock', label: 'Low stock' },
-  { value: 'out_of_stock', label: 'Out of stock' },
-];
 
 export const INITIAL_PRODUCT_FORM = {
   name: '',

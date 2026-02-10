@@ -22,7 +22,6 @@ export const fetchProductsPaginated = async ({
   search = '',
   categoryId = '',
   brandId = '',
-  status = '',
 } = {}) => {
   try {
     const params = new URLSearchParams({
@@ -38,9 +37,6 @@ export const fetchProductsPaginated = async ({
     }
     if (brandId) {
       params.append('brand_id', brandId);
-    }
-    if (status) {
-      params.append('status', status);
     }
 
     const [productResponse, inventoryData] = await Promise.all([
@@ -305,7 +301,6 @@ const transformProductFromBackend = (backendProduct, stockMap) => ({
   currentStock: stockMap ? (stockMap[backendProduct.sku] || 0) : 0, // Use stock from inventory map
   description: backendProduct.description || '',
   isActive: backendProduct.is_active || true,
-  stockStatus: 'in_stock', // TODO: Calculate based on inventory
   createdAt: backendProduct.created_at,
   updatedAt: backendProduct.updated_at,
 });

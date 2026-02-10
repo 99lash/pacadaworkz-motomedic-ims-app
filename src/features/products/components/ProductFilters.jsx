@@ -19,9 +19,6 @@ const ProductFilters = ({
   brandOptions,
   selectedBrand,
   onBrandChange,
-  statusOptions,
-  selectedStatus,
-  onStatusChange,
 }) => (
   <section className="bg-white border border-border rounded-lg shadow-sm p-4 space-y-5 dark:bg-gray-950 dark:border-gray-800">
     <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground dark:text-gray-300">
@@ -85,24 +82,6 @@ const ProductFilters = ({
             ))}
           </select>
         </div>
-
-        <div className="flex flex-1 min-w-[160px] flex-col gap-1.5">
-          <label htmlFor="product-status-filter" className="text-sm font-medium text-muted-foreground dark:text-gray-300">
-            {UI_TEXT.LABEL_STATUS}
-          </label>
-          <select
-            id="product-status-filter"
-            value={selectedStatus}
-            onChange={(e) => onStatusChange(e.target.value)}
-            className={`${controlClass} dark:bg-gray-900 dark:text-gray-100 dark:border-gray-800`}
-          >
-            {statusOptions.map((status) => (
-              <option key={status.value} value={status.value}>
-                {status.label}
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
     </div>
   </section>
@@ -127,20 +106,11 @@ ProductFilters.propTypes = {
   ),
   selectedBrand: PropTypes.string.isRequired,
   onBrandChange: PropTypes.func.isRequired,
-  statusOptions: PropTypes.arrayOf(
-    PropTypes.shape({
-      value: PropTypes.string.isRequired,
-      label: PropTypes.string.isRequired,
-    })
-  ),
-  selectedStatus: PropTypes.string.isRequired,
-  onStatusChange: PropTypes.func.isRequired,
 };
 
 ProductFilters.defaultProps = {
   categoryOptions: [],
   brandOptions: [],
-  statusOptions: [],
 };
 
 export default memo(ProductFilters);

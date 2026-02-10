@@ -2,7 +2,6 @@ import React, { memo } from 'react';
 import PropTypes from 'prop-types';
 import { Edit } from 'lucide-react';
 import { Button } from '../../../shared/components/ui/button';
-import { Badge } from '../../../shared/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -12,7 +11,7 @@ import {
   TableRow,
 } from '../../../shared/components/ui/table';
 import ProductDeleteDialog from './ProductDeleteDialog';
-import { formatCurrency, formatDate, getStockStatusMeta } from '../utils';
+import { formatCurrency, formatDate } from '../utils';
 
 const ProductTable = ({ products, onEdit, onDelete, isDeleting }) => (
   <Table>
@@ -30,9 +29,6 @@ const ProductTable = ({ products, onEdit, onDelete, isDeleting }) => (
         <TableHead id="col-stock" className="text-right">
           Reorder Point
         </TableHead>
-        <TableHead id="col-status" className="text-center">
-          Stock Status
-        </TableHead>
         <TableHead id="col-updated" className="text-center">
           Updated
         </TableHead>
@@ -42,42 +38,35 @@ const ProductTable = ({ products, onEdit, onDelete, isDeleting }) => (
       </TableRow>
     </TableHeader>
     <TableBody>
-      {products.map((product) => {
-        const stockStatus = getStockStatusMeta(product);
-
-        return (
-          <TableRow key={product.id}>
-            <TableCell headers="col-product">
-              <p className="font-medium text-foreground">{product.name}</p>
-              <p className="text-xs text-muted-foreground mt-1">{product.sku}</p>
-              {product.description && (
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                  {product.description}
-                </p>
-              )}
-            </TableCell>
-            <TableCell headers="col-category">{product.categoryName}</TableCell>
-            <TableCell headers="col-brand">{product.brandName}</TableCell>
-            <TableCell headers="col-cost" className="text-right">
-              {formatCurrency(product.costPrice)}
-            </TableCell>
-            <TableCell headers="col-price" className="text-right">
-              {formatCurrency(product.sellingPrice)}
-            </TableCell>
-            <TableCell headers="col-stock" className="text-right">
-              <span className="font-semibold">{product.reorderPoint}</span>
-              <span className="block text-xs text-muted-foreground">
-                
-              </span>            </TableCell>
-            <TableCell headers="col-status" className="text-center">
-              <Badge variant="outline" className={stockStatus.className}>
-                {stockStatus.label}
-              </Badge>
-            </TableCell>
-            <TableCell headers="col-updated" className="text-center text-sm text-muted-foreground">
-              {formatDate(product.updatedAt)}
-            </TableCell>
-            <TableCell headers="col-actions">
+      {products.map((product) => (
+        <TableRow key={product.id}>
+          <TableCell headers="col-product">
+            <p className="font-medium text-foreground">{product.name}</p>
+            <p className="text-xs text-muted-foreground mt-1">{product.sku}</p>
+            {product.description && (
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                {product.description}
+              </p>
+            )}
+          </TableCell>
+          <TableCell headers="col-category">{product.categoryName}</TableCell>
+          <TableCell headers="col-brand">{product.brandName}</TableCell>
+          <TableCell headers="col-cost" className="text-right">
+            {formatCurrency(product.costPrice)}
+          </TableCell>
+          <TableCell headers="col-price" className="text-right">
+            {formatCurrency(product.sellingPrice)}
+          </TableCell>
+          <TableCell headers="col-stock" className="text-right">
+            <span className="font-semibold">{product.reorderPoint}</span>
+            <span className="block text-xs text-muted-foreground">
+              
+            </span>
+          </TableCell>
+          <TableCell headers="col-updated" className="text-center text-sm text-muted-foreground">
+            {formatDate(product.updatedAt)}
+          </TableCell>
+          <TableCell headers="col-actions">
               <div className="flex justify-center gap-2">
                 <Button
                   variant="ghost"
@@ -95,8 +84,7 @@ const ProductTable = ({ products, onEdit, onDelete, isDeleting }) => (
               </div>
             </TableCell>
           </TableRow>
-        );
-      })}
+      ))}
     </TableBody>
   </Table>
 );
@@ -115,7 +103,6 @@ ProductTable.propTypes = {
       reorderPoint: PropTypes.number.isRequired,
       updatedAt: PropTypes.string.isRequired,
       description: PropTypes.string,
-      stockStatus: PropTypes.string,
     })
   ).isRequired,
   onEdit: PropTypes.func.isRequired,
