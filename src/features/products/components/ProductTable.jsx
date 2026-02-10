@@ -11,7 +11,7 @@ import {
   TableRow,
 } from '../../../shared/components/ui/table';
 import ProductDeleteDialog from './ProductDeleteDialog';
-import { formatCurrency, formatDate } from '../utils';
+import { formatCurrency, formatDateTime } from '../utils';
 
 const ProductTable = ({ products, onEdit, onDelete, isDeleting }) => (
   <Table>
@@ -64,7 +64,7 @@ const ProductTable = ({ products, onEdit, onDelete, isDeleting }) => (
             </span>
           </TableCell>
           <TableCell headers="col-updated" className="text-center text-sm text-muted-foreground">
-            {formatDate(product.updatedAt)}
+            {formatDateTime(product.updatedAt)}
           </TableCell>
           <TableCell headers="col-actions">
               <div className="flex justify-center gap-2">

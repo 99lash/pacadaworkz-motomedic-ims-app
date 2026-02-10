@@ -9,6 +9,7 @@ import { UI_TEXT } from '../utils';
  */
 const controlClass =
   'w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring';
+const optionClass = 'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100';
 
 const ProductFilters = ({
   searchValue,
@@ -55,9 +56,9 @@ const ProductFilters = ({
             onChange={(e) => onCategoryChange(e.target.value)}
             className={`${controlClass} dark:bg-gray-900 dark:text-gray-100 dark:border-gray-800`}
           >
-            <option value="all">{UI_TEXT.OPTION_ALL_CATEGORIES}</option>
+            <option value="all" className={optionClass}>{UI_TEXT.OPTION_ALL_CATEGORIES}</option>
             {categoryOptions.map((category) => (
-              <option key={category.value} value={category.value}>
+              <option key={category.value} value={category.value} className={optionClass}>
                 {category.label}
               </option>
             ))}
@@ -74,9 +75,9 @@ const ProductFilters = ({
             onChange={(e) => onBrandChange(e.target.value)}
             className={`${controlClass} dark:bg-gray-900 dark:text-gray-100 dark:border-gray-800`}
           >
-            <option value="all">{UI_TEXT.OPTION_ALL_BRANDS}</option>
+            <option value="all" className={optionClass}>{UI_TEXT.OPTION_ALL_BRANDS}</option>
             {brandOptions.map((brand) => (
-              <option key={brand.value} value={brand.value}>
+              <option key={brand.value} value={brand.value} className={optionClass}>
                 {brand.label}
               </option>
             ))}
