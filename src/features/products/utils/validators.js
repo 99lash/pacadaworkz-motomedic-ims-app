@@ -63,6 +63,8 @@ export const sanitizeProductData = (formData) => ({
   brandId: formData.brandId,
   costPrice: Number(formData.costPrice) || 0,
   sellingPrice: Number(formData.sellingPrice) || 0,
+  location: formData.location?.trim() || '',
+  currentStock: Number(formData.currentStock) || 0,
   reorderPoint: Number(formData.reorderPoint) || 0,
   description: formData.description?.trim() || '',
   attributes: (formData.attributes || []).map((attr) => ({

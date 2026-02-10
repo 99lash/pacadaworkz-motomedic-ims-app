@@ -19,6 +19,20 @@ export const formatDate = (value) => {
   });
 };
 
+export const formatDateTime = (value) => {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleString('en-PH', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
 export const mapProductToFormState = (product) => {
   if (!product) {
     return { ...INITIAL_PRODUCT_FORM };
@@ -32,6 +46,7 @@ export const mapProductToFormState = (product) => {
     brandId: product.brandId?.toString() || '',
     costPrice: product.costPrice?.toString() ?? '',
     sellingPrice: product.sellingPrice?.toString() ?? '',
+    location: product.location || '',
     reorderPoint: product.reorderPoint?.toString() ?? '',
     description: product.description || '',
     attributes: product.attributes || [],

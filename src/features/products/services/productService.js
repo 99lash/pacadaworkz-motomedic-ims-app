@@ -297,6 +297,7 @@ const transformProductFromBackend = (backendProduct, stockMap) => ({
   brandName: backendProduct.brand,
   costPrice: parseFloat(backendProduct.cost_price) || 0,
   sellingPrice: parseFloat(backendProduct.unit_price) || 0,
+  location: backendProduct.location || '',
   reorderPoint: parseInt(backendProduct.reorder_level) || 0,
   currentStock: stockMap ? (stockMap[backendProduct.sku] || 0) : 0, // Use stock from inventory map
   description: backendProduct.description || '',
@@ -318,8 +319,9 @@ const transformProductToBackend = (frontendProduct) => ({
   description: frontendProduct.description || '',
   unit_price: parseFloat(frontendProduct.sellingPrice) || 0,
   cost_price: parseFloat(frontendProduct.costPrice) || 0,
+  location: frontendProduct.location || '',
   reorder_level: parseInt(frontendProduct.reorderPoint) || 0,
-  // Note: currentStock not sent to backend as it's not implemented yet
+  initial_stock: parseInt(frontendProduct.currentStock) || 0,
 });
 
 // =============================================================================
