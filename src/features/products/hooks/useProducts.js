@@ -24,7 +24,6 @@ import {
   setSearchTerm,
   setSelectedCategory,
   setSelectedBrand,
-  setSelectedStatus,
   setCurrentPage,
   setPageSize,
   setSaving,
@@ -53,7 +52,6 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     searchTerm,
     selectedCategory,
     selectedBrand,
-    selectedStatus,
     filterOptions,
     isSaving,
     isDeleting,
@@ -117,9 +115,8 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     () => ({
       categoryId: selectedCategory === 'all' ? '' : selectedCategory,
       brandId: selectedBrand === 'all' ? '' : selectedBrand,
-      status: selectedStatus === 'all' ? '' : selectedStatus,
     }),
-    [selectedCategory, selectedBrand, selectedStatus]
+    [selectedCategory, selectedBrand]
   );
 
   // load products
@@ -353,15 +350,6 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     [dispatch, goToPage]
   );
 
-  const handleStatusFilterChange = useCallback(
-    (value) => {
-      dispatch(setSelectedStatus(value));
-      dispatch(setCurrentPage(1));
-      goToPage(1);
-    },
-    [dispatch, goToPage]
-  );
-
   const handleSearchChange = useCallback((value) => {
     dispatch(setSearchTerm(value));
   }, [dispatch]);
@@ -373,7 +361,6 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     setSearchTerm: handleSearchChange,
     selectedCategory,
     selectedBrand,
-    selectedStatus,
     filterOptions,
     currentPage,
     pageSize,
@@ -400,7 +387,6 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     handleExportProducts,
     handleCategoryFilterChange,
     handleBrandFilterChange,
-    handleStatusFilterChange,
     handlePageSizeChange,
     handlePageChange,
   };

@@ -9,6 +9,7 @@ import { UI_TEXT } from '../utils';
  */
 const controlClass =
   'w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring';
+const optionClass = 'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100';
 
 const ProductFilters = ({
   searchValue,
@@ -19,9 +20,6 @@ const ProductFilters = ({
   brandOptions,
   selectedBrand,
   onBrandChange,
-  statusOptions,
-  selectedStatus,
-  onStatusChange,
 }) => (
   <section className="bg-white border border-border rounded-lg shadow-sm p-4 space-y-5 dark:bg-gray-950 dark:border-gray-800">
     <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground dark:text-gray-300">
@@ -58,9 +56,9 @@ const ProductFilters = ({
             onChange={(e) => onCategoryChange(e.target.value)}
             className={`${controlClass} dark:bg-gray-900 dark:text-gray-100 dark:border-gray-800`}
           >
-            <option value="all">{UI_TEXT.OPTION_ALL_CATEGORIES}</option>
+            <option value="all" className={optionClass}>{UI_TEXT.OPTION_ALL_CATEGORIES}</option>
             {categoryOptions.map((category) => (
-              <option key={category.value} value={category.value}>
+              <option key={category.value} value={category.value} className={optionClass}>
                 {category.label}
               </option>
             ))}
@@ -77,28 +75,10 @@ const ProductFilters = ({
             onChange={(e) => onBrandChange(e.target.value)}
             className={`${controlClass} dark:bg-gray-900 dark:text-gray-100 dark:border-gray-800`}
           >
-            <option value="all">{UI_TEXT.OPTION_ALL_BRANDS}</option>
+            <option value="all" className={optionClass}>{UI_TEXT.OPTION_ALL_BRANDS}</option>
             {brandOptions.map((brand) => (
-              <option key={brand.value} value={brand.value}>
+              <option key={brand.value} value={brand.value} className={optionClass}>
                 {brand.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex flex-1 min-w-[160px] flex-col gap-1.5">
-          <label htmlFor="product-status-filter" className="text-sm font-medium text-muted-foreground dark:text-gray-300">
-            {UI_TEXT.LABEL_STATUS}
-          </label>
-          <select
-            id="product-status-filter"
-            value={selectedStatus}
-            onChange={(e) => onStatusChange(e.target.value)}
-            className={`${controlClass} dark:bg-gray-900 dark:text-gray-100 dark:border-gray-800`}
-          >
-            {statusOptions.map((status) => (
-              <option key={status.value} value={status.value}>
-                {status.label}
               </option>
             ))}
           </select>
@@ -127,20 +107,11 @@ ProductFilters.propTypes = {
   ),
   selectedBrand: PropTypes.string.isRequired,
   onBrandChange: PropTypes.func.isRequired,
-  statusOptions: PropTypes.arrayOf(
-    PropTypes.shape({
-      value: PropTypes.string.isRequired,
-      label: PropTypes.string.isRequired,
-    })
-  ),
-  selectedStatus: PropTypes.string.isRequired,
-  onStatusChange: PropTypes.func.isRequired,
 };
 
 ProductFilters.defaultProps = {
   categoryOptions: [],
   brandOptions: [],
-  statusOptions: [],
 };
 
 export default memo(ProductFilters);

@@ -19,15 +19,16 @@ export const UI_TEXT = {
   LABEL_SKU: 'SKU',
   LABEL_CATEGORY: 'Category',
   LABEL_BRAND: 'Brand',
-  LABEL_STATUS: 'Stock status',
   LABEL_COST_PRICE: 'Cost price (₱)',
   LABEL_SELLING_PRICE: 'Selling price (₱)',
+  LABEL_LOCATION: 'Storage location',
   LABEL_STOCK: 'Current stock',
   LABEL_REORDER_POINT: 'Reorder point',
   LABEL_DESCRIPTION: 'Description',
 
   PLACEHOLDER_NAME: 'e.g. Premium brake pads',
   PLACEHOLDER_SKU: 'e.g. BRK-2105',
+  PLACEHOLDER_LOCATION: 'e.g. shelf-1, bin-A',
   PLACEHOLDER_DESCRIPTION: 'Add important notes such as fitment, supplier, or warranty...',
 
   OPTION_ALL_CATEGORIES: 'All categories',
@@ -94,13 +95,6 @@ export const DEBOUNCE = {
   SEARCH: 350,
 };
 
-export const PRODUCT_STATUSES = [
-  { value: 'all', label: 'All stock statuses' },
-  { value: 'in_stock', label: 'In stock' },
-  { value: 'low_stock', label: 'Low stock' },
-  { value: 'out_of_stock', label: 'Out of stock' },
-];
-
 export const INITIAL_PRODUCT_FORM = {
   name: '',
   sku: '',
@@ -108,6 +102,7 @@ export const INITIAL_PRODUCT_FORM = {
   brandId: '',
   costPrice: '',
   sellingPrice: '',
+  location: '',
   currentStock: '',
   reorderPoint: '',
   description: '',
@@ -121,6 +116,7 @@ export const INITIAL_PRODUCT_ERRORS = {
   brandId: '',
   costPrice: '',
   sellingPrice: '',
+  location: '',
   currentStock: '',
   reorderPoint: '',
   description: '',

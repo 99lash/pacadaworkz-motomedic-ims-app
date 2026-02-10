@@ -15,6 +15,9 @@ import {
 import ProductAttributesSection from './ProductAttributesSection';
 import { UI_TEXT, VALIDATION } from '../utils';
 
+const selectClass = "w-full rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50";
+const optionClass = "bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100";
+
 const ProductFormDialog = ({
   isOpen,
   onClose,
@@ -34,6 +37,7 @@ const ProductFormDialog = ({
   const brandId = useId();
   const costId = useId();
   const priceId = useId();
+  const locationId = useId();
   const stockId = useId();
   const reorderId = useId();
   const descriptionId = useId();
@@ -131,14 +135,14 @@ const ProductFormDialog = ({
                 id={categoryId}
                 value={formData.categoryId}
                 onChange={(e) => onFieldChange('categoryId', e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className={selectClass}
                 aria-invalid={Boolean(formErrors.categoryId)}
                 aria-describedby={formErrors.categoryId ? `${categoryId}-error` : undefined}
                 disabled={isSaving}
               >
-                <option value="">{UI_TEXT.OPTION_SELECT_CATEGORY}</option>
+                <option value="" className={optionClass}>{UI_TEXT.OPTION_SELECT_CATEGORY}</option>
                 {categoryOptions.map((category) => (
-                  <option key={category.value} value={category.value}>
+                  <option key={category.value} value={category.value} className={optionClass}>
                     {category.label}
                   </option>
                 ))}
@@ -158,14 +162,14 @@ const ProductFormDialog = ({
                 id={brandId}
                 value={formData.brandId}
                 onChange={(e) => onFieldChange('brandId', e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className={selectClass}
                 aria-invalid={Boolean(formErrors.brandId)}
                 aria-describedby={formErrors.brandId ? `${brandId}-error` : undefined}
                 disabled={isSaving}
               >
-                <option value="">{UI_TEXT.OPTION_SELECT_BRAND}</option>
+                <option value="" className={optionClass}>{UI_TEXT.OPTION_SELECT_BRAND}</option>
                 {brandOptions.map((brand) => (
-                  <option key={brand.value} value={brand.value}>
+                  <option key={brand.value} value={brand.value} className={optionClass}>
                     {brand.label}
                   </option>
                 ))}
@@ -223,6 +227,21 @@ const ProductFormDialog = ({
                   {formErrors.sellingPrice}
                 </p>
               )}
+            </div>
+          </section>
+
+          <section className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor={locationId}>
+                {UI_TEXT.LABEL_LOCATION}
+              </Label>
+              <Input
+                id={locationId}
+                value={formData.location}
+                onChange={(e) => onFieldChange('location', e.target.value)}
+                placeholder={UI_TEXT.PLACEHOLDER_LOCATION}
+                disabled={isSaving}
+              />
             </div>
           </section>
 
@@ -341,6 +360,7 @@ ProductFormDialog.propTypes = {
     brandId: PropTypes.string,
     costPrice: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     sellingPrice: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    location: PropTypes.string,
     currentStock: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     reorderPoint: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     description: PropTypes.string,

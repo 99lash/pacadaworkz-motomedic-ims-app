@@ -22,7 +22,6 @@ export const fetchProductsPaginated = async ({
   search = '',
   categoryId = '',
   brandId = '',
-  status = '',
 } = {}) => {
   try {
     const params = new URLSearchParams({
@@ -38,9 +37,6 @@ export const fetchProductsPaginated = async ({
     }
     if (brandId) {
       params.append('brand_id', brandId);
-    }
-    if (status) {
-      params.append('status', status);
     }
 
     const [productResponse, inventoryData] = await Promise.all([
@@ -301,11 +297,11 @@ const transformProductFromBackend = (backendProduct, stockMap) => ({
   brandName: backendProduct.brand,
   costPrice: parseFloat(backendProduct.cost_price) || 0,
   sellingPrice: parseFloat(backendProduct.unit_price) || 0,
+  location: backendProduct.location || '',
   reorderPoint: parseInt(backendProduct.reorder_level) || 0,
   currentStock: stockMap ? (stockMap[backendProduct.sku] || 0) : 0, // Use stock from inventory map
   description: backendProduct.description || '',
   isActive: backendProduct.is_active || true,
-  stockStatus: 'in_stock', // TODO: Calculate based on inventory
   createdAt: backendProduct.created_at,
   updatedAt: backendProduct.updated_at,
 });
@@ -323,8 +319,9 @@ const transformProductToBackend = (frontendProduct) => ({
   description: frontendProduct.description || '',
   unit_price: parseFloat(frontendProduct.sellingPrice) || 0,
   cost_price: parseFloat(frontendProduct.costPrice) || 0,
+  location: frontendProduct.location || '',
   reorder_level: parseInt(frontendProduct.reorderPoint) || 0,
-  // Note: currentStock not sent to backend as it's not implemented yet
+  initial_stock: parseInt(frontendProduct.currentStock) || 0,
 });
 
 // =============================================================================
