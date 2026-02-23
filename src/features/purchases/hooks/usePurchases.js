@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { purchaseService } from '../services';
 import supplierService from '../../suppliers/services/supplierService';
@@ -29,8 +29,11 @@ export const usePurchases = () => {
   // Form state
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [formErrors, setFormErrors] = useState(INITIAL_FORM_ERRORS);
+  const isFetchingDataRef = useRef(false);
 
   const fetchData = useCallback(async (silent = false) => {
+    if (isFetchingDataRef.current) return;
+    isFetchingDataRef.current = true;
     if (!silent) setIsLoading(true);
     try {
       const [purchasesData, suppliersResponse, productsResponse] = await Promise.all([
@@ -53,6 +56,7 @@ export const usePurchases = () => {
       toast.error('Failed to load data. Please try again.');
     } finally {
       if (!silent) setIsLoading(false);
+      isFetchingDataRef.current = false;
     }
   }, []);
 
@@ -275,4 +279,3 @@ export const usePurchases = () => {
 };
 
 export default usePurchases;
-

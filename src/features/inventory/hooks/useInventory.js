@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useEffect } from 'react';
+import { useCallback, useMemo, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchInventory, updateInventoryStock } from '../services';
 import {
@@ -23,6 +23,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export const useInventory = () => {
   const dispatch = useDispatch();
+  const isFetchingRef = useRef(false);
   
   // Redux State
   const {
@@ -36,23 +37,32 @@ export const useInventory = () => {
   } = useSelector((state) => state.inventory);
 
   const refreshInventory = useCallback(async (forceRefresh = false) => {
-    const now = Date.now();
-    if (!forceRefresh && lastFetched && (now - lastFetched < CACHE_DURATION)) {
+    if (!forceRefresh && isFetchingRef.current) {
+      return;
+    }
+    if (isFetchingRef.current) {
       return;
     }
 
+    isFetchingRef.current = true;
     dispatch(fetchInventoryStart());
     try {
       const data = await fetchInventory();
       dispatch(fetchInventorySuccess(data));
     } catch (err) {
       dispatch(fetchInventoryFailure(err.message || 'Failed to fetch inventory'));
+    } finally {
+      isFetchingRef.current = false;
     }
-  }, [dispatch, lastFetched]);
+  }, [dispatch]);
 
   useEffect(() => {
+    const now = Date.now();
+    if (lastFetched && (now - lastFetched < CACHE_DURATION)) {
+      return;
+    }
     refreshInventory();
-  }, [refreshInventory]);
+  }, [lastFetched, refreshInventory]);
 
   // Get stock status for an item
   const getItemStockStatus = useCallback((item) => {
@@ -149,4 +159,3 @@ export const useInventory = () => {
 };
 
 export default useInventory;
-

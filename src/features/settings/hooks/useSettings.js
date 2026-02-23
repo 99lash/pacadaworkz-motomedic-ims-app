@@ -11,7 +11,7 @@
  * - Preferences management
  */
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
 import { settingsService } from '../services';
 import { validateProfileForm } from '../utils';
@@ -40,25 +40,32 @@ export const useSettings = (user) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [selectedBackupFile, setSelectedBackupFile] = useState(null);
+  const isFetchingProfileRef = useRef(false);
 
   // ---------------------------------------------------------------------------
   // EFFECT - Fetch Profile
   // ---------------------------------------------------------------------------
   useEffect(() => {
     const loadProfile = async () => {
+      if (isFetchingProfileRef.current) return;
+      isFetchingProfileRef.current = true;
       setIsLoadingProfile(true);
-      const result = await settingsService.fetchProfile();
-      if (result.success) {
-        setProfileData({
-          firstName: result.data.firstName || '',
-          lastName: result.data.lastName || '',
-          email: result.data.email || '',
-        });
-      } else {
-        // Fallback to initial user prop or show error
-        // toast.error('Failed to load profile data');
+      try {
+        const result = await settingsService.fetchProfile();
+        if (result.success) {
+          setProfileData({
+            firstName: result.data.firstName || '',
+            lastName: result.data.lastName || '',
+            email: result.data.email || '',
+          });
+        } else {
+          // Fallback to initial user prop or show error
+          // toast.error('Failed to load profile data');
+        }
+      } finally {
+        setIsLoadingProfile(false);
+        isFetchingProfileRef.current = false;
       }
-      setIsLoadingProfile(false);
     };
 
     if (activeTab === TAB_TYPES.PROFILE) {
@@ -232,4 +239,3 @@ export const useSettings = (user) => {
 };
 
 export default useSettings;
-

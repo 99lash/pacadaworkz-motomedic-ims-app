@@ -74,6 +74,7 @@ export const useCategories = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
 
   // Ref to track if initial load is complete
   const isInitialLoad = useRef(true);
+  const isFetchingCategoriesRef = useRef(false);
 
   // ---------------------------------------------------------------------------
   // PAGINATION HOOK
@@ -120,6 +121,11 @@ export const useCategories = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
    * Loads categories with pagination and search
    */
   const loadCategories = useCallback(async () => {
+    if (isFetchingCategoriesRef.current) {
+      return;
+    }
+
+    isFetchingCategoriesRef.current = true;
     setIsLoading(true);
     setError(null);
     
@@ -145,6 +151,7 @@ export const useCategories = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     } finally {
       setIsLoading(false);
       isInitialLoad.current = false;
+      isFetchingCategoriesRef.current = false;
     }
   }, [currentPage, pageSize, debouncedSearchTerm]);
 
@@ -192,12 +199,7 @@ export const useCategories = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   // Initial load and reload on pagination/search changes
   useEffect(() => {
     loadCategories();
-  }, [currentPage, pageSize, debouncedSearchTerm, loadCategories]);
-
-  // Load all categories once for validation
-  useEffect(() => {
-    loadAllCategories();
-  }, [loadAllCategories]);
+  }, [currentPage, pageSize, debouncedSearchTerm]);
 
   // Clean up dialog states when component unmounts
   useEffect(() => {
@@ -215,7 +217,8 @@ export const useCategories = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   const openAddDialog = useCallback(() => {
     resetForm();
     setIsAddDialogOpen(true);
-  }, [resetForm]);
+    loadAllCategories();
+  }, [resetForm, loadAllCategories]);
 
   const closeAddDialog = useCallback(() => {
     setIsAddDialogOpen(false);
@@ -230,7 +233,8 @@ export const useCategories = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     });
     setFormErrors(INITIAL_FORM_ERRORS);
     setIsEditDialogOpen(true);
-  }, []);
+    loadAllCategories();
+  }, [loadAllCategories]);
 
   const closeEditDialog = useCallback(() => {
     setIsEditDialogOpen(false);

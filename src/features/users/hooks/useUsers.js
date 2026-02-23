@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { userService } from '../services';
 import {
@@ -23,19 +23,26 @@ export const useUsers = () => {
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [formErrors, setFormErrors] = useState(INITIAL_FORM_ERRORS);
   const [searchTerm, setSearchTerm] = useState('');
+  const isFetchingUsersRef = useRef(false);
 
   // Fetch users on mount
   useEffect(() => {
     const loadUsers = async () => {
+      if (isFetchingUsersRef.current) return;
+      isFetchingUsersRef.current = true;
       setIsLoading(true);
-      const result = await userService.fetchUsers();
-      if (result.success) {
-        setUsers(result.data);
-      } else {
-        toast.error(result.error || 'Failed to load users');
-        setUsers([]);
+      try {
+        const result = await userService.fetchUsers();
+        if (result.success) {
+          setUsers(result.data);
+        } else {
+          toast.error(result.error || 'Failed to load users');
+          setUsers([]);
+        }
+      } finally {
+        setIsLoading(false);
+        isFetchingUsersRef.current = false;
       }
-      setIsLoading(false);
     };
 
     loadUsers();
@@ -197,4 +204,3 @@ export const useUsers = () => {
 };
 
 export default useUsers;
-

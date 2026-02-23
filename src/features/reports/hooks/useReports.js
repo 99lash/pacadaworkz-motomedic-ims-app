@@ -5,7 +5,7 @@
  * and business logic. Separates concerns from UI components.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { reportsService } from '../services';
 import { productService } from '../../products/services';
 import { REPORT_TYPES, DATE_RANGE_TYPES, getDateRangeFilter, filterByDateRange } from '../utils';
@@ -82,6 +82,7 @@ export const useReports = () => {
   const [products] = useState([]);
 
   const [isLoading, setIsLoading] = useState(true);
+  const isLoadingDataRef = useRef(false);
 
   // ---------------------------------------------------------------------------
   // HELPERS
@@ -103,6 +104,8 @@ export const useReports = () => {
   // ---------------------------------------------------------------------------
 
   const loadData = useCallback(async () => {
+    if (isLoadingDataRef.current) return;
+    isLoadingDataRef.current = true;
     setIsLoading(true);
     
     // Reset all data to defaults to prevent stale data display
@@ -268,6 +271,7 @@ export const useReports = () => {
       console.error('Error loading reports data:', error);
     } finally {
       setIsLoading(false);
+      isLoadingDataRef.current = false;
     }
   }, [reportType, dateRange, customStartDate, customEndDate]);
 
@@ -351,4 +355,3 @@ export const useReports = () => {
 };
 
 export default useReports;
-

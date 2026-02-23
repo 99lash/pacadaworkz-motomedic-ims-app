@@ -6,7 +6,7 @@
  * Manages state via Redux.
  */
 
-import { useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import { posService } from '../services';
@@ -38,6 +38,8 @@ const logActivity = () => {
 
 export const usePOS = (user) => {
   const dispatch = useDispatch();
+  const isFetchingRef = useRef(false);
+  const isLoadingCartRef = useRef(false);
   
   // Select state from Redux
   const {
@@ -62,6 +64,11 @@ export const usePOS = (user) => {
   // ---------------------------------------------------------------------------
 
   const loadCart = useCallback(async () => {
+    if (isLoadingCartRef.current) {
+      return;
+    }
+
+    isLoadingCartRef.current = true;
     dispatch(setCartLoading(true));
     try {
       const cartResponse = await cartService.getCart();
@@ -82,15 +89,16 @@ export const usePOS = (user) => {
       toast.error('Failed to load cart');
     } finally {
       dispatch(setCartLoading(false));
+      isLoadingCartRef.current = false;
     }
   }, [dispatch]);
 
   const loadInitialData = useCallback(async (isSilent = false) => {
-    const now = Date.now();
-    if (!isSilent && lastFetched && (now - lastFetched < CACHE_DURATION)) {
-      return; // Data is fresh
+    if (isFetchingRef.current) {
+      return;
     }
 
+    isFetchingRef.current = true;
     if (!isSilent) dispatch(fetchPosDataStart());
     try {
       const [productsData, categoriesData, brandsData] = await Promise.all([
@@ -108,13 +116,18 @@ export const usePOS = (user) => {
       console.error('Error loading initial POS data:', error);
       toast.error('Failed to load products');
       dispatch(fetchPosDataFailure('Failed to load products'));
+    } finally {
+      isFetchingRef.current = false;
     }
-  }, [dispatch, lastFetched]);
+  }, [dispatch]);
 
   useEffect(() => {
-    loadInitialData();
+    const now = Date.now();
+    if (!lastFetched || (now - lastFetched >= CACHE_DURATION)) {
+      loadInitialData();
+    }
     loadCart();
-  }, [loadInitialData, loadCart]);
+  }, [loadInitialData, loadCart, lastFetched]);
 
   // ---------------------------------------------------------------------------
   // CART OPERATIONS

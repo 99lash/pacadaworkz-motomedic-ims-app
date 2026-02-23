@@ -11,7 +11,7 @@
  * - Role-based access control
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { activityLogsService } from '../services';
 import { filterLogs, getUniqueModules } from '../utils';
 
@@ -33,6 +33,7 @@ export const useActivityLogs = (user) => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterModule, setFilterModule] = useState('');
+  const isFetchingLogsRef = useRef(false);
 
   // ---------------------------------------------------------------------------
   // DATA FETCHING
@@ -40,6 +41,8 @@ export const useActivityLogs = (user) => {
 
   useEffect(() => {
     const loadLogs = async () => {
+      if (isFetchingLogsRef.current) return;
+      isFetchingLogsRef.current = true;
       try {
         setIsLoading(true);
         const response = await activityLogsService.fetchActivityLogs();
@@ -52,6 +55,7 @@ export const useActivityLogs = (user) => {
         setLogs([]);
       } finally {
         setIsLoading(false);
+        isFetchingLogsRef.current = false;
       }
     };
 
@@ -85,6 +89,8 @@ export const useActivityLogs = (user) => {
   }, []);
 
   const refreshLogs = useCallback(async () => {
+    if (isFetchingLogsRef.current) return;
+    isFetchingLogsRef.current = true;
     try {
       setIsLoading(true);
       const response = await activityLogsService.fetchActivityLogs();
@@ -95,6 +101,7 @@ export const useActivityLogs = (user) => {
       console.error('Error refreshing activity logs:', error);
     } finally {
       setIsLoading(false);
+      isFetchingLogsRef.current = false;
     }
   }, []);
 
@@ -121,4 +128,3 @@ export const useActivityLogs = (user) => {
 };
 
 export default useActivityLogs;
-

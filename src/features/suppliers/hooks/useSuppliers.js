@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { supplierService } from '../services';
 import {
@@ -23,20 +23,27 @@ export const useSuppliers = () => {
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [formErrors, setFormErrors] = useState(INITIAL_FORM_ERRORS);
   const [isSaving, setIsSaving] = useState(false);
+  const isFetchingSuppliersRef = useRef(false);
 
   const isEditing = !!selectedSupplier;
 
   const loadSuppliers = useCallback(async () => {
+    if (isFetchingSuppliersRef.current) return;
+    isFetchingSuppliersRef.current = true;
     setIsLoading(true);
     setError(null);
-    const response = await supplierService.fetchSuppliers();
-    if (response.success) {
-      setSuppliers(response.data);
-    } else {
-      setError(response.error);
-      toast.error(response.error);
+    try {
+      const response = await supplierService.fetchSuppliers();
+      if (response.success) {
+        setSuppliers(response.data);
+      } else {
+        setError(response.error);
+        toast.error(response.error);
+      }
+    } finally {
+      setIsLoading(false);
+      isFetchingSuppliersRef.current = false;
     }
-    setIsLoading(false);
   }, []);
 
   useEffect(() => {
@@ -170,4 +177,3 @@ export const useSuppliers = () => {
 };
 
 export default useSuppliers;
-

@@ -68,6 +68,8 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
 
   const isInitialLoad = useRef(true);
+  const isLoadingProductsRef = useRef(false);
+  const isLoadingFilterOptionsRef = useRef(false);
 
   // pagination hook sync
   const pagination = usePagination({
@@ -121,6 +123,9 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
 
   // load products
   const loadProducts = useCallback(async (forceRefresh = false) => {
+    if (isLoadingProductsRef.current) return;
+
+    isLoadingProductsRef.current = true;
     const now = Date.now();
     // Simple cache check: if not forcing refresh, and data exists and is fresh
     // Note: We might want to re-fetch if filters changed. 
@@ -150,6 +155,7 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
       dispatch(fetchProductsFailure(err.message));
       toast.error(UI_TEXT.TOAST_LOAD_ERROR);
     } finally {
+      isLoadingProductsRef.current = false;
       isInitialLoad.current = false;
     }
   }, [dispatch, currentPage, pageSize, debouncedSearchTerm, normalizedFilters]);
@@ -157,7 +163,9 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   // load filter options
   const loadFilterOptions = useCallback(async () => {
     if (filterOptions.categories.length > 0 && filterOptions.brands.length > 0) return;
+    if (isLoadingFilterOptionsRef.current) return;
 
+    isLoadingFilterOptionsRef.current = true;
     try {
       const [categoriesResult, brandsResult] = await Promise.all([
         categoryService.fetchCategories(),
@@ -174,6 +182,8 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
       }));
     } catch (err) {
       console.error('Failed to load product filter options', err);
+    } finally {
+      isLoadingFilterOptionsRef.current = false;
     }
   }, [dispatch, filterOptions.categories.length, filterOptions.brands.length]);
 

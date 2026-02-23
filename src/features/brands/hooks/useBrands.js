@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { brandService } from '../services';
 import {
@@ -25,19 +25,26 @@ export const useBrands = () => {
   // Form state
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [formErrors, setFormErrors] = useState(INITIAL_FORM_ERRORS);
+  const isFetchingBrandsRef = useRef(false);
 
   const fetchBrandsPaginated = useCallback(async (page) => {
+    if (isFetchingBrandsRef.current) return;
+    isFetchingBrandsRef.current = true;
     setIsLoading(true);
     setError(null);
-    const { data, success, pagination: newPagination, error: fetchError } = await brandService.fetchBrandsPaginated({ page, pageSize: 10 });
-    if (success) {
-      setBrands(data);
-      setPagination(newPagination);
-    } else {
-      setError(fetchError);
-      toast.error(UI_TEXT.TOAST_FETCH_ERROR);
+    try {
+      const { data, success, pagination: newPagination, error: fetchError } = await brandService.fetchBrandsPaginated({ page, pageSize: 10 });
+      if (success) {
+        setBrands(data);
+        setPagination(newPagination);
+      } else {
+        setError(fetchError);
+        toast.error(UI_TEXT.TOAST_FETCH_ERROR);
+      }
+    } finally {
+      setIsLoading(false);
+      isFetchingBrandsRef.current = false;
     }
-    setIsLoading(false);
   }, []);
 
   useEffect(() => {
@@ -172,4 +179,3 @@ export const useBrands = () => {
 };
 
 export default useBrands;
-

@@ -5,7 +5,7 @@
  * and business logic. Fetches data from the API and manages state via Redux.
  */
 
-import { useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { dashboardService } from '../services';
 import { 
@@ -18,6 +18,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export const useDashboard = (user, userRole) => {
   const dispatch = useDispatch();
+  const isFetchingRef = useRef(false);
   
   // Select state from Redux
   const {
@@ -47,12 +48,10 @@ export const useDashboard = (user, userRole) => {
 
   const loadDashboardData = useCallback(async (forceRefresh = false) => {
     if (!user) return;
-
-    // Cache check
-    const now = Date.now();
-    if (!forceRefresh && lastFetched && (now - lastFetched < CACHE_DURATION)) {
-      return; // Data is fresh, don't fetch
+    if (isFetchingRef.current) {
+      return;
     }
+    isFetchingRef.current = true;
 
     dispatch(fetchDashboardStart());
 
@@ -156,12 +155,18 @@ export const useDashboard = (user, userRole) => {
     } catch (err) {
       console.error('Error loading dashboard data:', err);
       dispatch(fetchDashboardFailure('Failed to load dashboard data'));
+    } finally {
+      isFetchingRef.current = false;
     }
-  }, [user, isAdminOrSuper, dispatch, lastFetched]);
+  }, [user, isAdminOrSuper, dispatch]);
 
   useEffect(() => {
+    const now = Date.now();
+    if (lastFetched && (now - lastFetched < CACHE_DURATION)) {
+      return;
+    }
     loadDashboardData();
-  }, [loadDashboardData]);
+  }, [loadDashboardData, lastFetched]);
 
   // ---------------------------------------------------------------------------
   // RETURN

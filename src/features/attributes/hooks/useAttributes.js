@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { attributeService } from '../services';
 import {
@@ -23,8 +23,11 @@ export const useAttributes = () => {
   // Form state
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [formErrors, setFormErrors] = useState(INITIAL_FORM_ERRORS);
+  const isFetchingAttributesRef = useRef(false);
 
   const fetchAllAttributes = useCallback(async () => {
+    if (isFetchingAttributesRef.current) return;
+    isFetchingAttributesRef.current = true;
     setIsLoading(true);
     setError(null);
     try {
@@ -36,6 +39,7 @@ export const useAttributes = () => {
       console.error('Failed to fetch attributes:', err);
     } finally {
       setIsLoading(false);
+      isFetchingAttributesRef.current = false;
     }
   }, []);
 
@@ -159,4 +163,3 @@ export const useAttributes = () => {
 };
 
 export default useAttributes;
-
