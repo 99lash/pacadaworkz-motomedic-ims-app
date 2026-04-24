@@ -8,8 +8,11 @@ import {
   validateUserForm,
 } from '../utils';
 
-export const useUsers = () => {
+import { usePagination, DEFAULT_PAGE_SIZE } from '../../../shared/hooks';
+
+export const useUsers = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   const [users, setUsers] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   // Dialog states
@@ -23,30 +26,56 @@ export const useUsers = () => {
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [formErrors, setFormErrors] = useState(INITIAL_FORM_ERRORS);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  const isInitialLoad = useRef(true);
   const isFetchingUsersRef = useRef(false);
 
-  // Fetch users on mount
-  useEffect(() => {
-    const loadUsers = async () => {
-      if (isFetchingUsersRef.current) return;
-      isFetchingUsersRef.current = true;
-      setIsLoading(true);
-      try {
-        const result = await userService.fetchUsers();
-        if (result.success) {
-          setUsers(result.data);
-        } else {
-          toast.error(result.error || 'Failed to load users');
-          setUsers([]);
-        }
-      } finally {
-        setIsLoading(false);
-        isFetchingUsersRef.current = false;
-      }
-    };
+  // Pagination hook
+  const pagination = usePagination({
+    initialPage: 1,
+    initialPageSize,
+    totalItems,
+  });
 
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    hasPrevPage,
+    hasNextPage,
+    paginationInfo,
+    goToPage,
+    changePageSize,
+  } = pagination;
+
+  // Fetch users with pagination
+  const loadUsers = useCallback(async () => {
+    if (isFetchingUsersRef.current) return;
+    isFetchingUsersRef.current = true;
+    setIsLoading(true);
+    try {
+      const result = await userService.fetchUsersPaginated({
+        page: currentPage,
+        pageSize: pageSize,
+        search: searchTerm,
+      });
+      if (result.success) {
+        setUsers(result.data);
+        setTotalItems(result.pagination.totalItems);
+      } else {
+        toast.error(result.error || 'Failed to load users');
+        setUsers([]);
+      }
+    } finally {
+      setIsLoading(false);
+      isInitialLoad.current = false;
+      isFetchingUsersRef.current = false;
+    }
+  }, [currentPage, pageSize, searchTerm]);
+
+  useEffect(() => {
     loadUsers();
-  }, []);
+  }, [loadUsers]);
 
   const resetForm = useCallback(() => {
     setFormData(INITIAL_FORM_STATE);
@@ -85,6 +114,14 @@ export const useUsers = () => {
     }
   }, [formErrors]);
 
+  const handlePageChange = useCallback((newPage) => {
+    goToPage(newPage);
+  }, [goToPage]);
+
+  const handlePageSizeChange = useCallback((newSize) => {
+    changePageSize(newSize);
+  }, [changePageSize]);
+
   const handleSubmit = useCallback(async () => {
     const { isValid, errors } = validateUserForm(formData, users, selectedUser?.id);
     if (!isValid) {
@@ -100,10 +137,7 @@ export const useUsers = () => {
         role: formData.role,
       });
       if (result.success) {
-        const usersResult = await userService.fetchUsers();
-        if (usersResult.success) {
-          setUsers(usersResult.data);
-        }
+        await loadUsers();
         closeFormDialog();
         toast.success(UI_TEXT.TOAST_CREATE);
       } else {
@@ -116,10 +150,7 @@ export const useUsers = () => {
         role: formData.role,
       });
       if (result.success) {
-        const usersResult = await userService.fetchUsers();
-        if (usersResult.success) {
-          setUsers(usersResult.data);
-        }
+        await loadUsers();
         closeFormDialog();
         toast.success(UI_TEXT.TOAST_UPDATE);
       } else {
@@ -127,7 +158,7 @@ export const useUsers = () => {
       }
     }
     return true;
-  }, [formData, users, selectedUser, formMode, closeFormDialog]);
+  }, [formData, users, selectedUser, formMode, closeFormDialog, loadUsers]);
 
   const openDeleteDialog = useCallback((user) => {
     setUserToDelete(user);
@@ -143,10 +174,7 @@ export const useUsers = () => {
     if (!userToDelete) return false;
     const result = await userService.deleteUser(userToDelete.id);
     if (result.success) {
-      const usersResult = await userService.fetchUsers();
-      if (usersResult.success) {
-        setUsers(usersResult.data);
-      }
+      await loadUsers();
       closeDeleteDialog();
       toast.success(UI_TEXT.TOAST_DELETE);
       return true;
@@ -154,27 +182,31 @@ export const useUsers = () => {
       toast.error(result.error || 'Failed to delete user');
     }
     return false;
-  }, [userToDelete, closeDeleteDialog]);
+  }, [userToDelete, closeDeleteDialog, loadUsers]);
 
-
-  const filteredUsers = users.filter(
-    (user) =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const stats = {
-    total: users.length,
-    active: users.filter((u) => u.status === 'Active').length,
+    total: totalItems,
+    active: users.filter((u) => u.status === 'Active').length, // This might only be for current page
     admins: users.filter((u) => u.role === 'Admin').length,
   };
 
   return {
     // Data
-    users: filteredUsers,
-    allUsers: users,
+    users,
+    totalItems,
     stats,
     isLoading,
+
+    // Pagination
+    currentPage,
+    pageSize,
+    totalPages,
+    hasPrevPage,
+    hasNextPage,
+    paginationInfo,
+    handlePageChange,
+    handlePageSizeChange,
 
     // Search
     searchTerm,

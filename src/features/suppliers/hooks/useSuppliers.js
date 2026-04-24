@@ -8,8 +8,11 @@ import {
   validateSupplierForm,
 } from '../utils';
 
-export const useSuppliers = () => {
+import { usePagination, DEFAULT_PAGE_SIZE } from '../../../shared/hooks';
+
+export const useSuppliers = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   const [suppliers, setSuppliers] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -23,9 +26,45 @@ export const useSuppliers = () => {
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [formErrors, setFormErrors] = useState(INITIAL_FORM_ERRORS);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Search state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  
+  const isInitialLoad = useRef(true);
   const isFetchingSuppliersRef = useRef(false);
 
   const isEditing = !!selectedSupplier;
+
+  // Pagination hook
+  const pagination = usePagination({
+    initialPage: 1,
+    initialPageSize,
+    totalItems,
+  });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    hasPrevPage,
+    hasNextPage,
+    paginationInfo,
+    goToPage,
+    changePageSize,
+  } = pagination;
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      if (!isInitialLoad.current) {
+        goToPage(1);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, goToPage]);
 
   const loadSuppliers = useCallback(async () => {
     if (isFetchingSuppliersRef.current) return;
@@ -33,23 +72,39 @@ export const useSuppliers = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await supplierService.fetchSuppliers();
+      const response = await supplierService.fetchSuppliersPaginated({
+        page: currentPage,
+        pageSize: pageSize,
+        search: debouncedSearchTerm,
+      });
       if (response.success) {
         setSuppliers(response.data);
+        setTotalItems(response.pagination.totalItems);
       } else {
         setError(response.error);
         toast.error(response.error);
       }
+    } catch (err) {
+      setError(err.message);
+      toast.error('Failed to load suppliers');
     } finally {
       setIsLoading(false);
+      isInitialLoad.current = false;
       isFetchingSuppliersRef.current = false;
     }
-  }, []);
+  }, [currentPage, pageSize, debouncedSearchTerm]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadSuppliers();
   }, [loadSuppliers]);
+
+  const handlePageChange = useCallback((newPage) => {
+    goToPage(newPage);
+  }, [goToPage]);
+
+  const handlePageSizeChange = useCallback((newSize) => {
+    changePageSize(newSize);
+  }, [changePageSize]);
 
   const resetForm = useCallback(() => {
     setFormData(INITIAL_FORM_STATE);
@@ -149,8 +204,19 @@ export const useSuppliers = () => {
   return {
     // Data
     suppliers,
+    totalItems,
     isLoading,
     error,
+
+    // Pagination
+    currentPage,
+    pageSize,
+    totalPages,
+    hasPrevPage,
+    hasNextPage,
+    paginationInfo,
+    handlePageChange,
+    handlePageSizeChange,
 
     // Form state
     formData,
@@ -173,6 +239,10 @@ export const useSuppliers = () => {
     openDeleteDialog,
     closeDeleteDialog,
     handleDelete,
+
+    // Search
+    searchTerm,
+    setSearchTerm,
   };
 };
 

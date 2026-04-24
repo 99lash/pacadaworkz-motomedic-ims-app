@@ -69,6 +69,49 @@ const transformPurchaseOrderToBackend = (po) => {
 // =============================================================================
 
 /**
+ * Fetches all purchase orders with pagination
+ * @param {Object} params - Query parameters
+ * @returns {Promise<Object>} Paginated response
+ */
+export const fetchPurchaseOrdersPaginated = async ({
+  page = 1,
+  pageSize = 20,
+  search = '',
+} = {}) => {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      per_page: pageSize.toString(),
+    });
+
+    if (search?.trim()) {
+      params.append('search', search.trim());
+    }
+
+    const response = await apiClient.get(`${API_ENDPOINT}?${params}`);
+
+    if (response.data.success) {
+      const { data, meta } = response.data;
+      return {
+        success: true,
+        data: data.map(transformPurchaseOrderFromBackend),
+        pagination: {
+          page: meta?.current_page || page,
+          pageSize: meta?.per_page || pageSize,
+          totalItems: meta?.total || 0,
+          totalPages: meta?.last_page || 0,
+          hasNextPage: (meta?.current_page || page) < (meta?.last_page || 0),
+          hasPrevPage: (meta?.current_page || page) > 1,
+        },
+      };
+    }
+    return { success: false, data: [], pagination: { totalItems: 0 }, error: 'Failed to fetch purchase orders' };
+  } catch (error) {
+    return { success: false, data: [], pagination: { totalItems: 0 }, error: extractErrorMessage(error, 'Failed to fetch purchase orders') };
+  }
+};
+
+/**
  * Fetches all purchase orders
  * @returns {Promise<Array>} Purchase orders array
  */
@@ -182,6 +225,7 @@ export const deletePurchaseOrder = async (id) => {
 
 const purchaseService = {
   fetchPurchaseOrders,
+  fetchPurchaseOrdersPaginated,
   fetchPurchaseOrderById,
   createPurchaseOrder,
   updatePurchaseOrder,

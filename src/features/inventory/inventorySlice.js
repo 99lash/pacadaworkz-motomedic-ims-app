@@ -3,7 +3,7 @@ import { STATUS_FILTERS, UI_TEXT } from './utils';
 
 const initialState = {
   inventory: [],
-  filteredInventory: [], // We can keep filtered state in Redux or compute in hook. Storing in Redux for persistence.
+  totalItems: 0,
   isLoading: false,
   error: null,
   lastFetched: null,
@@ -12,6 +12,10 @@ const initialState = {
   searchTerm: '',
   statusFilter: UI_TEXT.STATUS_ALL,
   statusFilters: STATUS_FILTERS,
+
+  // Pagination
+  currentPage: 1,
+  pageSize: 10,
 };
 
 const inventorySlice = createSlice({
@@ -24,7 +28,8 @@ const inventorySlice = createSlice({
     },
     fetchInventorySuccess: (state, action) => {
       state.isLoading = false;
-      state.inventory = action.payload;
+      state.inventory = action.payload.inventory;
+      state.totalItems = action.payload.totalItems;
       state.lastFetched = Date.now();
     },
     fetchInventoryFailure: (state, action) => {
@@ -38,6 +43,14 @@ const inventorySlice = createSlice({
     },
     setStatusFilter: (state, action) => {
       state.statusFilter = action.payload;
+    },
+
+    // Pagination
+    setCurrentPage: (state, action) => {
+      state.currentPage = action.payload;
+    },
+    setPageSize: (state, action) => {
+      state.pageSize = action.payload;
     },
     
     // Updates
@@ -60,6 +73,8 @@ export const {
   fetchInventoryFailure,
   setSearchTerm,
   setStatusFilter,
+  setCurrentPage,
+  setPageSize,
   updateInventoryItem,
   resetInventoryState
 } = inventorySlice.actions;

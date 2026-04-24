@@ -51,6 +51,51 @@ export const fetchAttributes = async (forceRefresh = false) => {
 };
 
 /**
+ * Fetches attributes with pagination and search
+ *
+ * @param {Object} params - Query parameters
+ * @param {number} params.page - Page number (1-based)
+ * @param {number} params.pageSize - Items per page
+ * @param {string} params.search - Search term (optional)
+ * @returns {Promise<Object>} Paginated response
+ */
+export const fetchAttributesPaginated = async ({
+  page = 1,
+  pageSize = 20,
+  search = '',
+} = {}) => {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      per_page: pageSize.toString(),
+    });
+
+    if (search?.trim()) {
+      params.append('search', search.trim());
+    }
+
+    const response = await apiClient.get(`${ATTRIBUTE_API_ENDPOINT}?${params}`);
+
+    const { data, meta } = response.data;
+
+    return {
+      success: true,
+      data: data || [],
+      pagination: {
+        page: meta?.current_page || page,
+        pageSize: meta?.per_page || pageSize,
+        totalItems: meta?.total || 0,
+        totalPages: meta?.last_page || 0,
+        hasNextPage: (meta?.current_page || page) < (meta?.last_page || 0),
+        hasPrevPage: (meta?.current_page || page) > 1,
+      },
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
  * Fetches a single attribute by ID from the cache.
  * Note: For real-time data, you might want a dedicated API call.
  * @param {string} id - Attribute ID
@@ -100,6 +145,7 @@ export const deleteAttribute = async (id) => {
 
 const attributeService = {
   fetchAttributes,
+  fetchAttributesPaginated,
   fetchAttributeById,
   createAttribute,
   updateAttribute,

@@ -1,5 +1,6 @@
 export { default as PurchaseHeader } from './PurchaseHeader';
 export { default as PurchaseTable } from './PurchaseTable';
+export { default as PurchaseSearchBar } from './PurchaseSearchBar';
 export { default as PurchaseFormDialog } from './PurchaseFormDialog';
 export { default as PurchaseReceiveDialog } from './PurchaseReceiveDialog';
 export { default as PurchaseDeleteDialog } from './PurchaseDeleteDialog';

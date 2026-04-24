@@ -23,6 +23,42 @@ export const fetchInventory = async () => {
 };
 
 /**
+ * Fetches inventory items with pagination
+ * @param {Object} params - Query parameters
+ * @returns {Promise<Object>} Paginated response
+ */
+export const fetchInventoryPaginated = async ({
+  page = 1,
+  pageSize = 20,
+  search = '',
+} = {}) => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    per_page: pageSize.toString(),
+  });
+
+  if (search?.trim()) {
+    params.append('search', search.trim());
+  }
+
+  const response = await apiClient.get(`/v1/inventory?${params}`);
+  const { data, meta } = response.data;
+
+  return {
+    success: true,
+    data: data.map(mapInventoryFromApi),
+    pagination: {
+      page: meta?.current_page || page,
+      pageSize: meta?.per_page || pageSize,
+      totalItems: meta?.total || 0,
+      totalPages: meta?.last_page || 0,
+      hasNextPage: (meta?.current_page || page) < (meta?.last_page || 0),
+      hasPrevPage: (meta?.current_page || page) > 1,
+    },
+  };
+};
+
+/**
  * Updates inventory stock for an item
  * @param {string} id - Inventory item ID
  * @param {number} newStock - New stock quantity

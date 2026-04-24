@@ -7,13 +7,13 @@ import {
   UI_TEXT,
   validateBrandForm,
 } from '../utils';
+import { usePagination, DEFAULT_PAGE_SIZE } from '../../../shared/hooks';
 
-export const useBrands = () => {
+export const useBrands = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   const [brands, setBrands] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [pagination, setPagination] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
 
   // Dialog states
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -25,38 +25,80 @@ export const useBrands = () => {
   // Form state
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [formErrors, setFormErrors] = useState(INITIAL_FORM_ERRORS);
+  
+  // Search state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  
+  const isInitialLoad = useRef(true);
   const isFetchingBrandsRef = useRef(false);
 
-  const fetchBrandsPaginated = useCallback(async (page) => {
+  // Pagination hook
+  const pagination = usePagination({
+    initialPage: 1,
+    initialPageSize,
+    totalItems,
+  });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    hasPrevPage,
+    hasNextPage,
+    paginationInfo,
+    goToPage,
+    changePageSize,
+  } = pagination;
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      if (!isInitialLoad.current) {
+        goToPage(1);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, goToPage]);
+
+  const fetchBrandsPaginated = useCallback(async () => {
     if (isFetchingBrandsRef.current) return;
     isFetchingBrandsRef.current = true;
     setIsLoading(true);
     setError(null);
     try {
-      const { data, success, pagination: newPagination, error: fetchError } = await brandService.fetchBrandsPaginated({ page, pageSize: 10 });
+      const { data, success, pagination: brandPagination, error: fetchError } = await brandService.fetchBrandsPaginated({ 
+        page: currentPage, 
+        pageSize: pageSize,
+        search: debouncedSearchTerm,
+      });
       if (success) {
         setBrands(data);
-        setPagination(newPagination);
+        setTotalItems(brandPagination.totalItems);
       } else {
         setError(fetchError);
         toast.error(UI_TEXT.TOAST_FETCH_ERROR);
       }
     } finally {
       setIsLoading(false);
+      isInitialLoad.current = false;
       isFetchingBrandsRef.current = false;
     }
-  }, []);
+  }, [currentPage, pageSize, debouncedSearchTerm]);
 
   useEffect(() => {
-    const loadBrands = async () => {
-      await fetchBrandsPaginated(currentPage);
-    };
-    loadBrands();
-  }, [fetchBrandsPaginated, currentPage]);
+    fetchBrandsPaginated();
+  }, [fetchBrandsPaginated]);
 
-  const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
-  };
+  const handlePageChange = useCallback((newPage) => {
+    goToPage(newPage);
+  }, [goToPage]);
+
+  const handlePageSizeChange = useCallback((newSize) => {
+    changePageSize(newSize);
+  }, [changePageSize]);
 
   const resetForm = useCallback(() => {
     setFormData(INITIAL_FORM_STATE);
@@ -104,7 +146,7 @@ export const useBrands = () => {
     if (formMode === 'create') {
       const { success, error: createError } = await brandService.createBrand(formData);
       if (success) {
-        await fetchBrandsPaginated(currentPage);
+        await fetchBrandsPaginated();
         closeFormDialog();
         toast.success(UI_TEXT.TOAST_CREATE);
       } else {
@@ -113,7 +155,7 @@ export const useBrands = () => {
     } else {
       const { success, error: updateError } = await brandService.updateBrand(selectedBrand.id, formData);
       if (success) {
-        await fetchBrandsPaginated(currentPage);
+        await fetchBrandsPaginated();
         closeFormDialog();
         toast.success(UI_TEXT.TOAST_UPDATE);
       } else {
@@ -137,7 +179,7 @@ export const useBrands = () => {
     if (!brandToDelete) return false;
     const { success, error: deleteError } = await brandService.deleteBrand(brandToDelete.id);
     if (success) {
-      await fetchBrandsPaginated(currentPage);
+      await fetchBrandsPaginated();
       closeDeleteDialog();
       toast.success(UI_TEXT.TOAST_DELETE);
       return true;
@@ -150,9 +192,19 @@ export const useBrands = () => {
   return {
     // Data
     brands,
+    totalItems,
     isLoading,
     error,
-    pagination,
+    
+    // Pagination
+    currentPage,
+    pageSize,
+    totalPages,
+    hasPrevPage,
+    hasNextPage,
+    paginationInfo,
+    handlePageChange,
+    handlePageSizeChange,
 
     // Form state
     formData,
@@ -174,7 +226,10 @@ export const useBrands = () => {
     openDeleteDialog,
     closeDeleteDialog,
     handleDelete,
-    handlePageChange,
+
+    // Search
+    searchTerm,
+    setSearchTerm,
   };
 };
 

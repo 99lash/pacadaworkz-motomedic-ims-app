@@ -10,8 +10,11 @@ import {
   validatePurchaseOrderForm,
 } from '../utils';
 
-export const usePurchases = () => {
+import { usePagination, DEFAULT_PAGE_SIZE } from '../../../shared/hooks';
+
+export const usePurchases = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
   const [suppliers, setSuppliers] = useState([]);
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,20 +32,63 @@ export const usePurchases = () => {
   // Form state
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [formErrors, setFormErrors] = useState(INITIAL_FORM_ERRORS);
+  
+  // Search state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  
+  const isInitialLoad = useRef(true);
   const isFetchingDataRef = useRef(false);
+
+  // Pagination hook
+  const pagination = usePagination({
+    initialPage: 1,
+    initialPageSize,
+    totalItems,
+  });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    hasPrevPage,
+    hasNextPage,
+    paginationInfo,
+    goToPage,
+    changePageSize,
+  } = pagination;
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      if (!isInitialLoad.current) {
+        goToPage(1);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, goToPage]);
 
   const fetchData = useCallback(async (silent = false) => {
     if (isFetchingDataRef.current) return;
     isFetchingDataRef.current = true;
     if (!silent) setIsLoading(true);
     try {
-      const [purchasesData, suppliersResponse, productsResponse] = await Promise.all([
-        purchaseService.fetchPurchaseOrders(),
+      const [purchasesResult, suppliersResponse, productsResponse] = await Promise.all([
+        purchaseService.fetchPurchaseOrdersPaginated({
+          page: currentPage,
+          pageSize: pageSize,
+          search: debouncedSearchTerm,
+        }),
         supplierService.fetchSuppliers(),
         productService.fetchProducts(),
       ]);
 
-      setPurchaseOrders(purchasesData);
+      if (purchasesResult.success) {
+        setPurchaseOrders(purchasesResult.data);
+        setTotalItems(purchasesResult.pagination.totalItems);
+      }
       
       if (suppliersResponse.success) {
         setSuppliers(suppliersResponse.data);
@@ -56,13 +102,22 @@ export const usePurchases = () => {
       toast.error('Failed to load data. Please try again.');
     } finally {
       if (!silent) setIsLoading(false);
+      isInitialLoad.current = false;
       isFetchingDataRef.current = false;
     }
-  }, []);
+  }, [currentPage, pageSize, debouncedSearchTerm]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const handlePageChange = useCallback((newPage) => {
+    goToPage(newPage);
+  }, [goToPage]);
+
+  const handlePageSizeChange = useCallback((newSize) => {
+    changePageSize(newSize);
+  }, [changePageSize]);
 
   const resetForm = useCallback(() => {
     setFormData(INITIAL_FORM_STATE);
@@ -235,9 +290,24 @@ export const usePurchases = () => {
   return {
     // Data
     purchaseOrders,
+    totalItems,
     suppliers,
     products,
     isLoading,
+
+    // Pagination
+    currentPage,
+    pageSize,
+    totalPages,
+    hasPrevPage,
+    hasNextPage,
+    paginationInfo,
+    handlePageChange,
+    handlePageSizeChange,
+
+    // Search
+    searchTerm,
+    setSearchTerm,
 
     // Form state
     formData,

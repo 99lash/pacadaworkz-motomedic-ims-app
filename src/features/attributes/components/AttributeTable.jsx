@@ -43,7 +43,7 @@ const AttributeTable = ({ attributes, onEdit, onDelete }) => {
                 {attribute.name}
               </TableCell>
               <TableCell className="text-gray-600 dark:text-gray-400">
-                {attribute.name || '-'}
+                {attribute.description || '-'}
               </TableCell>
               <TableCell>
                 <div className="flex items-center justify-end gap-2">

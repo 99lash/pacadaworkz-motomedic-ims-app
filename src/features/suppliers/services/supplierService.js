@@ -67,6 +67,54 @@ export const fetchSuppliers = async () => {
   }
 };
 
+export const fetchSuppliersPaginated = async ({
+  page = 1,
+  pageSize = 20,
+  search = '',
+} = {}) => {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      per_page: pageSize.toString(),
+    });
+
+    if (search?.trim()) {
+      params.append('search', search.trim());
+    }
+
+    const response = await apiClient.get(`${API_ENDPOINTS.SUPPLIERS}?${params}`);
+
+    if (response.data.success) {
+      const { data, meta } = response.data;
+      return {
+        success: true,
+        data: data.map(transformSupplierFromBackend),
+        pagination: {
+          page: meta?.current_page || page,
+          pageSize: meta?.per_page || pageSize,
+          totalItems: meta?.total || 0,
+          totalPages: meta?.last_page || 0,
+          hasNextPage: (meta?.current_page || page) < (meta?.last_page || 0),
+          hasPrevPage: (meta?.current_page || page) > 1,
+        },
+      };
+    }
+    return { 
+      success: false, 
+      data: [], 
+      pagination: { totalItems: 0 }, 
+      error: response.data.message || 'Failed to fetch suppliers' 
+    };
+  } catch (error) {
+    return { 
+      success: false, 
+      data: [], 
+      pagination: { totalItems: 0 }, 
+      error: extractErrorMessage(error, 'Failed to fetch suppliers') 
+    };
+  }
+};
+
 export const fetchSupplierById = async (id) => {
   try {
     const response = await apiClient.get(API_ENDPOINTS.SUPPLIER_BY_ID(id));
@@ -129,6 +177,7 @@ export const deleteSupplier = async (id) => {
 
 const supplierService = {
   fetchSuppliers,
+  fetchSuppliersPaginated,
   fetchSupplierById,
   createSupplier,
   updateSupplier,

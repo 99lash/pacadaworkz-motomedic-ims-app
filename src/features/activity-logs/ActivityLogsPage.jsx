@@ -27,6 +27,8 @@ import { UI_TEXT } from './utils';
 // MAIN COMPONENT
 // =============================================================================
 
+import { Pagination } from '../../shared/components/ui/pagination';
+
 const ActivityLogsPage = () => {
   // ---------------------------------------------------------------------------
   // AUTH - Get current user
@@ -39,8 +41,18 @@ const ActivityLogsPage = () => {
   const {
     // Data
     logs,
-    filteredLogs,
+    totalItems,
     isLoading,
+
+    // Pagination
+    currentPage,
+    pageSize,
+    totalPages,
+    hasPrevPage,
+    hasNextPage,
+    paginationInfo,
+    handlePageChange,
+    handlePageSizeChange,
 
     // Filters
     searchTerm,
@@ -50,7 +62,7 @@ const ActivityLogsPage = () => {
     // Handlers
     handleSearchChange,
     handleModuleFilterChange,
-  } = useActivityLogs(user);
+  } = useActivityLogs(user, { initialPageSize: 10 });
 
   // ---------------------------------------------------------------------------
   // COMPUTED VALUES
@@ -60,7 +72,7 @@ const ActivityLogsPage = () => {
   // ---------------------------------------------------------------------------
   // RENDER - Loading State
   // ---------------------------------------------------------------------------
-  if (isLoading) {
+  if (isLoading && logs.length === 0) {
     return (
       <div className="p-6 space-y-6">
         <ActivityLogsHeader userRole={user?.role} />
@@ -95,31 +107,59 @@ const ActivityLogsPage = () => {
       />
 
       {/* Logs Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Activity Logs
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {filteredLogs.length > 0 ? (
-            <ActivityLogsTable logs={filteredLogs} />
-          ) : (
-            <ActivityLogsEmptyState hasFilters={hasFilters} />
-          )}
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Activity Logs
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 relative">
+            {isLoading && logs.length > 0 && (
+              <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
+                <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+              </div>
+            )}
+            {logs.length > 0 ? (
+              <ActivityLogsTable logs={logs} />
+            ) : (
+              <ActivityLogsEmptyState hasFilters={hasFilters} />
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Pagination */}
+        {totalItems > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            startItem={paginationInfo.startItem}
+            endItem={paginationInfo.endItem}
+            hasPrevPage={hasPrevPage}
+            hasNextPage={hasNextPage}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+            showPageSizeSelector={true}
+            showItemCount={true}
+            showFirstLast={totalPages > 5}
+            isLoading={isLoading}
+          />
+        )}
+      </div>
 
       {/* Summary */}
       {logs.length > 0 && (
         <ActivityLogsSummary 
-          filteredCount={filteredLogs.length} 
-          totalCount={logs.length} 
+          filteredCount={logs.length} 
+          totalCount={totalItems} 
         />
       )}
     </div>
   );
 };
+
 
 // =============================================================================
 // EXPORT

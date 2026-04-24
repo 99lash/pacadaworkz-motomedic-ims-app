@@ -7,9 +7,11 @@ import {
   UI_TEXT,
   validateAttributeForm,
 } from '../utils';
+import { usePagination, DEFAULT_PAGE_SIZE } from '../../../shared/hooks';
 
-export const useAttributes = () => {
+export const useAttributes = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   const [attributes, setAttributes] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -23,29 +25,81 @@ export const useAttributes = () => {
   // Form state
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [formErrors, setFormErrors] = useState(INITIAL_FORM_ERRORS);
+  
+  // Search state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  
+  const isInitialLoad = useRef(true);
   const isFetchingAttributesRef = useRef(false);
 
-  const fetchAllAttributes = useCallback(async () => {
+  // Pagination hook
+  const pagination = usePagination({
+    initialPage: 1,
+    initialPageSize,
+    totalItems,
+  });
+
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    hasPrevPage,
+    hasNextPage,
+    paginationInfo,
+    goToPage,
+    changePageSize,
+  } = pagination;
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      if (!isInitialLoad.current) {
+        goToPage(1);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, goToPage]);
+
+  const fetchAttributesPaginated = useCallback(async () => {
     if (isFetchingAttributesRef.current) return;
     isFetchingAttributesRef.current = true;
     setIsLoading(true);
     setError(null);
     try {
-      const data = await attributeService.fetchAttributes();
-      setAttributes(data);
+      const result = await attributeService.fetchAttributesPaginated({
+        page: currentPage,
+        pageSize: pageSize,
+        search: debouncedSearchTerm,
+      });
+      if (result.success) {
+        setAttributes(result.data);
+        setTotalItems(result.pagination.totalItems);
+      }
     } catch (err) {
       setError(err);
       toast.error('Failed to fetch attributes.');
       console.error('Failed to fetch attributes:', err);
     } finally {
       setIsLoading(false);
+      isInitialLoad.current = false;
       isFetchingAttributesRef.current = false;
     }
-  }, []);
+  }, [currentPage, pageSize, debouncedSearchTerm]);
 
   useEffect(() => {
-    fetchAllAttributes();
-  }, [fetchAllAttributes]);
+    fetchAttributesPaginated();
+  }, [fetchAttributesPaginated]);
+
+  const handlePageChange = useCallback((newPage) => {
+    goToPage(newPage);
+  }, [goToPage]);
+
+  const handlePageSizeChange = useCallback((newSize) => {
+    changePageSize(newSize);
+  }, [changePageSize]);
 
   const resetForm = useCallback(() => {
     setFormData(INITIAL_FORM_STATE);
@@ -99,14 +153,14 @@ export const useAttributes = () => {
         toast.success(UI_TEXT.TOAST_UPDATE);
       }
       closeFormDialog();
-      fetchAllAttributes(); // Refresh the list
+      fetchAttributesPaginated(); // Refresh the list
       return true;
     } catch (err) {
       toast.error(`Failed to ${formMode} attribute.`);
       console.error(`Failed to ${formMode} attribute:`, err);
       return false;
     }
-  }, [formData, attributes, selectedAttribute, formMode, closeFormDialog, fetchAllAttributes]);
+  }, [formData, attributes, selectedAttribute, formMode, closeFormDialog, fetchAttributesPaginated]);
 
   const openDeleteDialog = useCallback((attribute) => {
     setAttributeToDelete(attribute);
@@ -124,20 +178,31 @@ export const useAttributes = () => {
       await attributeService.deleteAttribute(attributeToDelete.id);
       toast.success(UI_TEXT.TOAST_DELETE);
       closeDeleteDialog();
-      fetchAllAttributes(); // Refresh the list
+      fetchAttributesPaginated(); // Refresh the list
       return true;
     } catch (err) {
       toast.error('Failed to delete attribute.');
       console.error('Failed to delete attribute:', err);
       return false;
     }
-  }, [attributeToDelete, closeDeleteDialog, fetchAllAttributes]);
+  }, [attributeToDelete, closeDeleteDialog, fetchAttributesPaginated]);
 
   return {
     // Data
     attributes,
+    totalItems,
     isLoading,
     error,
+    
+    // Pagination
+    currentPage,
+    pageSize,
+    totalPages,
+    hasPrevPage,
+    hasNextPage,
+    paginationInfo,
+    handlePageChange,
+    handlePageSizeChange,
 
     // Form state
     formData,
@@ -159,7 +224,12 @@ export const useAttributes = () => {
     openDeleteDialog,
     closeDeleteDialog,
     handleDelete,
+
+    // Search
+    searchTerm,
+    setSearchTerm,
   };
 };
 
 export default useAttributes;
+

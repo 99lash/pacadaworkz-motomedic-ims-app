@@ -80,6 +80,63 @@ export const fetchUsers = async () => {
 };
 
 /**
+ * Fetches users with pagination and search
+ *
+ * @param {Object} params - Query parameters
+ * @param {number} params.page - Page number (1-based)
+ * @param {number} params.pageSize - Items per page
+ * @param {string} params.search - Search term (optional)
+ * @returns {Promise<Object>} Paginated response
+ */
+export const fetchUsersPaginated = async ({
+  page = 1,
+  pageSize = 20,
+  search = '',
+} = {}) => {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      per_page: pageSize.toString(),
+    });
+
+    if (search?.trim()) {
+      params.append('search', search.trim());
+    }
+
+    const response = await apiClient.get(`${API_ENDPOINTS.USERS}?${params}`);
+
+    if (response.data.success) {
+      const { data, meta } = response.data;
+      return {
+        success: true,
+        data: (data || []).map(transformUser),
+        pagination: {
+          page: meta?.current_page || page,
+          pageSize: meta?.per_page || pageSize,
+          totalItems: meta?.total || 0,
+          totalPages: meta?.last_page || 0,
+          hasNextPage: (meta?.current_page || page) < (meta?.last_page || 0),
+          hasPrevPage: (meta?.current_page || page) > 1,
+        },
+      };
+    }
+    return {
+      success: false,
+      data: [],
+      pagination: { totalItems: 0 },
+      error: response.data.message || 'Failed to fetch users',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      data: [],
+      pagination: { totalItems: 0 },
+      error: extractErrorMessage(error, 'Failed to fetch users'),
+    };
+  }
+};
+
+/**
  * Fetches a single user by ID
  * @param {string|number} id - User ID
  * @returns {Promise<Object>}
@@ -231,6 +288,7 @@ export const deleteUser = async (id) => {
 
 const userService = {
   fetchUsers,
+  fetchUsersPaginated,
   fetchUserById,
   createUser,
   updateUser,

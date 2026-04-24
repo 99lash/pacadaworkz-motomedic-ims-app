@@ -152,6 +152,8 @@ const ProductsPage = () => {
               hasNextPage={hasNextPage}
               onPageChange={handlePageChange}
               onPageSizeChange={handlePageSizeChange}
+              showPageSizeSelector={true}
+              showItemCount={true}
               showFirstLast={totalPages > 5}
               isLoading={isLoading}
             />

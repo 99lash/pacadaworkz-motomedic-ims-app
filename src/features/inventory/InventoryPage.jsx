@@ -10,12 +10,25 @@ import {
 } from './components';
 import { UI_TEXT } from './utils';
 
+import { Pagination } from '../../shared/components/ui/pagination';
+
 const InventoryPage = () => {
   const {
     // Data
-    filteredInventory,
+    inventory,
+    totalItems,
     isLoading,
     error,
+
+    // Pagination
+    currentPage,
+    pageSize,
+    totalPages,
+    hasPrevPage,
+    hasNextPage,
+    paginationInfo,
+    handlePageChange,
+    handlePageSizeChange,
 
     // Filters
     searchTerm,
@@ -34,7 +47,7 @@ const InventoryPage = () => {
     handleSearchChange,
     handleStatusFilterChange,
     handleAdjustStock,
-  } = useInventory();
+  } = useInventory({ initialPageSize: 10 });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -81,18 +94,46 @@ const InventoryPage = () => {
             onStatusFilterChange={handleStatusFilterChange}
           />
 
-          {isLoading && !filteredInventory.length ? (
+          {isLoading && !inventory.length ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-gray-500 dark:text-gray-400">Loading inventory...</div>
             </div>
           ) : (
-            <InventoryTable
-              inventory={filteredInventory}
-              getItemStockStatus={getItemStockStatus}
-              getStatusDisplayWithIcon={getStatusDisplayWithIcon}
-              getItemStockPercentage={getItemStockPercentage}
-              onAdjustStock={handleOpenModal}
-            />
+            <div className="space-y-4">
+              <div className="relative">
+                {isLoading && inventory.length > 0 && (
+                  <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
+                    <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+                  </div>
+                )}
+                <InventoryTable
+                  inventory={inventory}
+                  getItemStockStatus={getItemStockStatus}
+                  getStatusDisplayWithIcon={getStatusDisplayWithIcon}
+                  getItemStockPercentage={getItemStockPercentage}
+                  onAdjustStock={handleOpenModal}
+                />
+              </div>
+
+              {totalItems > 0 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={totalItems}
+                  pageSize={pageSize}
+                  startItem={paginationInfo.startItem}
+                  endItem={paginationInfo.endItem}
+                  hasPrevPage={hasPrevPage}
+                  hasNextPage={hasNextPage}
+                  onPageChange={handlePageChange}
+                  onPageSizeChange={handlePageSizeChange}
+                  showPageSizeSelector={true}
+                  showItemCount={true}
+                  showFirstLast={totalPages > 5}
+                  isLoading={isLoading}
+                />
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
