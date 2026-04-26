@@ -34,11 +34,6 @@ export const validateAttributeForm = (formData, attributes = [], currentAttribut
     }
   }
 
-  // Description validation (optional)
-  if (formData.description && formData.description.length > VALIDATION.DESCRIPTION_MAX_LENGTH) {
-    errors.description = `Description must not exceed ${VALIDATION.DESCRIPTION_MAX_LENGTH} characters.`;
-  }
-
   return {
     isValid: Object.keys(errors).length === 0,
     errors,

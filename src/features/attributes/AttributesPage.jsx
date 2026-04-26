@@ -20,6 +20,7 @@ import {
   AttributeDeleteDialog,
   AttributeEmptyState,
   AttributeSearchBar,
+  AttributeValuesDialog,
 } from './components';
 import { Pagination } from '../../shared/components/ui/pagination';
 
@@ -70,6 +71,19 @@ const AttributesPage = () => {
     openDeleteDialog,
     closeDeleteDialog,
     handleDelete,
+
+    // Values Actions
+    isValuesOpen,
+    valueInput,
+    setValueInput,
+    editingValueId,
+    isValueLoading,
+    openValuesDialog,
+    closeValuesDialog,
+    handleValueSubmit,
+    handleEditValue,
+    handleDeleteValue,
+    selectedAttribute,
   } = useAttributes({ initialPageSize: 10 });
 
   // ---------------------------------------------------------------------------
@@ -120,6 +134,7 @@ const AttributesPage = () => {
                 attributes={attributes}
                 onEdit={openEditDialog}
                 onDelete={openDeleteDialog}
+                onManageValues={openValuesDialog}
               />
             ) : (
               <AttributeEmptyState onAddClick={openCreateDialog} />
@@ -169,6 +184,20 @@ const AttributesPage = () => {
           onConfirm={handleDelete}
         />
       )}
+
+      {/* Values Management Dialog */}
+      <AttributeValuesDialog
+        isOpen={isValuesOpen}
+        attribute={selectedAttribute}
+        valueInput={valueInput}
+        setValueInput={setValueInput}
+        editingValueId={editingValueId}
+        isLoading={isValueLoading}
+        onClose={closeValuesDialog}
+        onSubmit={handleValueSubmit}
+        onEdit={handleEditValue}
+        onDelete={handleDeleteValue}
+      />
     </div>
   );
 };

@@ -1,0 +1,283 @@
+{
+  "module": "Attribute Management",
+  "base_url": "/api/v1/attributes",
+  "endpoints": [
+    {
+      "name": "List Attributes",
+      "method": "GET",
+      "path": "/",
+      "access": "AP, WP (Attributes:View)",
+      "features": ["Paginated", "Searchable"],
+      "request": {
+        "query_params": {
+          "search": {
+            "type": "string",
+            "description": "Search by attribute name",
+            "required": false
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number",
+            "default": 1
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Items per page",
+            "default": 10
+          }
+        }
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": [
+              {
+                "id": 1,
+                "name": "Size",
+                "attribute_values": [
+                  {
+                    "id": 1,
+                    "attribute": "Size",
+                    "value": "Small"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "current_page": 1,
+              "per_page": 10,
+              "total": 1,
+              "total_pages": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Show Attribute Details",
+      "method": "GET",
+      "path": "/{id}",
+      "access": "AP, WP (Attributes:View)",
+      "request": {
+        "url_params": {
+          "id": {
+            "type": "integer",
+            "required": true
+          }
+        }
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "id": 1,
+              "name": "Size",
+              "attribute_values": [
+                {
+                  "id": 1,
+                  "attribute": "Size",
+                  "value": "Small"
+                }
+              ]
+            }
+          }
+        },
+        "error_404": {
+          "body": {
+            "success": false,
+            "message": "Attribute not found"
+          }
+        }
+      }
+    },
+    {
+      "name": "Create Attribute",
+      "method": "POST",
+      "path": "/",
+      "access": "AP, WP (Attributes:Create)",
+      "request": {
+        "body": {
+          "name": {
+            "type": "string",
+            "max": 50,
+            "required": true,
+            "example": "Color"
+          }
+        }
+      },
+      "response": {
+        "success": {
+          "status": 201,
+          "body": {
+            "success": true,
+            "data": {
+              "id": 2,
+              "name": "Color",
+              "attribute_values": []
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update Attribute",
+      "method": "PUT",
+      "path": "/{id}",
+      "access": "AP, WP (Attributes:Edit)",
+      "request": {
+        "url_params": {
+          "id": {
+            "type": "integer",
+            "required": true
+          }
+        },
+        "body": {
+          "name": {
+            "type": "string",
+            "max": 50,
+            "required": true,
+            "example": "Size (Updated)"
+          }
+        }
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "id": 1,
+              "name": "Size (Updated)",
+              "attribute_values": []
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete Attribute",
+      "method": "DELETE",
+      "path": "/{id}",
+      "access": "AP, WP (Attributes:Delete)",
+      "request": {
+        "url_params": {
+          "id": {
+            "type": "integer",
+            "required": true
+          }
+        }
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "message": "Attribute deleted successfully"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Add Attribute Value",
+      "method": "POST",
+      "path": "/{id}/values",
+      "access": "Authenticated",
+      "request": {
+        "url_params": {
+          "id": {
+            "type": "integer",
+            "description": "Attribute ID",
+            "required": true
+          }
+        },
+        "body": {
+          "value": {
+            "type": "string",
+            "required": true,
+            "unique": "attributes_values.value",
+            "example": "Red"
+          }
+        }
+      },
+      "response": {
+        "success": {
+          "status": 201,
+          "body": {
+            "success": true,
+            "data": {
+              "id": 5,
+              "attribute": "Color",
+              "value": "Red"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update Attribute Value",
+      "method": "PATCH",
+      "path": "/values/{valueId}",
+      "access": "Authenticated",
+      "request": {
+        "url_params": {
+          "valueId": {
+            "type": "integer",
+            "required": true
+          }
+        },
+        "body": {
+          "value": {
+            "type": "string",
+            "required": true,
+            "unique": "attributes_values.value (except current)",
+            "example": "Blue"
+          }
+        }
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "id": 5,
+              "attribute": "Color",
+              "value": "Blue"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete Attribute Value",
+      "method": "DELETE",
+      "path": "/values/{valueId}",
+      "access": "Authenticated",
+      "request": {
+        "url_params": {
+          "valueId": {
+            "type": "integer",
+            "required": true
+          }
+        }
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "message": "Attribute value deleted successfully"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

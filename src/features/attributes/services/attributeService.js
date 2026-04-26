@@ -139,6 +139,40 @@ export const deleteAttribute = async (id) => {
   clearAttributeCache(); // Invalidate cache
 };
 
+/**
+ * Adds a new value to an attribute.
+ * @param {string} attributeId - Attribute ID
+ * @param {Object} valueData - { value }
+ * @returns {Promise<Object>} Created attribute value
+ */
+export const addAttributeValue = async (attributeId, valueData) => {
+  const response = await apiClient.post(`${ATTRIBUTE_API_ENDPOINT}/${attributeId}/values`, valueData);
+  clearAttributeCache();
+  return response.data.data;
+};
+
+/**
+ * Updates an attribute value.
+ * @param {string} valueId - Value ID
+ * @param {Object} valueData - { value }
+ * @returns {Promise<Object>} Updated attribute value
+ */
+export const updateAttributeValue = async (valueId, valueData) => {
+  const response = await apiClient.patch(`${ATTRIBUTE_API_ENDPOINT}/values/${valueId}`, valueData);
+  clearAttributeCache();
+  return response.data.data;
+};
+
+/**
+ * Deletes an attribute value.
+ * @param {string} valueId - Value ID
+ * @returns {Promise<void>}
+ */
+export const deleteAttributeValue = async (valueId) => {
+  await apiClient.delete(`${ATTRIBUTE_API_ENDPOINT}/values/${valueId}`);
+  clearAttributeCache();
+};
+
 // =============================================================================
 // SERVICE EXPORT
 // =============================================================================
@@ -150,6 +184,9 @@ const attributeService = {
   createAttribute,
   updateAttribute,
   deleteAttribute,
+  addAttributeValue,
+  updateAttributeValue,
+  deleteAttributeValue,
 };
 
 export default attributeService;

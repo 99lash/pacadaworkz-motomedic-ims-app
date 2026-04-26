@@ -18,9 +18,7 @@ export const UI_TEXT = {
   FORM_DESCRIPTION_CREATE: 'Add a new attribute that can be used when creating products.',
   FORM_DESCRIPTION_EDIT: 'Update the attribute information.',
   LABEL_NAME: 'Attribute Name',
-  LABEL_DESCRIPTION: 'Description',
   PLACEHOLDER_NAME: 'e.g., Size, Color, Viscosity, Volume, Type',
-  PLACEHOLDER_DESCRIPTION: 'Enter attribute description (optional)',
   TOAST_CREATE: 'Attribute created successfully',
   TOAST_UPDATE: 'Attribute updated successfully',
   TOAST_DELETE: 'Attribute deleted successfully',
@@ -29,6 +27,16 @@ export const UI_TEXT = {
   DELETE_DESCRIPTION: 'This action cannot be undone.',
   DELETE_CONFIRM: 'Are you sure you want to delete',
   DELETE_WARNING: 'This will permanently remove the attribute and may affect products associated with it.',
+  
+  // Attribute Values
+  VALUES_TITLE: 'Manage Values',
+  VALUES_DESCRIPTION: 'Add, edit, or remove values for',
+  LABEL_VALUE: 'Value',
+  PLACEHOLDER_VALUE: 'e.g., Red, XL, 10W-40',
+  BTN_ADD_VALUE: 'Add Value',
+  TOAST_VALUE_ADD: 'Value added successfully',
+  TOAST_VALUE_UPDATE: 'Value updated successfully',
+  TOAST_VALUE_DELETE: 'Value deleted successfully',
 };
 
 // =============================================================================
@@ -36,7 +44,6 @@ export const UI_TEXT = {
 // =============================================================================
 export const INITIAL_FORM_STATE = {
   name: '',
-  description: '',
 };
 
 export const INITIAL_FORM_ERRORS = {
@@ -49,6 +56,5 @@ export const INITIAL_FORM_ERRORS = {
 export const VALIDATION = {
   NAME_MIN_LENGTH: 2,
   NAME_MAX_LENGTH: 100,
-  DESCRIPTION_MAX_LENGTH: 500,
 };
 

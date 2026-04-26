@@ -9,7 +9,6 @@ import React, { memo } from 'react';
 import PropTypes from 'prop-types';
 import { Button } from '../../../shared/components/ui/button';
 import { Input } from '../../../shared/components/ui/input';
-import { Textarea } from '../../../shared/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -82,24 +81,6 @@ const AttributeFormDialog = ({
                 </p>
               )}
             </div>
-
-            <div>
-              <Label htmlFor="description" className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
-                {UI_TEXT.LABEL_DESCRIPTION}
-              </Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => onFieldChange('description', e.target.value)}
-                placeholder={UI_TEXT.PLACEHOLDER_DESCRIPTION}
-                rows={3}
-              />
-              {formErrors.description && (
-                <p className="text-sm text-destructive mt-1.5" role="alert">
-                  {formErrors.description}
-                </p>
-              )}
-            </div>
           </div>
         </div>
 
@@ -140,7 +121,6 @@ AttributeFormDialog.propTypes = {
   /** Form data */
   formData: PropTypes.shape({
     name: PropTypes.string.isRequired,
-    description: PropTypes.string,
   }).isRequired,
   /** Form validation errors */
   formErrors: PropTypes.object.isRequired,

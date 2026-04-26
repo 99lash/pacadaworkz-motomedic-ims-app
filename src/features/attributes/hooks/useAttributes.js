@@ -18,6 +18,7 @@ export const useAttributes = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   // Dialog states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isValuesOpen, setIsValuesOpen] = useState(false);
   const [formMode, setFormMode] = useState('create');
   const [selectedAttribute, setSelectedAttribute] = useState(null);
   const [attributeToDelete, setAttributeToDelete] = useState(null);
@@ -25,6 +26,11 @@ export const useAttributes = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   // Form state
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [formErrors, setFormErrors] = useState(INITIAL_FORM_ERRORS);
+
+  // Values state
+  const [valueInput, setValueInput] = useState('');
+  const [editingValueId, setEditingValueId] = useState(null);
+  const [isValueLoading, setIsValueLoading] = useState(false);
   
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
@@ -118,7 +124,6 @@ export const useAttributes = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     setSelectedAttribute(attribute);
     setFormData({
       name: attribute.name || '',
-      description: attribute.description || '',
     });
     setFormErrors(INITIAL_FORM_ERRORS);
     setIsFormOpen(true);
@@ -187,6 +192,79 @@ export const useAttributes = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     }
   }, [attributeToDelete, closeDeleteDialog, fetchAttributesPaginated]);
 
+  // Attribute Values Handlers
+  const openValuesDialog = useCallback((attribute) => {
+    setSelectedAttribute(attribute);
+    setIsValuesOpen(true);
+    setValueInput('');
+    setEditingValueId(null);
+  }, []);
+
+  const closeValuesDialog = useCallback(() => {
+    setIsValuesOpen(false);
+    setSelectedAttribute(null);
+    setValueInput('');
+    setEditingValueId(null);
+  }, []);
+
+  const handleValueSubmit = useCallback(async () => {
+    if (!valueInput.trim() || !selectedAttribute) return;
+
+    setIsValueLoading(true);
+    try {
+      if (editingValueId) {
+        await attributeService.updateAttributeValue(editingValueId, { value: valueInput.trim() });
+        toast.success(UI_TEXT.TOAST_VALUE_UPDATE);
+      } else {
+        await attributeService.addAttributeValue(selectedAttribute.id, { value: valueInput.trim() });
+        toast.success(UI_TEXT.TOAST_VALUE_ADD);
+      }
+      
+      setValueInput('');
+      setEditingValueId(null);
+      
+      // Refresh attribute details to show new values
+      const updated = await attributeService.fetchAttributeById(selectedAttribute.id);
+      if (updated) {
+        setSelectedAttribute(updated);
+        // Also refresh the main list to update counts
+        fetchAttributesPaginated();
+      }
+    } catch (err) {
+      toast.error('Failed to save attribute value.');
+      console.error('Failed to save attribute value:', err);
+    } finally {
+      setIsValueLoading(false);
+    }
+  }, [valueInput, selectedAttribute, editingValueId, fetchAttributesPaginated]);
+
+  const handleEditValue = useCallback((val) => {
+    setValueInput(val.value);
+    setEditingValueId(val.id);
+  }, []);
+
+  const handleDeleteValue = useCallback(async (valueId) => {
+    if (!window.confirm('Are you sure you want to delete this value?')) return;
+
+    setIsValueLoading(true);
+    try {
+      await attributeService.deleteAttributeValue(valueId);
+      toast.success(UI_TEXT.TOAST_VALUE_DELETE);
+      
+      // Refresh attribute details
+      const updated = await attributeService.fetchAttributeById(selectedAttribute.id);
+      if (updated) {
+        setSelectedAttribute(updated);
+        fetchAttributesPaginated();
+      }
+    } catch (err) {
+      toast.error('Failed to delete attribute value.');
+      console.error('Failed to delete attribute value:', err);
+    } finally {
+      setIsValueLoading(false);
+    }
+  }, [selectedAttribute, fetchAttributesPaginated]);
+
   return {
     // Data
     attributes,
@@ -214,6 +292,18 @@ export const useAttributes = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     // Delete state
     isDeleteOpen,
     attributeToDelete,
+
+    // Values state
+    isValuesOpen,
+    valueInput,
+    setValueInput,
+    editingValueId,
+    isValueLoading,
+    openValuesDialog,
+    closeValuesDialog,
+    handleValueSubmit,
+    handleEditValue,
+    handleDeleteValue,
 
     // Actions
     openCreateDialog,
