@@ -1,22 +1,14 @@
 /**
  * CategoryHeader Component
  * 
- * Page header with breadcrumb navigation and add button.
+ * Page header with add button.
  * Follows accessibility best practices.
  */
 
 import React, { memo } from 'react';
 import PropTypes from 'prop-types';
-import { Plus, Home, Package, Tags } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Button } from '../../../shared/components/ui/button';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '../../../shared/components/ui/breadcrumb';
 import { UI_TEXT } from '../utils';
 
 // =============================================================================
@@ -24,51 +16,13 @@ import { UI_TEXT } from '../utils';
 // =============================================================================
 
 /**
- * CategoryHeader displays breadcrumb and page title with actions
+ * CategoryHeader displays page title with actions
  */
 const CategoryHeader = ({
   onAddClick,
 }) => {
   return (
     <header className="space-y-4">
-      {/* Breadcrumb Navigation */}
-      <nav aria-label="Breadcrumb">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink 
-                href="/" 
-                className="flex items-center gap-2"
-              >
-                <Home className="h-4 w-4" aria-hidden="true" />
-                <span>{UI_TEXT.BREADCRUMB_DASHBOARD}</span>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            
-            <BreadcrumbSeparator aria-hidden="true" />
-            
-            <BreadcrumbItem>
-              <BreadcrumbLink 
-                href="/products" 
-                className="flex items-center gap-2"
-              >
-                <Package className="h-4 w-4" aria-hidden="true" />
-                <span>{UI_TEXT.BREADCRUMB_PRODUCTS}</span>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            
-            <BreadcrumbSeparator aria-hidden="true" />
-            
-            <BreadcrumbItem>
-              <BreadcrumbPage className="flex items-center gap-2">
-                <Tags className="h-4 w-4" aria-hidden="true" />
-                <span>{UI_TEXT.BREADCRUMB_CATEGORIES}</span>
-              </BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </nav>
-
       {/* Page Title and Actions */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>

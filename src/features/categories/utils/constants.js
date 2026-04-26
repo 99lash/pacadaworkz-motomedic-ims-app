@@ -18,11 +18,6 @@ export const UI_TEXT = {
   // Page
   PAGE_TITLE: 'Product Categories',
   
-  // Breadcrumb
-  BREADCRUMB_DASHBOARD: 'Dashboard',
-  BREADCRUMB_PRODUCTS: 'Products',
-  BREADCRUMB_CATEGORIES: 'Categories',
-  
   // Buttons
   BTN_ADD_CATEGORY: 'Add New Category',
   BTN_SAVE: 'Save Category',

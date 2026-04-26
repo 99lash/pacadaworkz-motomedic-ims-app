@@ -7,10 +7,6 @@ export const UI_TEXT = {
   PAGE_TITLE: 'Master Products',
   PAGE_SUBTITLE: 'Track motorcycle parts, pricing, and availability in real-time.',
 
-  BREADCRUMB_DASHBOARD: 'Dashboard',
-  BREADCRUMB_INVENTORY: 'Inventory',
-  BREADCRUMB_PRODUCTS: 'Products',
-
   FILTER_TITLE: 'Filters',
   FILTER_SEARCH_ARIA: 'Search products by name or SKU',
   PLACEHOLDER_SEARCH: 'Search by name, SKU, or description...',
