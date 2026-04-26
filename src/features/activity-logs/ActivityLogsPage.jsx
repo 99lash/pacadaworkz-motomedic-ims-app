@@ -19,7 +19,6 @@ import {
   ActivityLogsFilters,
   ActivityLogsTable,
   ActivityLogsEmptyState,
-  ActivityLogsSummary,
 } from './components';
 import { UI_TEXT } from './utils';
 
@@ -148,14 +147,6 @@ const ActivityLogsPage = () => {
           />
         )}
       </div>
-
-      {/* Summary */}
-      {logs.length > 0 && (
-        <ActivityLogsSummary 
-          filteredCount={logs.length} 
-          totalCount={totalItems} 
-        />
-      )}
     </div>
   );
 };
