@@ -1,6 +1,6 @@
 export const UI_TEXT = {
   PAGE_TITLE: 'Dashboard',
-  PAGE_SUBTITLE: 'Overview of your motor shop performance',
+  PAGE_SUBTITLE: 'Overview of your shop performance',
   BTN_NEW_PRODUCT: 'New Product',
   
   // Stat Labels

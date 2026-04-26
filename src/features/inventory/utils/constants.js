@@ -1,6 +1,6 @@
 export const UI_TEXT = {
   PAGE_TITLE: 'Inventory Management',
-  PAGE_SUBTITLE: 'Monitor and track your stock levels',
+  PAGE_SUBTITLE: 'Monitor and track your products stock levels',
   STATS_TOTAL_ITEMS: 'Total Items',
   STATS_IN_STOCK: 'In Stock',
   STATS_LOW_STOCK: 'Low Stock',
