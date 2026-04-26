@@ -4,7 +4,7 @@ export const API_ENDPOINTS = {
 };
 
 export const UI_TEXT = {
-  PAGE_TITLE: 'Products & Inventory',
+  PAGE_TITLE: 'Master Products',
   PAGE_SUBTITLE: 'Track motorcycle parts, pricing, and availability in real-time.',
 
   BREADCRUMB_DASHBOARD: 'Dashboard',
