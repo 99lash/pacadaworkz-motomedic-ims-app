@@ -27,6 +27,8 @@ export const useUsers = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   const [formErrors, setFormErrors] = useState(INITIAL_FORM_ERRORS);
   const [searchTerm, setSearchTerm] = useState('');
   
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+  
   const isInitialLoad = useRef(true);
   const isFetchingUsersRef = useRef(false);
 
@@ -48,6 +50,21 @@ export const useUsers = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     changePageSize,
   } = pagination;
 
+  // Debounced search - trims and only triggers if content changed
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmedSearch = searchTerm.trim();
+      if (trimmedSearch !== debouncedSearchTerm) {
+        setDebouncedSearchTerm(trimmedSearch);
+        if (!isInitialLoad.current) {
+          goToPage(1);
+        }
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, debouncedSearchTerm, goToPage]);
+
   // Fetch users with pagination
   const loadUsers = useCallback(async () => {
     if (isFetchingUsersRef.current) return;
@@ -57,7 +74,7 @@ export const useUsers = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
       const result = await userService.fetchUsersPaginated({
         page: currentPage,
         pageSize: pageSize,
-        search: searchTerm,
+        search: debouncedSearchTerm,
       });
       if (result.success) {
         setUsers(result.data);
@@ -71,7 +88,7 @@ export const useUsers = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
       isInitialLoad.current = false;
       isFetchingUsersRef.current = false;
     }
-  }, [currentPage, pageSize, searchTerm]);
+  }, [currentPage, pageSize, debouncedSearchTerm]);
 
   useEffect(() => {
     loadUsers();
@@ -187,7 +204,7 @@ export const useUsers = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
 
   const stats = {
     total: totalItems,
-    active: users.filter((u) => u.status === 'Active').length, // This might only be for current page
+    active: users.filter((u) => u.status === 'Active').length,
     admins: users.filter((u) => u.role === 'Admin').length,
   };
 

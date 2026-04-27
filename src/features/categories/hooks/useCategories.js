@@ -103,15 +103,15 @@ export const useCategories = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-      // Reset to page 1 when search changes
-      if (!isInitialLoad.current) {
+      const trimmedSearch = searchTerm.trim();
+      if (trimmedSearch !== debouncedSearchTerm) {
+        setDebouncedSearchTerm(trimmedSearch);
         goToPage(1);
       }
     }, DEBOUNCE.SEARCH);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, goToPage]);
+  }, [searchTerm, debouncedSearchTerm, goToPage]);
 
   // ---------------------------------------------------------------------------
   // DATA FETCHING
@@ -199,7 +199,7 @@ export const useCategories = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   // Initial load and reload on pagination/search changes
   useEffect(() => {
     loadCategories();
-  }, [currentPage, pageSize, debouncedSearchTerm]);
+  }, [loadCategories]);
 
   // Clean up dialog states when component unmounts
   useEffect(() => {

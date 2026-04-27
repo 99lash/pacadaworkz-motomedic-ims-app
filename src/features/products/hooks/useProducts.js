@@ -99,18 +99,21 @@ export const useProducts = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     changePageSize(size);
   }, [dispatch, changePageSize]);
 
-  // debounce search
+  // debounce search - trims and only updates if content changed
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-      if (!isInitialLoad.current && searchTerm !== debouncedSearchTerm) {
-        dispatch(setCurrentPage(1));
-        goToPage(1);
+      const trimmedSearch = searchTerm.trim();
+      if (trimmedSearch !== debouncedSearchTerm) {
+        setDebouncedSearchTerm(trimmedSearch);
+        if (!isInitialLoad.current) {
+          dispatch(setCurrentPage(1));
+          goToPage(1);
+        }
       }
     }, DEBOUNCE.SEARCH);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, dispatch, goToPage, debouncedSearchTerm]);
+  }, [searchTerm, debouncedSearchTerm, dispatch, goToPage]);
 
   // normalized filters
   const normalizedFilters = useMemo(

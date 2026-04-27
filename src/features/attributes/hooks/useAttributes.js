@@ -57,17 +57,20 @@ export const useAttributes = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     changePageSize,
   } = pagination;
 
-  // Debounced search
+  // Debounced search - trims and only triggers if content changed
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-      if (!isInitialLoad.current) {
-        goToPage(1);
+      const trimmedSearch = searchTerm.trim();
+      if (trimmedSearch !== debouncedSearchTerm) {
+        setDebouncedSearchTerm(trimmedSearch);
+        if (!isInitialLoad.current) {
+          goToPage(1);
+        }
       }
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, goToPage]);
+  }, [searchTerm, debouncedSearchTerm, goToPage]);
 
   const fetchAttributesPaginated = useCallback(async () => {
     if (isFetchingAttributesRef.current) return;

@@ -22,8 +22,8 @@ import { UI_TEXT } from '../utils';
 const CategorySearchBar = ({
   value,
   onChange,
-  placeholder,
-  className,
+  placeholder = UI_TEXT.PLACEHOLDER_SEARCH,
+  className = '',
 }) => {
   const inputId = useId();
   
@@ -92,11 +92,6 @@ CategorySearchBar.propTypes = {
   
   /** Additional CSS classes */
   className: PropTypes.string,
-};
-
-CategorySearchBar.defaultProps = {
-  placeholder: UI_TEXT.PLACEHOLDER_SEARCH,
-  className: '',
 };
 
 // =============================================================================

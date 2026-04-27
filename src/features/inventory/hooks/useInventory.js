@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useEffect, useRef } from 'react';
+import { useCallback, useMemo, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   STATUS_FILTERS,
@@ -19,7 +19,7 @@ import {
   setPageSize,
   updateInventoryItem,
 } from '../inventorySlice';
-import { fetchInventoryPaginated, updateInventoryStock } from '../services';
+import { fetchInventory, fetchInventoryPaginated, updateInventoryStock } from '../services';
 
 export const useInventory = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
   const dispatch = useDispatch();
@@ -39,6 +39,8 @@ export const useInventory = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     pageSize,
   } = useSelector((state) => state.inventory);
 
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
   // Pagination hook
   const pagination = usePagination({
     initialPage: currentPage,
@@ -55,22 +57,58 @@ export const useInventory = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     changePageSize,
   } = pagination;
 
+  // Handle Search Debounce - Trims and only updates if content changed
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmedValue = searchTerm.trim();
+      if (trimmedValue !== debouncedSearchTerm) {
+        setDebouncedSearchTerm(trimmedValue);
+        dispatch(setCurrentPage(1));
+        goToPage(1);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, debouncedSearchTerm, dispatch, goToPage]);
+
+  const getItemStockStatus = useCallback((item) => {
+    return getStockStatus(item.currentStock, item.minStock);
+  }, []);
+
   const loadInventory = useCallback(async () => {
     if (isFetchingRef.current) return;
 
     isFetchingRef.current = true;
     dispatch(fetchInventoryStart());
     try {
+      // Use Paginated API with the debounced search term
       const result = await fetchInventoryPaginated({
         page: currentPage,
         pageSize,
-        search: searchTerm,
-        // status: statusFilter, // Add if backend supports
+        search: debouncedSearchTerm,
+        // Backend should handle the status filter if possible, otherwise we can filter the paginated results
       });
 
       if (result.success) {
+        let items = result.data;
+
+        // If backend doesn't support status filtering yet, we filter the current page
+        // Ideally, this should be moved to the backend for perfect accuracy
+        if (statusFilter && statusFilter !== UI_TEXT.STATUS_ALL) {
+          items = items.filter(item => {
+            const itemStatus = getItemStockStatus(item);
+            switch (statusFilter) {
+              case UI_TEXT.STATUS_IN_STOCK: return itemStatus === 'healthy';
+              case UI_TEXT.STATUS_LOW_STOCK: return itemStatus === 'low';
+              case UI_TEXT.STATUS_CRITICAL: return itemStatus === 'critical';
+              case UI_TEXT.STATUS_OUT_OF_STOCK: return itemStatus === 'out';
+              default: return true;
+            }
+          });
+        }
+
         dispatch(fetchInventorySuccess({
-          inventory: result.data,
+          inventory: items,
           totalItems: result.pagination.totalItems
         }));
       }
@@ -79,7 +117,7 @@ export const useInventory = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     } finally {
       isFetchingRef.current = false;
     }
-  }, [dispatch, currentPage, pageSize, searchTerm]);
+  }, [dispatch, currentPage, pageSize, debouncedSearchTerm, statusFilter, getItemStockStatus]);
 
   useEffect(() => {
     loadInventory();
@@ -94,11 +132,6 @@ export const useInventory = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     dispatch(setPageSize(size));
     changePageSize(size);
   }, [dispatch, changePageSize]);
-
-  // Get stock status for an item
-  const getItemStockStatus = useCallback((item) => {
-    return getStockStatus(item.currentStock, item.minStock);
-  }, []);
 
   // Get status display with icon component
   const getStatusDisplayWithIcon = useCallback((status) => {
@@ -119,11 +152,10 @@ export const useInventory = ({ initialPageSize = DEFAULT_PAGE_SIZE } = {}) => {
     return getStockPercentage(item.currentStock, item.maxStock);
   }, []);
 
-  // Calculate statistics (Note: this might be based on current page only or all items)
-  // For now, keeping it consistent with current implementation but it might need adjustment for all items
+  // Calculate statistics (Currently based on fetched inventory for this page)
+  // For total accuracy across all pages, backend should provide these stats
   const stats = useMemo(() => {
     const total = totalItems;
-    // These specific counts might need a separate API call for all items if pagination is used
     const inStock = inventory.filter(item => getItemStockStatus(item) === 'healthy').length;
     const lowStock = inventory.filter(item => getItemStockStatus(item) === 'low').length;
     const outOfStock = inventory.filter(item => getItemStockStatus(item) === 'out').length;
