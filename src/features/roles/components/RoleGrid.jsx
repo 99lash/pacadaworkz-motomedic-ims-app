@@ -10,13 +10,13 @@ const RoleGrid = ({ roles, onEdit, onDelete, getUserCount, onAddClick }) => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {roles.map((role) => (
+      {roles.map((role, index) => (
         <RoleCard
-          key={role.id}
+          key={role.id || `role-${role.role || role.name}-${index}`}
           role={role}
           onEdit={onEdit}
           onDelete={onDelete}
-          userCount={getUserCount(role.name)}
+          getUserCount={getUserCount}
         />
       ))}
     </div>
@@ -32,4 +32,3 @@ RoleGrid.propTypes = {
 };
 
 export default RoleGrid;
-

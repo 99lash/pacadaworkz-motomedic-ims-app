@@ -1,65 +1,88 @@
-const ROLE_STORAGE_KEY = 'motomedic_roles';
-const USER_STORAGE_KEY = 'motomedic_users';
+import apiClient from '../../../shared/services/apiClient';
 
-const MOCK_ROLES = [
-  {
-    id: 'role_superadmin',
-    name: 'SuperAdmin',
-    description: 'Full system access',
-    permissions: [{ module: 'roles', actions: ['view', 'create', 'edit', 'delete'] }],
-    createdAt: '2024-01-01T00:00:00Z',
-  },
-  {
-    id: 'role_admin',
-    name: 'Admin',
-    description: 'Manage settings and users',
-    permissions: [{ module: 'users', actions: ['view', 'create', 'edit'] }],
-    createdAt: '2024-01-01T00:00:00Z',
-  },
-  {
-    id: 'role_staff',
-    name: 'Staff',
-    description: 'Limited operational access',
-    permissions: [{ module: 'products', actions: ['view', 'edit'] }],
-    createdAt: '2024-01-01T00:00:00Z',
-  },
-];
-
-const readFromStorage = (key, fallback = []) => {
-  if (typeof window === 'undefined') return fallback;
-  try {
-    const stored = window.localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : fallback;
-  } catch {
-    return fallback;
-  }
-};
-
-export const fetchRoles = () => {
-  const stored = readFromStorage(ROLE_STORAGE_KEY, MOCK_ROLES);
-  if (stored.length === 0 && typeof window !== 'undefined') {
-    window.localStorage.setItem(ROLE_STORAGE_KEY, JSON.stringify(MOCK_ROLES));
-    return MOCK_ROLES;
-  }
-  return stored;
-};
-
-export const fetchUsers = () => readFromStorage(USER_STORAGE_KEY);
-
-export const saveRoles = (roles) => {
-  window.localStorage.setItem(ROLE_STORAGE_KEY, JSON.stringify(roles));
-  return roles;
-};
-
-export const generateRoleId = () =>
-  `role_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+/**
+ * Role Service
+ * Handles all API calls for role and permission management
+ */
 
 const roleService = {
-  fetchRoles,
-  fetchUsers,
-  saveRoles,
-  generateRoleId,
+  /**
+   * Fetches all roles from the API
+   * @returns {Promise<Array>} List of roles with their permissions
+   */
+  getRoles: async () => {
+    const response = await apiClient.get('/v1/roles/');
+    return response.data.data;
+  },
+
+  /**
+   * Fetches a single role by ID
+   * @param {number|string} id Role ID
+   * @returns {Promise<Object>} Role details
+   */
+  getRoleById: async (id) => {
+    const response = await apiClient.get(`/v1/roles/${id}`);
+    return response.data.data;
+  },
+
+  /**
+   * Creates a new role
+   * @param {Object} data Role data { role_name, description }
+   * @returns {Promise<Object>} Created role
+   */
+  createRole: async (data) => {
+    const response = await apiClient.post('/v1/roles/', {
+      role_name: data.name, // Mapping UI 'name' to API 'role_name'
+      description: data.description,
+    });
+    return response.data.data;
+  },
+
+  /**
+   * Updates an existing role
+   * @param {number|string} id Role ID
+   * @param {Object} data Role data { name, description }
+   * @returns {Promise<Object>} Updated role
+   */
+  updateRole: async (id, data) => {
+    const response = await apiClient.put(`/v1/roles/${id}`, {
+      role_name: data.name, // Mapping UI 'name' to API 'role_name'
+      description: data.description,
+    });
+    return response.data.data;
+  },
+
+  /**
+   * Deletes a role
+   * @param {number|string} id Role ID
+   * @returns {Promise<Object>} Success message
+   */
+  deleteRole: async (id) => {
+    const response = await apiClient.delete(`/v1/roles/${id}`);
+    return response.data.data;
+  },
+
+  /**
+   * Fetches all available permissions
+   * @returns {Promise<Array>} List of all permissions
+   */
+  getPermissions: async () => {
+    const response = await apiClient.get('/v1/permissions/');
+    return response.data.data;
+  },
+
+  /**
+   * Syncs permissions for a role
+   * @param {number|string} id Role ID
+   * @param {Array<number>} permissionIds Array of permission IDs
+   * @returns {Promise<Object>} Updated role with permissions
+   */
+  syncPermissions: async (id, permissionIds) => {
+    const response = await apiClient.post(`/v1/roles/${id}/permissions`, {
+      permissions: permissionIds,
+    });
+    return response.data.data;
+  },
 };
 
 export default roleService;
-

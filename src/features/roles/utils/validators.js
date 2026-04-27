@@ -5,9 +5,11 @@ export const validateRoleForm = (formData, roles = [], currentRoleId = null) => 
   if (!trimmedName) {
     errors.name = 'Role name is required.';
   } else {
-    const exists = roles.some(
-      (role) => role.name.toLowerCase() === trimmedName.toLowerCase() && role.id !== currentRoleId
-    );
+    const exists = roles.some((role) => {
+      const roleName = role.role || role.name;
+      return roleName?.toLowerCase() === trimmedName.toLowerCase() && role.id !== currentRoleId;
+    });
+    
     if (exists) {
       errors.name = 'Role name must be unique.';
     }
@@ -22,4 +24,3 @@ export const validateRoleForm = (formData, roles = [], currentRoleId = null) => 
     errors,
   };
 };
-

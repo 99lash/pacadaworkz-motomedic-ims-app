@@ -1,0 +1,35 @@
+{
+  "module": "Permission Management",
+  "base_url": "/api/v1/permissions",
+  "endpoints": [
+    {
+      "name": "List All Permissions",
+      "method": "GET",
+      "path": "/",
+      "access": "AP (Admin/Superadmin)",
+      "description": "Retrieves a list of all available system permissions.",
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": [
+              {
+                "id": 1,
+                "name": "view_dashboard",
+                "description": "Can view dashboard",
+                "module": "Dashboard"
+              },
+              {
+                "id": 2,
+                "name": "create_product",
+                "description": "Can create new products",
+                "module": "Products"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -8,6 +8,8 @@ const RoleDeleteDialog = ({ role, isOpen, onClose, onConfirm }) => {
     return null;
   }
 
+  const roleName = role.role || role.name;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full p-6 space-y-4">
@@ -24,7 +26,7 @@ const RoleDeleteDialog = ({ role, isOpen, onClose, onConfirm }) => {
         </div>
 
         <p className="text-gray-700 dark:text-gray-200">
-          Are you sure you want to delete <span className="font-semibold">{role.name}</span>?
+          Are you sure you want to delete <span className="font-semibold">{roleName}</span>?
         </p>
 
         <div className="flex justify-end gap-3">
@@ -42,7 +44,8 @@ const RoleDeleteDialog = ({ role, isOpen, onClose, onConfirm }) => {
 
 RoleDeleteDialog.propTypes = {
   role: PropTypes.shape({
-    id: PropTypes.string,
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    role: PropTypes.string,
     name: PropTypes.string,
   }),
   isOpen: PropTypes.bool.isRequired,
@@ -55,4 +58,3 @@ RoleDeleteDialog.defaultProps = {
 };
 
 export default RoleDeleteDialog;
-

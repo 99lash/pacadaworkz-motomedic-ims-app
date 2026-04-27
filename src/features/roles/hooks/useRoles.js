@@ -1,6 +1,17 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
-import { roleService } from '../services';
+import {
+  fetchRolesAndPermissions,
+  createRole as createRoleThunk,
+  updateRole as updateRoleThunk,
+  deleteRole as deleteRoleThunk,
+  setFormOpen,
+  setDeleteOpen,
+  setFormMode,
+  setSelectedRole,
+  setRoleToDelete,
+} from '../rolesSlice';
 import {
   INITIAL_FORM_STATE,
   INITIAL_FORM_ERRORS,
@@ -10,47 +21,109 @@ import {
 } from '../utils';
 
 export const useRoles = () => {
-  const [roles, setRoles] = useState(() => roleService.fetchRoles());
-  const [users] = useState(() => roleService.fetchUsers());
-  const isLoading = false;
-
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [formMode, setFormMode] = useState('create');
-  const [selectedRole, setSelectedRole] = useState(null);
+  const dispatch = useDispatch();
+  const {
+    roles,
+    allPermissions,
+    isLoading,
+    isFormOpen,
+    isDeleteOpen,
+    formMode,
+    selectedRole,
+    roleToDelete,
+  } = useSelector((state) => state.roles);
 
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [formErrors, setFormErrors] = useState(INITIAL_FORM_ERRORS);
-  const [roleToDelete, setRoleToDelete] = useState(null);
+
+  // Fetch data on mount
+  useEffect(() => {
+    dispatch(fetchRolesAndPermissions());
+  }, [dispatch]);
 
   const resetForm = useCallback(() => {
     setFormData(INITIAL_FORM_STATE);
     setFormErrors(INITIAL_FORM_ERRORS);
-    setSelectedRole(null);
-  }, []);
+    dispatch(setSelectedRole(null));
+  }, [dispatch]);
 
   const openCreateDialog = useCallback(() => {
-    setFormMode('create');
+    dispatch(setFormMode('create'));
     resetForm();
-    setIsFormOpen(true);
-  }, [resetForm]);
+    dispatch(setFormOpen(true));
+  }, [dispatch, resetForm]);
 
-  const openEditDialog = useCallback((role) => {
-    setFormMode('edit');
-    setSelectedRole(role);
-    setFormData({
-      name: role.name,
-      description: role.description,
-      permissions: role.permissions,
+  /**
+   * Helper to convert API permission objects to UI module-based format
+   */
+  const mapApiPermissionsToUi = useCallback((apiPermissions) => {
+    const modules = {};
+    apiPermissions.forEach((perm) => {
+      const moduleName = perm.module.toLowerCase().replace(/ /g, '_');
+      // Try to extract action by removing module name from the permission name
+      let action = perm.name.toLowerCase();
+      const moduleSuffix = `_${moduleName}`;
+      if (action.endsWith(moduleSuffix)) {
+        action = action.slice(0, -moduleSuffix.length);
+      } else {
+        action = action.split('_')[0];
+      }
+      
+      if (!modules[moduleName]) {
+        modules[moduleName] = [];
+      }
+      if (!modules[moduleName].includes(action)) {
+        modules[moduleName].push(action);
+      }
     });
-    setFormErrors(INITIAL_FORM_ERRORS);
-    setIsFormOpen(true);
+
+    return Object.entries(modules).map(([module, actions]) => ({
+      module,
+      actions,
+    }));
   }, []);
 
+  /**
+   * Helper to convert UI module-based format to API permission IDs
+   */
+  const mapUiPermissionsToIds = useCallback((uiPermissions) => {
+    const ids = [];
+    uiPermissions.forEach((uiPerm) => {
+      uiPerm.actions.forEach((action) => {
+        const apiPerm = allPermissions.find((p) => {
+          const pModule = p.module.toLowerCase().replace(/ /g, '_');
+          const pName = p.name.toLowerCase();
+          
+          return pModule === uiPerm.module && (
+            pName === `${action}_${uiPerm.module}` || 
+            pName.startsWith(action)
+          );
+        });
+        if (apiPerm) {
+          ids.push(apiPerm.id);
+        }
+      });
+    });
+    return ids;
+  }, [allPermissions]);
+
+  const openEditDialog = useCallback((role) => {
+    dispatch(setFormMode('edit'));
+    dispatch(setSelectedRole(role));
+    
+    setFormData({
+      name: role.role || role.name,
+      description: role.description,
+      permissions: mapApiPermissionsToUi(role.permissions || []),
+    });
+    setFormErrors(INITIAL_FORM_ERRORS);
+    dispatch(setFormOpen(true));
+  }, [dispatch, mapApiPermissionsToUi]);
+
   const closeFormDialog = useCallback(() => {
-    setIsFormOpen(false);
+    dispatch(setFormOpen(false));
     resetForm();
-  }, [resetForm]);
+  }, [dispatch, resetForm]);
 
   const handleFormFieldChange = useCallback((field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -113,70 +186,72 @@ export const useRoles = () => {
     [formData.permissions]
   );
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     const { isValid, errors } = validateRoleForm(formData, roles, selectedRole?.id);
     if (!isValid) {
       setFormErrors(errors);
       return false;
     }
 
-    const payload = {
-      id: selectedRole?.id ?? roleService.generateRoleId(),
+    const permissionIds = mapUiPermissionsToIds(formData.permissions);
+    const roleData = {
       name: formData.name.trim(),
       description: formData.description.trim(),
-      permissions: formData.permissions,
-      createdAt: selectedRole?.createdAt ?? new Date().toISOString(),
     };
 
-    const updated =
-      formMode === 'edit'
-        ? roles.map((role) => (role.id === payload.id ? payload : role))
-        : [...roles, payload];
-
-    roleService.saveRoles(updated);
-    setRoles(updated);
-    closeFormDialog();
-    toast.success(formMode === 'edit' ? UI_TEXT.TOAST_UPDATE : UI_TEXT.TOAST_CREATE);
-    return true;
-  }, [formData, roles, selectedRole, formMode, closeFormDialog]);
+    try {
+      if (formMode === 'edit') {
+        await dispatch(updateRoleThunk({ id: selectedRole.id, roleData, permissionIds })).unwrap();
+        toast.success(UI_TEXT.TOAST_UPDATE);
+      } else {
+        await dispatch(createRoleThunk({ roleData, permissionIds })).unwrap();
+        toast.success(UI_TEXT.TOAST_CREATE);
+      }
+      return true;
+    } catch (error) {
+      toast.error(error || 'Something went wrong');
+      return false;
+    }
+  }, [formData, roles, selectedRole, formMode, dispatch, mapUiPermissionsToIds]);
 
   const openDeleteDialog = useCallback((role) => {
-    const assignedUsers = users.filter((user) => user.role?.toLowerCase() === role.name.toLowerCase());
-    if (assignedUsers.length > 0) {
-      toast.error(UI_TEXT.TOAST_DELETE_BLOCKED.replace('{count}', assignedUsers.length));
+    // API now provides users_count directly
+    const userCount = role.users_count || 0;
+
+    if (userCount > 0) {
+      toast.error(UI_TEXT.TOAST_DELETE_BLOCKED.replace('{count}', userCount));
       return;
     }
-    setRoleToDelete(role);
-    setIsDeleteOpen(true);
-  }, [users]);
+    dispatch(setRoleToDelete(role));
+    dispatch(setDeleteOpen(true));
+  }, [dispatch]);
 
   const closeDeleteDialog = useCallback(() => {
-    setRoleToDelete(null);
-    setIsDeleteOpen(false);
-  }, []);
+    dispatch(setRoleToDelete(null));
+    dispatch(setDeleteOpen(false));
+  }, [dispatch]);
 
-  const handleDelete = useCallback(() => {
+  const handleDelete = useCallback(async () => {
     if (!roleToDelete) return false;
-    const updated = roles.filter((role) => role.id !== roleToDelete.id);
-    roleService.saveRoles(updated);
-    setRoles(updated);
-    closeDeleteDialog();
-    toast.success(UI_TEXT.TOAST_DELETE);
-    return true;
-  }, [roleToDelete, roles, closeDeleteDialog]);
+    try {
+      await dispatch(deleteRoleThunk(roleToDelete.id)).unwrap();
+      toast.success(UI_TEXT.TOAST_DELETE);
+      return true;
+    } catch (error) {
+      toast.error(error || 'Failed to delete role');
+      return false;
+    }
+  }, [roleToDelete, dispatch]);
 
   const getUserCount = useCallback(
-    (roleName) => users.filter((user) => user.role?.toLowerCase() === roleName.toLowerCase()).length,
-    [users]
+    (role) => role.users_count || 0,
+    []
   );
-
-  const permissionSummary = useMemo(() => PERMISSION_MODULES, []);
 
   return {
     // data
     roles,
-    users,
-    permissionSummary,
+    allPermissions,
     isLoading,
 
     // form state
@@ -206,4 +281,3 @@ export const useRoles = () => {
 };
 
 export default useRoles;
-

@@ -1,0 +1,220 @@
+{
+  "module": "Role Management",
+  "base_url": "/api/v1/roles",
+  "endpoints": [
+    {
+      "name": "List Roles",
+      "method": "GET",
+      "path": "/",
+      "access": "AP (Admin/Superadmin)",
+      "description": "Retrieves all roles with their assigned permissions.",
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": [
+              {
+                "id": 1,
+                "role": "superadmin",
+                "description": "Administrator with full access",
+                "users_count": 5,
+                "permissions": [
+                  {
+                    "id": 1,
+                    "name": "view_dashboard",
+                    "description": "Can view dashboard",
+                    "module": "Dashboard"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "Show Role Details",
+      "method": "GET",
+      "path": "/{id}",
+      "access": "AP (Admin/Superadmin)",
+      "request": {
+        "url_params": {
+          "id": {
+            "type": "integer",
+            "required": true
+          }
+        }
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "id": 1,
+              "role": "superadmin",
+              "description": "Administrator with full access",
+              "permissions": [
+                {
+                  "id": 1,
+                  "name": "view_dashboard",
+                  "description": "Can view dashboard",
+                  "module": "Dashboard"
+                }
+              ]
+            }
+          }
+        },
+        "error_404": {
+          "body": {
+            "success": false,
+            "message": "Role not found"
+          }
+        }
+      }
+    },
+    {
+      "name": "Create Role",
+      "method": "POST",
+      "path": "/",
+      "access": "AP (Admin/Superadmin)",
+      "request": {
+        "body": {
+          "role_name": {
+            "type": "string",
+            "max": 50,
+            "required": true,
+            "unique": true,
+            "example": "manager"
+          },
+          "description": {
+            "type": "string",
+            "required": true,
+            "example": "Managerial role"
+          }
+        }
+      },
+      "response": {
+        "success": {
+          "status": 201,
+          "body": {
+            "success": true,
+            "data": {
+              "id": 4,
+              "role": "manager",
+              "description": "Managerial role",
+              "users_count": 0,
+              "permissions": []
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update Role",
+      "method": "PUT",
+      "path": "/{id}",
+      "access": "AP (Admin/Superadmin)",
+      "request": {
+        "url_params": {
+          "id": {
+            "type": "integer",
+            "required": true
+          }
+        },
+        "body": {
+          "role_name": {
+            "type": "string",
+            "max": 50,
+            "required": false,
+            "example": "senior_manager"
+          },
+          "description": {
+            "type": "string",
+            "required": true,
+            "example": "Updated description"
+          }
+        }
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "id": 4,
+              "role": "senior_manager",
+              "description": "Updated description",
+              "users_count": 0,
+              "permissions": []
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete Role",
+      "method": "DELETE",
+      "path": "/{id}",
+      "access": "AP (Admin/Superadmin)",
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "message": "Role deleted successfully"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Assign/Sync Permissions to Role",
+      "method": "POST",
+      "path": "/{id}/permissions",
+      "access": "AP (Admin/Superadmin)",
+      "description": "Syncs permissions for a role. NOTE: This endpoint replaces all existing permissions with the IDs provided in the array. To remove a permission, exclude its ID from the array. To remove all permissions, send an empty array [].",
+      "request": {
+        "url_params": {
+          "id": {
+            "type": "integer",
+            "required": true
+          }
+        },
+        "body": {
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "required": true,
+            "description": "Full array of permission IDs to be assigned (sync behavior)",
+            "example": [1, 2, 3]
+          }
+        }
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "message": "Permissions assigned successfully.",
+            "data": {
+              "role_name": "superadmin",
+              "permissions": [
+                {
+                  "id": 1,
+                  "name": "view_dashboard",
+                  "module": "Dashboard",
+                  "description": "Can view dashboard"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}
