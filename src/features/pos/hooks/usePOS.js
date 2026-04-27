@@ -379,9 +379,8 @@ export const usePOS = (user) => {
 
   const toggleCategory = useCallback((categoryId) => {
     const id = categoryId.toString();
-    const newSelected = selectedCategoryIds.includes(id)
-      ? selectedCategoryIds.filter(c => c !== id)
-      : [...selectedCategoryIds, id];
+    // Single selection logic: if already selected, clear it. Otherwise, select only the new one.
+    const newSelected = selectedCategoryIds.includes(id) ? [] : [id];
     dispatch(setSelectedCategoryIds(newSelected));
   }, [dispatch, selectedCategoryIds]);
 
