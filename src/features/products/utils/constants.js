@@ -102,7 +102,7 @@ export const INITIAL_PRODUCT_FORM = {
   currentStock: '',
   reorderPoint: '',
   description: '',
-  attributes: [], // Array of { id, attributeId, value }
+  attributes: [], // Array of { id, attributeId, valueId, value }
 };
 
 export const INITIAL_PRODUCT_ERRORS = {

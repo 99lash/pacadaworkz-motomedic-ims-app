@@ -1,0 +1,171 @@
+{
+  "module": "Product Management",
+  "base_url": "/api/v1/products",
+  "endpoints": [
+    {
+      "name": "List Products",
+      "method": "GET",
+      "path": "/",
+      "access": "AP (Admin/Superadmin)",
+      "features": ["Paginated", "Searchable", "Filterable"],
+      "request": {
+        "query_params": {
+          "search": { "type": "string", "description": "Search by name, SKU, category, or brand" },
+          "category_id": { "type": "integer", "description": "Filter by category ID" },
+          "brand_id": { "type": "integer", "description": "Filter by brand ID" },
+          "page": { "type": "integer", "default": 1 },
+          "limit": { "type": "integer", "default": 10 }
+        }
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": [
+              {
+                "id": 1,
+                "category": { "id": 1, "name": "Electronics" },
+                "brand": "Apple",
+                "sku": "IPHONE-15-PRO",
+                "name": "iPhone 15 Pro",
+                "description": "Latest model",
+                "unit_price": 999.99,
+                "cost_price": 700.00,
+                "reorder_level": 10,
+                "image_url": null,
+                "is_active": true,
+                "current_stock": 50,
+                "attribute_values": [
+                  { "id": 1, "attribute": "Color", "value": "Space Grey" },
+                  { "id": 2, "attribute": "Storage", "value": "256GB" }
+                ],
+                "updated_at": "2026-04-26T12:00:00Z"
+              }
+            ],
+            "meta": {
+              "current_page": 1,
+              "per_page": 10,
+              "total": 100,
+              "last_page": 10
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Show Product Details",
+      "method": "GET",
+      "path": "/{id}",
+      "access": "AP (Admin/Superadmin)",
+      "request": {
+        "url_params": { "id": { "type": "integer", "required": true } }
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "id": 1,
+              "name": "iPhone 15 Pro",
+              "attribute_values": [
+                { "id": 1, "attribute": "Color", "value": "Space Grey" }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Create Product",
+      "method": "POST",
+      "path": "/",
+      "access": "AP (Admin/Superadmin)",
+      "request": {
+        "body": {
+          "category_id": { "type": "integer", "required": true },
+          "brand_id": { "type": "integer", "required": true },
+          "sku": { "type": "string", "required": true, "unique": true },
+          "name": { "type": "string", "required": true },
+          "description": { "type": "string", "required": false },
+          "unit_price": { "type": "number", "required": true },
+          "cost_price": { "type": "number", "required": true },
+          "reorder_level": { "type": "integer", "default": 10 },
+          "initial_stock": { "type": "integer", "description": "Auto-creates inventory record", "default": 0 },
+          "location": { "type": "string", "description": "Inventory location" },
+          "attribute_values": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "description": "Array of Attribute Value IDs to sync",
+            "example": [1, 5, 12]
+          }
+        }
+      },
+      "response": {
+        "success": {
+          "status": 201,
+          "body": {
+            "success": true,
+            "data": {
+              "id": 10,
+              "name": "New Product",
+              "attribute_values": [
+                { "id": 1, "attribute": "Color", "value": "Red" }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update Product",
+      "method": "PUT",
+      "path": "/{id}",
+      "access": "AP (Admin/Superadmin)",
+      "request": {
+        "url_params": { "id": { "type": "integer", "required": true } },
+        "body": {
+          "category_id": { "type": "integer", "required": true },
+          "brand_id": { "type": "integer", "required": true },
+          "name": { "type": "string", "required": true },
+          "unit_price": { "type": "number", "required": true },
+          "cost_price": { "type": "number", "required": true },
+          "attribute_values": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "description": "Full array of IDs to sync (overwrites old relations)"
+          }
+        }
+      },
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": {
+              "id": 1,
+              "name": "Updated Name",
+              "attribute_values": []
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete Product",
+      "method": "DELETE",
+      "path": "/{id}",
+      "access": "AP (Admin/Superadmin)",
+      "response": {
+        "success": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "data": { "message": "Product deleted successfully" }
+          }
+        }
+      }
+    }
+  ]
+}

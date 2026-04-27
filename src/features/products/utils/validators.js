@@ -59,17 +59,16 @@ export const validateProductForm = (formData = INITIAL_PRODUCT_FORM) => {
 export const sanitizeProductData = (formData) => ({
   name: formData.name?.trim() || '',
   sku: formData.sku?.trim() || '',
-  categoryId: formData.categoryId,
-  brandId: formData.brandId,
-  costPrice: Number(formData.costPrice) || 0,
-  sellingPrice: Number(formData.sellingPrice) || 0,
+  category_id: Number(formData.categoryId),
+  brand_id: Number(formData.brandId),
+  cost_price: Number(formData.costPrice) || 0,
+  unit_price: Number(formData.sellingPrice) || 0,
   location: formData.location?.trim() || '',
-  currentStock: Number(formData.currentStock) || 0,
-  reorderPoint: Number(formData.reorderPoint) || 0,
+  current_stock: Number(formData.currentStock) || 0,
+  reorder_level: Number(formData.reorderPoint) || 0,
   description: formData.description?.trim() || '',
-  attributes: (formData.attributes || []).map((attr) => ({
-    attributeId: attr.attributeId,
-    value: attr.value?.trim() || '',
-  })),
+  attribute_values: (formData.attributes || [])
+    .filter(attr => attr.valueId)
+    .map((attr) => Number(attr.valueId)),
 });
 

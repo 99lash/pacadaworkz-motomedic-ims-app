@@ -304,6 +304,7 @@ const transformProductFromBackend = (backendProduct, stockMap) => ({
   isActive: backendProduct.is_active || true,
   createdAt: backendProduct.created_at,
   updatedAt: backendProduct.updated_at,
+  attribute_values: backendProduct.attribute_values || [],
 });
 
 /**
@@ -312,16 +313,17 @@ const transformProductFromBackend = (backendProduct, stockMap) => ({
  * @returns {Object} Transformed product for API
  */
 const transformProductToBackend = (frontendProduct) => ({
-  category_id: frontendProduct.categoryId,
-  brand_id: frontendProduct.brandId,
+  category_id: frontendProduct.category_id || frontendProduct.categoryId,
+  brand_id: frontendProduct.brand_id || frontendProduct.brandId,
   sku: frontendProduct.sku,
   name: frontendProduct.name,
   description: frontendProduct.description || '',
-  unit_price: parseFloat(frontendProduct.sellingPrice) || 0,
-  cost_price: parseFloat(frontendProduct.costPrice) || 0,
+  unit_price: parseFloat(frontendProduct.unit_price || frontendProduct.sellingPrice) || 0,
+  cost_price: parseFloat(frontendProduct.cost_price || frontendProduct.costPrice) || 0,
   location: frontendProduct.location || '',
-  reorder_level: parseInt(frontendProduct.reorderPoint) || 0,
-  initial_stock: parseInt(frontendProduct.currentStock) || 0,
+  reorder_level: parseInt(frontendProduct.reorder_level || frontendProduct.reorderPoint) || 0,
+  initial_stock: parseInt(frontendProduct.current_stock || frontendProduct.currentStock) || 0,
+  attribute_values: frontendProduct.attribute_values || [],
 });
 
 // =============================================================================

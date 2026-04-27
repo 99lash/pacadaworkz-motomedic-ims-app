@@ -38,18 +38,35 @@ export const mapProductToFormState = (product) => {
     return { ...INITIAL_PRODUCT_FORM };
   }
 
+  // Map attribute_values from API to the form structure
+  const attributes = (product.attribute_values || []).map((val) => {
+    // We need to find the attribute ID for this value.
+    // The API response for product attribute_values includes { id, attribute, value }
+    // but not necessarily the attribute_id. 
+    // However, our frontend needs it to show which attribute is selected in the dropdown.
+    // Note: If the backend doesn't provide attribute_id, we might need to rely on 
+    // availableAttributes to find it by name 'attribute'.
+    return {
+      id: `attr_existing_${val.id}`,
+      attributeId: val.attribute_id?.toString() || '', // Assuming attribute_id might be available or handled later
+      attributeName: val.attribute, // Keep the name to help with lookup
+      valueId: val.id.toString(),
+      value: val.value,
+    };
+  });
+
   return {
     ...INITIAL_PRODUCT_FORM,
     name: product.name || '',
     sku: product.sku || '',
-    categoryId: product.categoryId?.toString() || '',
-    brandId: product.brandId?.toString() || '',
-    costPrice: product.costPrice?.toString() ?? '',
-    sellingPrice: product.sellingPrice?.toString() ?? '',
+    categoryId: (product.category?.id || product.categoryId)?.toString() || '',
+    brandId: (product.brand?.id || product.brandId)?.toString() || '',
+    costPrice: product.cost_price?.toString() || product.costPrice?.toString() || '',
+    sellingPrice: product.unit_price?.toString() || product.sellingPrice?.toString() || '',
     location: product.location || '',
-    reorderPoint: product.reorderPoint?.toString() ?? '',
+    reorderPoint: product.reorder_level?.toString() || product.reorderPoint?.toString() || '',
     description: product.description || '',
-    attributes: product.attributes || [],
+    attributes,
   };
 };
 

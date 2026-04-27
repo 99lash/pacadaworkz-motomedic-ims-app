@@ -9,7 +9,6 @@ import React, { memo, useCallback, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Plus, Tag, X } from 'lucide-react';
 import { Button } from '../../../shared/components/ui/button';
-import { Input } from '../../../shared/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/components/ui/card';
 import ProductAttributeRow from './ProductAttributeRow';
 import { attributeService } from '../../attributes/services';
@@ -29,7 +28,7 @@ const ProductAttributesSection = ({
   const [availableAttributes, setAvailableAttributes] = useState([]);
   const [editingAttributeId, setEditingAttributeId] = useState(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
-  const [newAttribute, setNewAttribute] = useState({ attributeId: '', value: '' });
+  const [newAttribute, setNewAttribute] = useState({ attributeId: '', valueId: '', value: '' });
 
   // Load available attributes
   useEffect(() => {
@@ -38,6 +37,25 @@ const ProductAttributesSection = ({
         const attrs = await attributeService.fetchAttributes();
         if (Array.isArray(attrs)) {
           setAvailableAttributes(attrs);
+
+          // Resolve missing attributeIds from names for existing attributes
+          if (attributes.length > 0) {
+            const updatedAttributes = attributes.map(attr => {
+              if (!attr.attributeId && attr.attributeName) {
+                const found = attrs.find(a => a.name === attr.attributeName);
+                if (found) {
+                  return { ...attr, attributeId: found.id.toString() };
+                }
+              }
+              return attr;
+            });
+            
+            // Check if any changed before calling update
+            const hasChanges = updatedAttributes.some((attr, idx) => attr.attributeId !== attributes[idx].attributeId);
+            if (hasChanges) {
+              onAttributesChange(updatedAttributes);
+            }
+          }
         } else {
           setAvailableAttributes([]);
         }
@@ -48,7 +66,7 @@ const ProductAttributesSection = ({
     };
 
     loadAttributes();
-  }, []);
+  }, [availableAttributes.length === 0, attributes.length]);
 
   // Get available attributes that haven't been used yet
   // When editing, include the currently selected attribute
@@ -65,7 +83,7 @@ const ProductAttributesSection = ({
               .filter((a) => a.attributeId && a.id !== editingAttributeId)
               .map((a) => a.attributeId)
           );
-          return attr.id === editingAttr.attributeId || !usedAttributeIds.has(attr.id);
+          return String(attr.id) === String(editingAttr.attributeId) || !usedAttributeIds.has(String(attr.id));
         });
       }
     }
@@ -79,28 +97,29 @@ const ProductAttributesSection = ({
 
   const handleAddNew = useCallback(() => {
     setIsAddingNew(true);
-    setNewAttribute({ attributeId: '', value: '' });
+    setNewAttribute({ attributeId: '', valueId: '', value: '' });
   }, []);
 
   const handleCancelAdd = useCallback(() => {
     setIsAddingNew(false);
-    setNewAttribute({ attributeId: '', value: '' });
+    setNewAttribute({ attributeId: '', valueId: '', value: '' });
   }, []);
 
   const handleSaveNew = useCallback(() => {
-    if (!newAttribute.attributeId || !newAttribute.value?.trim()) {
+    if (!newAttribute.attributeId || !newAttribute.valueId) {
       return;
     }
 
     const newAttr = {
       id: generateAttributeId(),
       attributeId: newAttribute.attributeId,
-      value: newAttribute.value.trim(),
+      valueId: newAttribute.valueId,
+      value: newAttribute.value,
     };
 
     onAttributesChange([...attributes, newAttr]);
     // Keep the form open and reset for next attribute
-    setNewAttribute({ attributeId: '', value: '' });
+    setNewAttribute({ attributeId: '', valueId: '', value: '' });
   }, [newAttribute, attributes, onAttributesChange, generateAttributeId]);
 
   const handleEdit = useCallback((attributeId) => {
@@ -122,15 +141,15 @@ const ProductAttributesSection = ({
   const handleAttributeChange = useCallback((attributeId, newAttributeId) => {
     onAttributesChange(
       attributes.map((attr) =>
-        attr.id === attributeId ? { ...attr, attributeId: newAttributeId } : attr
+        attr.id === attributeId ? { ...attr, attributeId: newAttributeId, valueId: '', value: '' } : attr
       )
     );
   }, [attributes, onAttributesChange]);
 
-  const handleValueChange = useCallback((attributeId, newValue) => {
+  const handleValueChange = useCallback((attributeId, newValueId, newValue) => {
     onAttributesChange(
       attributes.map((attr) =>
-        attr.id === attributeId ? { ...attr, value: newValue } : attr
+        attr.id === attributeId ? { ...attr, valueId: newValueId, value: newValue } : attr
       )
     );
   }, [attributes, onAttributesChange]);
@@ -196,10 +215,10 @@ const ProductAttributesSection = ({
               {/* Select Attribute Dropdown - At Top */}
               <select
                 value={newAttribute.attributeId}
-                onChange={(e) => setNewAttribute({ ...newAttribute, attributeId: e.target.value })}
+                onChange={(e) => setNewAttribute({ ...newAttribute, attributeId: e.target.value, valueId: '', value: '' })}
                 onKeyDown={(e) => {
                   // Allow Enter key to save if both fields are filled
-                  if (e.key === 'Enter' && newAttribute.attributeId && newAttribute.value?.trim()) {
+                  if (e.key === 'Enter' && newAttribute.attributeId && newAttribute.valueId) {
                     e.preventDefault();
                     handleSaveNew();
                   }
@@ -214,27 +233,35 @@ const ProductAttributesSection = ({
                 ))}
               </select>
               
-              {/* Value Input and Button - At Bottom */}
+              {/* Value Select and Button - At Bottom */}
               <div className="flex items-center gap-2">
-                <Input
-                  value={newAttribute.value}
-                  onChange={(e) => setNewAttribute({ ...newAttribute, value: e.target.value })}
-                  onKeyDown={(e) => {
-                    // Allow Enter key to save if both fields are filled
-                    if (e.key === 'Enter' && newAttribute.attributeId && newAttribute.value?.trim()) {
-                      e.preventDefault();
-                      handleSaveNew();
-                    }
+                <select
+                  value={newAttribute.valueId}
+                  onChange={(e) => {
+                    const valId = e.target.value;
+                    const valName = e.target.options[e.target.selectedIndex].text;
+                    setNewAttribute({ ...newAttribute, valueId: valId, value: valId ? valName : '' });
                   }}
-                  placeholder="Enter value"
-                  className="flex-1"
-                />
+                  disabled={!newAttribute.attributeId}
+                  className="flex h-10 flex-1 rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">Select value</option>
+                  {newAttribute.attributeId && 
+                    availableAttributes
+                      .find(attr => String(attr.id) === String(newAttribute.attributeId))
+                      ?.attribute_values?.map(val => (
+                        <option key={val.id} value={val.id}>
+                          {val.value}
+                        </option>
+                      ))
+                  }
+                </select>
                 
                 <Button
                   type="button"
                   size="sm"
                   onClick={handleSaveNew}
-                  disabled={!newAttribute.attributeId || !newAttribute.value?.trim()}
+                  disabled={!newAttribute.attributeId || !newAttribute.valueId}
                   className="h-10"
                 >
                   Add & Continue
